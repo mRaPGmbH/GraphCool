@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types;
 
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\InputObjectType;
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
@@ -21,8 +22,8 @@ class WhereInputType extends InputObjectType
             'column' => $this->getColumns($model, $type),
             'operator' => $typeLoader->load('SQLOperator')(),
             'value' => Type::string(),
-            'AND' => $this,
-            'OR' => $this
+            'AND' => new ListOfType($this),
+            'OR' => new ListOfType($this)
         ];
         $config = [
             'name' => $type->name . 'WhereConditions',

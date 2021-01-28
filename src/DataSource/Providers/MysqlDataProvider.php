@@ -41,8 +41,8 @@ class MysqlDataProvider extends DataProvider
     public function findAll(string $name, array $args): ?array
     {
         $limit = $args['first'] ?? 10;
-        $page = $args['page'] ?? 0;
-        $offset = $page * $limit;
+        $page = $args['page'] ?? 1;
+        $offset = ($page - 1) * $limit;
         $where = $args['where'] ?? null;
         [$ids, $total] = $this->findNodes($name, $where, $limit, $offset);
         $paginatorInfo = new stdClass();
@@ -341,34 +341,74 @@ class MysqlDataProvider extends DataProvider
         );
     }
 
-    protected function findNodes(string $name, array $where, int $limit = 10, int $offset = 0, string $orderBy = 'created_at ASC'): array
+    protected function findNodes(string $name, ?array $where, int $limit = 10, int $offset = 0, string $orderBy = '`n`.`created_at` ASC'): array
     {
-        $sql = 'SELECT `id` FROM `node` WHERE `model` = :model ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
-        $statement = $this->statement($sql);
-        $statement->execute([
-            ':model' => $name
-        ]);
+        [$sql, $parameters] = $this->buildFindSql($where, $name);
+        $order = 'ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
+
+        $statement = $this->statement('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
+
+        $statement->execute($parameters);
         $result = [];
         foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
             $result[] = $row->id;
         }
-        $sql = 'SELECT count(*) FROM `node` WHERE model = :model';
-        $statement = $this->statement($sql);
-        $statement->execute([
-            ':model' => $name
-        ]);
+        $statement = $this->statement('SELECT count(DISTINCT `n`.`id`) ' . $sql);
+        $statement->execute($parameters);
         $total = (int) $statement->fetchColumn();
         return [$result, $total];
     }
 
-    protected function buildWhereSqlPart(array $where, int $i = 0): array
+    protected function buildFindSql(?array $where, string $model)
     {
-        $p = ':p'.$i;
-        $sql = '`' . $where['column'] . '` ' . $where['operator'] . ' ' . $p;
-        $params = [
-            $p => $where['value']
+        $joins = [];
+        $whereSql = ' WHERE `n`.`model` = :model AND `n`.`deleted_at` IS NULL ';
+        $parameters = [
+            ':model' => $model
         ];
-        return [$sql, $params];
+
+        if (!empty($where)) {
+            $whereSql .= ' AND ' . $this->buildWhereSql($where,$joins, $parameters) . ' ';
+        }
+
+        $sql = 'FROM `node` AS `n` ' . implode(' ', $joins) . $whereSql;
+
+        return [$sql, $parameters];
+    }
+
+    protected function buildWhereSql(?array $wheres, array &$joins, array &$parameters, string $mode = 'AND'): string
+    {
+        if (
+            isset($wheres['operator'])
+            || isset($wheres['value'])
+            || isset($wheres['column'])
+            || isset($wheres['AND'])
+            || isset($wheres['OR'])
+        ) {
+            $wheres = [$wheres];
+        }
+        $sqls = [];
+        foreach ($wheres as $where) {
+            if (isset($where['operator']) || isset($where['value']) || isset($where['column'])) {
+                $i = count($parameters);
+                $joins[] = 'LEFT JOIN `node_property` AS `np' . $i . '` ON `np' . $i . '`.`node_id` = `n`.`id`';
+                $sql = '`np' . $i . '`.`property` = :p' . $i . 'p AND `np' . $i . '`.`deleted_at` IS NULL ';
+                $parameters[':p' . $i . 'p'] = $where['column'];
+                if (is_string($where['value'])) {
+                    $sql .= ' AND ';
+                    $sql .= '`np' . $i . '`.`value_string` ' . $where['operator'] . ' :p' . $i . 's';
+                    $parameters[':p' . $i . 's'] = $where['value'];
+                }
+                $sqls[] = '(' . $sql . ')';
+            }
+            if (isset($where['OR'])) {
+                $sqls[] = $this->buildWhereSql($where['OR'], $joins, $parameters, 'OR');
+            }
+            if (isset($where['AND'])) {
+                $sqls[] = $this->buildWhereSql($where['AND'], $joins, $parameters, 'AND');
+            }
+        }
+        return '(' . implode(' ' . $mode . ' ', $sqls) . ')';
     }
 
 
