@@ -1,0 +1,24 @@
+{
+  "name": "mrap/graphcool",
+  "description": "PHP GraphQL DBMS API generator",
+  "minimum-stability": "dev",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Michael Huber",
+      "email": "michael.huber@hellocash.at"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Mrap\\GraphCool\\": "src/"
+    }
+  },
+  "require": {
+    "webonyx/graphql-php": "^14.4",
+    "ext-json": "^8.0",
+    "vlucas/phpdotenv": "^5.2",
+    "ext-pdo": "^8.0",
+    "ramsey/uuid": "^4.1"
+  }
+}
