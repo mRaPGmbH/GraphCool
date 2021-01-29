@@ -25,8 +25,8 @@ class MutationType extends ObjectType
             $type = $typeLoader->load($name)();
             $classname = 'App\\Models\\' . $name;
             $model = new $classname();
-            $fields['create' . $type->name] = $this->create($type, $model);
-            $fields['update' . $type->name] = $this->update($type, $model);
+            $fields['create' . $type->name] = $this->create($type, $model, $typeLoader);
+            $fields['update' . $type->name] = $this->update($type, $model, $typeLoader);
             $fields['delete' . $type->name] = $this->delete($type);
         }
         ksort($fields);
@@ -40,7 +40,7 @@ class MutationType extends ObjectType
         parent::__construct($config);
     }
 
-    protected function create(ModelType $type, Model $model): array
+    protected function create(ModelType $type, Model $model, TypeLoader $typeLoader): array
     {
         $args = [];
         /**
@@ -60,9 +60,9 @@ class MutationType extends ObjectType
             }
             if ($field->readonly === false) {
                 if ($field->null === true) {
-                    $args[$name] = TypeFinder::byField($field);
+                    $args[$name] = $typeLoader->loadForField($field, $name);
                 } else {
-                    $args[$name] = new NonNull(TypeFinder::byField($field));
+                    $args[$name] = new NonNull($typeLoader->loadForField($field, $name));
                 }
             }
         }
@@ -77,7 +77,7 @@ class MutationType extends ObjectType
         return $ret;
     }
 
-    protected function update(ModelType $type, Model $model): array
+    protected function update(ModelType $type, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
             'id' => new nonNull(Type::id())
@@ -91,7 +91,7 @@ class MutationType extends ObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                $args[$name] = TypeFinder::byField($field);
+                $args[$name] = $typeLoader->loadForField($field, $name);
             }
         }
         $ret = [

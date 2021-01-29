@@ -9,6 +9,11 @@ class Field
 {
     public const UPDATED_AT = 'UPDATED_AT';
     public const CREATED_AT = 'CREATED_AT';
+    public const COUNTRY_CODE = 'COUNTRY_CODE';
+    public const CURRENCY_CODE = 'CURRENCY_CODE';
+    public const LANGUAGE_CODE = 'LANGUAGE_CODE';
+    public const LOCALE_CODE = 'LOCALE_CODE';
+    public const ENUM = 'ENUM';
 
 
     public string $type;
@@ -17,6 +22,7 @@ class Field
     public string $description;
     public string $default;
     public bool $readonly = false;
+    public array $enumValues;
 
     protected function __construct(string $type, int $length = null)
     {
@@ -61,6 +67,33 @@ class Field
         return (new Field(static::UPDATED_AT))->nullable()->readonly();
     }
 
+    public static function countryCode(): Field
+    {
+        return new Field(static::COUNTRY_CODE);
+    }
+
+    public static function languageCode(): Field
+    {
+        return new Field(static::LANGUAGE_CODE);
+    }
+
+    public static function currencyCode(): Field
+    {
+        return new Field(static::CURRENCY_CODE);
+    }
+
+    public static function localeCode(): Field
+    {
+        return new Field(static::LOCALE_CODE);
+    }
+
+    public static function enum(array $values): Field
+    {
+        $field = new Field(static::ENUM);
+        $field->enumValues = $values;
+        return $field;
+    }
+
     public function nullable(): Field
     {
         $this->null = true;
@@ -85,6 +118,7 @@ class Field
         return $this;
     }
 
+    // TODO: move elsewhere
     public function convert($value)
     {
         if ($value === null && $this->null === true) {
@@ -102,10 +136,16 @@ class Field
                 return (int) $value;
             case static::CREATED_AT:
             case static::UPDATED_AT:
+            case static::LOCALE_CODE:
+            case static::CURRENCY_CODE:
+            case static::COUNTRY_CODE:
+            case static::LANGUAGE_CODE:
+            case static::ENUM:
                 return $value;
         }
     }
 
+    // TODO: move elsewhere
     public function convertBack($value)
     {
         if ($value === null && $this->null === true) {
@@ -116,6 +156,11 @@ class Field
             case Type::STRING:
             case static::CREATED_AT:
             case static::UPDATED_AT:
+            case static::LOCALE_CODE:
+            case static::CURRENCY_CODE:
+            case static::COUNTRY_CODE:
+            case static::LANGUAGE_CODE:
+            case static::ENUM:
                 return (string) $value;
 
             case Type::BOOLEAN:
@@ -126,46 +171,6 @@ class Field
                 throw new \Exception('TODO');
         }
     }
-
-
-    /*
-    public function _toSql(string $name): string
-    {
-        return '`' . $name . '` ' . $this->getTypeForSql();
-    }
-
-    protected function getTypeForSql(): string
-    {
-        if ($this->null === true) {
-            $null = 'NULL';
-        } else {
-            $null = 'NOT NULL';
-        }
-        if (!isset($this->default)) {
-            $default = '';
-        } else {
-            $default = ' DEFAULT \'' . str_replace('\'', '\\\'', $this->default) . '\'';
-        }
-        switch ($this->type) {
-            case Type::STRING:
-                if (isset($this->length) && 0 < $this->length && $this->length < 256) {
-                    return 'varchar(' . $this->length . ') ' . $null . $default;
-                }
-                return 'longtext ' . $null . $default;
-            case Type::BOOLEAN:
-                return 'tinyint(4) ' . $null. $default;
-            case Type::FLOAT:
-                return 'double ' . $null . $default;
-            case Type::ID:
-                return 'int(11) ' . $null . ' auto_increment';
-            case Type::INT:
-                return 'int(11) ' . $null . $default;
-            case static::CREATED_AT:
-                return 'timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP';
-            case static::UPDATED_AT:
-                return 'timestamp NULL on update CURRENT_TIMESTAMP';
-        }
-    }*/
 
 
 
