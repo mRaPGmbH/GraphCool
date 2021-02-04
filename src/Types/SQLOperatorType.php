@@ -11,7 +11,7 @@ class SQLOperatorType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => 'SQLOperator',
+            'name' => '_SQLOperator',
             'description' => 'The available SQL operators that are used to filter query results',
             'values' => [
                 'EQ' => [

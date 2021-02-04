@@ -12,5 +12,6 @@ abstract class DataProvider
     abstract public function loadAll(string $name, array $ids): ?array;
     abstract public function insert(string $name, array $data): stdClass;
     abstract public function update(string $name, array $data): stdClass;
+    abstract public function findAll(string $name, array $args): stdClass;
 
 }

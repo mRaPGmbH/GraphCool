@@ -3,6 +3,7 @@
 
 namespace Mrap\GraphCool\DataSource\Providers;
 
+use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
@@ -26,6 +27,21 @@ class MysqlDataProvider extends DataProvider
         // TODO
     }
 
+    public function findAll(string $name, array $args): stdClass
+    {
+        $limit = $args['first'] ?? 10;
+        $page = $args['page'] ?? 1;
+        $offset = ($page - 1) * $limit;
+        $where = $args['where'] ?? null;
+
+        [$ids, $total] = $this->findNodes($name, $where, $limit, $offset);
+
+        $result = new stdClass();
+        $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
+        $result->data = $this->loadAll($name, $ids);
+        return $result;
+    }
+
     public function loadAll(string $name, array $ids): ?array
     {
         $result = [];
@@ -36,28 +52,6 @@ class MysqlDataProvider extends DataProvider
             return null;
         }
         return $result;
-    }
-
-    public function findAll(string $name, array $args): ?array
-    {
-        $limit = $args['first'] ?? 10;
-        $page = $args['page'] ?? 1;
-        $offset = ($page - 1) * $limit;
-        $where = $args['where'] ?? null;
-        [$ids, $total] = $this->findNodes($name, $where, $limit, $offset);
-        $paginatorInfo = new stdClass();
-        $paginatorInfo->count = count($ids);
-        $paginatorInfo->currentPage = $args['page'] ?? 0;
-        $paginatorInfo->firstItem = 1;
-        $paginatorInfo->hasMorePages = $total > ($page + 1) * $limit;
-        $paginatorInfo->lastItem = $total;
-        $paginatorInfo->lastPage = round($total / $limit);
-        $paginatorInfo->perPage = $limit;
-        $paginatorInfo->total = $total;
-        return [
-            $this->loadAll($name, $ids),
-            $paginatorInfo
-        ];
     }
 
     public function load(string $name, string $id): ?stdClass
@@ -76,8 +70,12 @@ class MysqlDataProvider extends DataProvider
         $model = $this->getModel($name);
         foreach ($this->fetchNodeProperties($id) as $property) {
             $key = $property->property;
+            if (!property_exists($model, $key)) {
+                continue;
+            }
+            /** @var Field $field */
             $field = $model->$key;
-            $node->$key = $field->convert($property->value_string);
+            $node->$key = $this->convertDatabaseTypeToOutput($field, $property);
         }
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -112,7 +110,7 @@ class MysqlDataProvider extends DataProvider
                     continue;
                 }
                 $value = $data[$fullKey];
-                $this->insertEdge($value, $id, $item->classname, $name);
+                $this->insertEdge($value, $id, $item->name, $name);
             } elseif ($item instanceof Field) {
                 if (!isset($data[$key])) {
                     continue;
@@ -121,7 +119,14 @@ class MysqlDataProvider extends DataProvider
                 if ($value === null) {
                     continue;
                 }
-                $this->insertOrUpdateNodeProperty($id, $name, $key, null, $item->convertBack($value));
+                $dbValue = $this->convertInputTypeToDatabase($item, $value);
+                if (is_int($dbValue)) {
+                    $this->insertOrUpdateNodeProperty($id, $name, $key, $dbValue, null, null);
+                } elseif (is_float($dbValue)) {
+                    $this->insertOrUpdateNodeProperty($id, $name, $key, null, null, $dbValue);
+                } else {
+                    $this->insertOrUpdateNodeProperty($id, $name, $key, null, $dbValue, null);
+                }
             }
         }
         //\App\Timer::stop(__METHOD__);
@@ -141,208 +146,40 @@ class MysqlDataProvider extends DataProvider
             if ($value === null) {
                 $this->deleteNodeProperty($data['id'], $key);
             }
-            $this->insertOrUpdateNodeProperty($data['id'], $name, $key, null, $item->convertBack($value));
+            $dbValue = $this->convertInputTypeToDatabase($item, $value);
+            if (is_int($dbValue)) {
+                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, $dbValue, null, null);
+            } elseif (is_float($dbValue)) {
+                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, null, null, $dbValue);
+            } else {
+                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, null, $dbValue, null);
+            }
         }
         //\App\Timer::stop(__METHOD__);
         return $this->load($name, $data['id']);
     }
 
-    public function delete(string $name, string $id): stdClass
+    protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass
     {
-        $model = $this->load($name, $id);
-        //\App\Timer::start(__METHOD__);
-        $this->deleteNode($id);
-        //\App\Timer::stop(__METHOD__);
-        return $model;
+        $paginatorInfo = new stdClass();
+        $paginatorInfo->count = $count;
+        $paginatorInfo->currentPage = $page;
+        $paginatorInfo->firstItem = 1;
+        $paginatorInfo->hasMorePages = $total > $page * $limit;
+        $paginatorInfo->lastItem = $total;
+        $paginatorInfo->lastPage = ceil($total / $limit);
+        $paginatorInfo->perPage = $limit;
+        $paginatorInfo->total = $total;
+        return $paginatorInfo;
     }
 
-    protected function getModel(string $name): Model
-    {
-        $classname = 'App\\Models\\' . $name;
-        return new $classname();
-    }
-
-    protected function fetchNode(string $id): ?stdClass
-    {
-        $sql = 'SELECT * FROM `node` WHERE `id` = :id AND deleted_at IS NULL';
-        $statement = $this->statement($sql);
-        $statement->execute([':id' => $id]);
-        $node = $statement->fetch(PDO::FETCH_OBJ);
-        if ($node === false) {
-            return null;
-        }
-        return $node;
-    }
-
-    protected function statement(string $sql): PDOStatement
-    {
-        if (!isset($this->statements[$sql])) {
-            //\App\Timer::start(__METHOD__);
-            $this->statements[$sql] = $this->pdo()->prepare($sql);
-            //\App\Timer::stop(__METHOD__);
-        }
-        return $this->statements[$sql];
-    }
-
-    protected function pdo(): PDO
-    {
-        if (!isset($this->pdo)) {
-            //\App\Timer::start(__METHOD__);
-            $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
-                . ';dbname=' . Env::get('DB_DATABASE');
-            try {
-                $this->pdo = new PDO(
-                    $connection,
-                    Env::get('DB_USERNAME'),
-                    Env::get('DB_PASSWORD'),
-                    [PDO::ATTR_PERSISTENT => true]
-                );
-                $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            } catch (PDOException $e) {
-                throw new RuntimeException('Could not connect to database: ' . $connection);
-            }
-            //\App\Timer::stop(__METHOD__);
-        }
-        return $this->pdo;
-    }
-
-    protected function fetchNodeProperties(string $id): array
-    {
-        $sql = 'SELECT * FROM `node_property` WHERE `node_id` = :node_id';
-        $statement = $this->statement($sql);
-        $statement->execute([':node_id' => $id]);
-        return $statement->fetchAll(PDO::FETCH_OBJ);
-    }
-
-    protected function getRelatedNodes(string $id, Relation $relation): ?array
-    {
-        $related_ids = [];
-        if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::HAS_ONE) {
-            $related_ids = $this->getChildrenIds($id, $relation->name);
-        } elseif ($relation->type === Relation::BELONGS_TO) {
-            $related_ids = $this->getParentIds($id, $relation->name);
-        }
-        if (count($related_ids) === 0) {
-            return null;
-        }
-        return $this->loadAll($relation->name, $related_ids);
-    }
-
-    protected function getChildrenIds(string $parent_id, string $childName): array
-    {
-        $sql = 'SELECT `child_id` FROM `edge` WHERE child = :child AND parent_id = :id';
-        $statement = $this->statement($sql);
-        $statement->execute(
-            [
-                ':id'    => $parent_id,
-                ':child' => $childName
-            ]
-        );
-        $result = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $relation) {
-            $result[] = $relation->child_id;
-        }
-        return $result;
-    }
-
-    protected function getParentIds(string $child_id, string $parentName): array
-    {
-        $sql = 'SELECT `parent_id` FROM `edge` WHERE parent = :parent AND child_id = :id';
-        $statement = $this->statement($sql);
-        $statement->execute(
-            [
-                ':id'     => $child_id,
-                ':parent' => $parentName
-            ]
-        );
-        $result = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $relation) {
-            $result[] = $relation->parent_id;
-        }
-        return $result;
-    }
-
-    protected function insertNode(string $id, string $name): bool
-    {
-        $sql = 'INSERT INTO `node` (`id`, `model`) VALUES (:id, :model)';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':id'    => $id,
-                ':model' => $name
-            ]
-        );
-    }
-
-    protected function insertOrUpdateNodeProperty(
-        string $nodeId,
+    protected function findNodes(
         string $name,
-        string $propertyName,
-        ?int $valueInt,
-        ?string $valueString
-    ): bool {
-        $sql = 'INSERT INTO `node_property` (`node_id`, `model`, `property`, `value_int`, `value_string`) '
-            . 'VALUES (:node_id, :model, :property, :value_int, :value_string) '
-            . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `deleted_at` = NULL';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':node_id'      => $nodeId,
-                ':model'        => $name,
-                ':property'     => $propertyName,
-                ':value_int'    => $valueInt,
-                ':value_string' => $valueString,
-                ':value_int2'    => $valueInt,
-                ':value_string2' => $valueString
-            ]
-        );
-    }
-
-    protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
-    {
-        $sql = 'UPDATE `node_property` SET deleted_at = now() '
-            . 'WHERE deleted_at IS NULL AND `node_id` = :node_id AND `property` = :property';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':node_id'      => $nodeId,
-                ':property'     => $propertyName,
-            ]
-        );
-    }
-
-    protected function updateNode(string $id): bool
-    {
-        $sql = 'UPDATE node SET updated_at = now() WHERE id = :id';
-        $statement = $this->statement($sql);
-        return $statement->execute([':id' => $id]);
-    }
-
-    protected function deleteNode(string $id): bool
-    {
-        $sql = 'UPDATE node SET deleted_at = now() WHERE id = :id';
-        $statement = $this->statement($sql);
-        return $statement->execute([':id' => $id]);
-    }
-
-    protected function insertEdge(string $parentId, string $childId, string $parent, string $child): bool
-    {
-        $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `parent`, `child`) VALUES 
-                    (:parent_id, :child_id, :parent, :child)';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':parent_id' => $parentId,
-                ':child_id' => $childId,
-                ':parent' => $parent,
-                ':child' => $child,
-            ]
-        );
-    }
-
-    protected function findNodes(string $name, ?array $where, int $limit = 10, int $offset = 0, string $orderBy = '`n`.`created_at` ASC'): array
-    {
+        ?array $where,
+        int $limit = 10,
+        int $offset = 0,
+        string $orderBy = '`n`.`created_at` ASC'
+    ): array {
         [$sql, $parameters] = $this->buildFindSql($where, $name);
         $order = 'ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
 
@@ -355,7 +192,7 @@ class MysqlDataProvider extends DataProvider
         }
         $statement = $this->statement('SELECT count(DISTINCT `n`.`id`) ' . $sql);
         $statement->execute($parameters);
-        $total = (int) $statement->fetchColumn();
+        $total = (int)$statement->fetchColumn();
         return [$result, $total];
     }
 
@@ -368,7 +205,7 @@ class MysqlDataProvider extends DataProvider
         ];
 
         if (!empty($where)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($where,$joins, $parameters) . ' ';
+            $whereSql .= ' AND ' . $this->buildWhereSql($where, $joins, $parameters) . ' ';
         }
 
         $sql = 'FROM `node` AS `n` ' . implode(' ', $joins) . $whereSql;
@@ -409,6 +246,310 @@ class MysqlDataProvider extends DataProvider
             }
         }
         return '(' . implode(' ' . $mode . ' ', $sqls) . ')';
+    }
+
+    protected function statement(string $sql): PDOStatement
+    {
+        if (!isset($this->statements[$sql])) {
+            //\App\Timer::start(__METHOD__);
+            $this->statements[$sql] = $this->pdo()->prepare($sql);
+            //\App\Timer::stop(__METHOD__);
+        }
+        return $this->statements[$sql];
+    }
+
+    protected function pdo(): PDO
+    {
+        if (!isset($this->pdo)) {
+            //\App\Timer::start(__METHOD__);
+            $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
+                . ';dbname=' . Env::get('DB_DATABASE');
+            try {
+                $this->pdo = new PDO(
+                    $connection,
+                    Env::get('DB_USERNAME'),
+                    Env::get('DB_PASSWORD'),
+                    [PDO::ATTR_PERSISTENT => true]
+                );
+                $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+            } catch (PDOException $e) {
+                throw new RuntimeException('Could not connect to database: ' . $connection);
+            }
+            //\App\Timer::stop(__METHOD__);
+        }
+        return $this->pdo;
+    }
+
+
+    protected function fetchNode(string $id): ?stdClass
+    {
+        $sql = 'SELECT * FROM `node` WHERE `id` = :id AND deleted_at IS NULL';
+        $statement = $this->statement($sql);
+        $statement->execute([':id' => $id]);
+        $node = $statement->fetch(PDO::FETCH_OBJ);
+        if ($node === false) {
+            return null;
+        }
+        return $node;
+    }
+
+    protected function fetchEdge(string $parentId, string $childId): ?stdClass
+    {
+        $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
+        $statement = $this->statement($sql);
+        $statement->execute([
+            'parent_id' => $parentId,
+            'child_id' => $childId
+        ]);
+        $edge = $statement->fetch(PDO::FETCH_OBJ);
+        if ($edge === false) {
+            return null;
+        }
+        return $edge;
+    }
+
+    protected function fetchChildEdges(string $parentId, string $childName): array
+    {
+        $sql = 'SELECT * FROM `edge` WHERE child = :child AND parent_id = :id';
+        $statement = $this->statement($sql);
+        $statement->execute(
+            [
+                ':id'    => $parentId,
+                ':child' => $childName
+            ]
+        );
+        return $statement->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    protected function fetchParentEdges(string $childId, string $parentName): array
+    {
+        $sql = 'SELECT * FROM `edge` WHERE parent = :parent AND child_id = :id';
+        $statement = $this->statement($sql);
+        $statement->execute(
+            [
+                ':id'    => $childId,
+                ':parent' => $parentName
+            ]
+        );
+        return $statement->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    protected function getModel(string $name): Model
+    {
+        $classname = 'App\\Models\\' . $name;
+        return new $classname();
+    }
+
+    protected function fetchNodeProperties(string $id): array
+    {
+        $sql = 'SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL';
+        $statement = $this->statement($sql);
+        $statement->execute([':node_id' => $id]);
+        return $statement->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    protected function fetchEdgeProperties(string $parentId, string $childId): array
+    {
+        $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
+        $statement = $this->statement($sql);
+        $statement->execute([
+            'parent_id' => $parentId,
+            'child_id' => $childId
+        ]);
+        return $statement->fetchAll(PDO::FETCH_OBJ);
+    }
+
+
+    protected function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string
+    {
+        return match ($field->type) {
+            Type::BOOLEAN => (bool)$property->value_int,
+            Type::FLOAT => (double)$property->value_float,
+            Type::INT => (int)$property->value_int,
+            Field::DECIMAL => (float)($property->value_int/(10 ** $field->decimalPlaces)),
+            Field::DATE => (string)date('Y-m-d', $property->value_int),
+            Field::DATE_TIME => (string)date('Y-m-d H:i:s', $property->value_int),
+            Field::TIME => (string)date('H:i:s', $property->value_int),
+            default => (string)$property->value_string,
+        };
+    }
+
+    protected function convertInputTypeToDatabase(Field $field, $value): float|int|string
+    {
+        return match ($field->type) {
+            default => (string)$value,
+            Type::BOOLEAN, Type::INT => (int)$value,
+            Type::FLOAT => (float)$value,
+            Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
+            Field::DATE, Field::DATE_TIME, Field::TIME => (int)strtotime($value),
+        };
+    }
+
+    protected function getRelatedNodes(string $id, Relation $relation): array|stdClass
+    {
+        if ($relation->type === Relation::HAS_ONE) {
+            return $this->getChildren($id, $relation);
+        }
+        if ($relation->type === Relation::BELONGS_TO) {
+            return $this->getParents($id, $relation);
+        }
+        if ($relation->type === Relation::HAS_MANY) {
+            // TODO: find children by first/page/where arguments
+            $children = $this->getChildren($id, $relation);
+            return [
+                'paginatorInfo' => $this->getPaginatorInfo(count($children), 1, 9999999, count($children)),
+                'edges' => $children,
+            ];
+        }
+        if ($relation->type === Relation::BELONGS_TO_MANY) {
+            $parents = $this->getParents($id, $relation);
+            return [
+                'paginatorInfo' => $this->getPaginatorInfo(count($parents), 1, 9999999, count($parents)),
+                'edges' => $parents,
+            ];
+        }
+        return [];
+    }
+
+    protected function getChildren(string $parentId, Relation $relation): array
+    {
+        $result = [];
+        $childName = $relation->name;
+        foreach($this->fetchChildEdges($parentId, $childName) as $edge) {
+            $properties = $this->convertProperties($this->fetchEdgeProperties($parentId, $edge->child_id), $relation);
+            $row = [];
+            foreach ($properties as $key => $value) {
+                $row[$key] = $value;
+            }
+            $row['_node'] = $this->load($childName, $edge->child_id);
+            $result[] = $row;
+        }
+        return $result;
+    }
+
+    protected function getParents(string $childId, Relation $relation): array
+    {
+        $result = [];
+        $parentName = $relation->name;
+        foreach($this->fetchParentEdges($childId, $parentName) as $edge) {
+            $properties = $this->convertProperties($this->fetchEdgeProperties($childId, $edge->parent_id), $relation);
+            foreach ($properties as $key => $value) {
+                $edge->$key = $value;
+            }
+            $result[] = [
+                'edge' => $edge,
+                'node' => $this->load($parentName, $edge->child_id)
+            ];
+        }
+        return $result;
+    }
+
+    protected function convertProperties(array $properties, Model|Relation $fieldSource): array
+    {
+        $result = [];
+        foreach ($properties as $property) {
+            $key = $property->property;
+            if (!property_exists($fieldSource, $key)) {
+                continue;
+            }
+            /** @var Field $field */
+            $field = $fieldSource->$key;
+            $result[$key] = $this->convertDatabaseTypeToOutput($field, $property);
+        }
+        return $result;
+    }
+
+
+    protected function insertNode(string $id, string $name): bool
+    {
+        $sql = 'INSERT INTO `node` (`id`, `model`) VALUES (:id, :model)';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':id'    => $id,
+                ':model' => $name
+            ]
+        );
+    }
+
+    protected function insertEdge(string $parentId, string $childId, string $parent, string $child): bool
+    {
+        $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `parent`, `child`) VALUES 
+                    (:parent_id, :child_id, :parent, :child)';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':parent_id' => $parentId,
+                ':child_id'  => $childId,
+                ':parent'    => $parent,
+                ':child'     => $child,
+            ]
+        );
+    }
+
+    protected function insertOrUpdateNodeProperty(
+        string $nodeId,
+        string $name,
+        string $propertyName,
+        ?int $valueInt,
+        ?string $valueString,
+        ?float $valueFloat
+    ): bool {
+        $sql = 'INSERT INTO `node_property` (`node_id`, `model`, `property`, `value_int`, `value_string`, `value_float`) '
+            . 'VALUES (:node_id, :model, :property, :value_int, :value_string, :value_float) '
+            . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':node_id'       => $nodeId,
+                ':model'         => $name,
+                ':property'      => $propertyName,
+                ':value_int'     => $valueInt,
+                ':value_string'  => $valueString,
+                ':value_float'   => $valueFloat,
+                ':value_int2'    => $valueInt,
+                ':value_string2' => $valueString,
+                ':value_float2'   => $valueFloat
+            ]
+        );
+    }
+
+
+    protected function updateNode(string $id): bool
+    {
+        $sql = 'UPDATE node SET updated_at = now() WHERE id = :id';
+        $statement = $this->statement($sql);
+        return $statement->execute([':id' => $id]);
+    }
+
+    protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
+    {
+        $sql = 'UPDATE `node_property` SET deleted_at = now() '
+            . 'WHERE deleted_at IS NULL AND `node_id` = :node_id AND `property` = :property';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':node_id'  => $nodeId,
+                ':property' => $propertyName,
+            ]
+        );
+    }
+
+    public function delete(string $name, string $id): stdClass
+    {
+        $model = $this->load($name, $id);
+        //\App\Timer::start(__METHOD__);
+        $this->deleteNode($id);
+        //\App\Timer::stop(__METHOD__);
+        return $model;
+    }
+
+    protected function deleteNode(string $id): bool
+    {
+        $sql = 'UPDATE node SET deleted_at = now() WHERE id = :id';
+        $statement = $this->statement($sql);
+        return $statement->execute([':id' => $id]);
     }
 
 

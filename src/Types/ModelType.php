@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Utils\TypeFinder;
@@ -22,16 +23,22 @@ class ModelType extends ObjectType
             'fields' => [],
         ];
         /**
-         * @var string $fieldName
+         * @var string $key
          * @var Field $field
          */
-        foreach ($model as $fieldName => $field)
+        foreach ($model as $key => $field)
         {
+            $args = null;
             if ($field instanceof Relation) {
                 if ($field->type === Relation::BELONGS_TO || $field->type === Relation::HAS_ONE) {
                     $type = $typeLoader->load($field->name);
                 } elseif ($field->type === Relation::HAS_MANY) {
-                    $type = new ListOfType($typeLoader->load($field->name));
+                    $type = $typeLoader->load('_' . $name . '_' . $key . 'Edges', null, $this);
+                    $args = [
+                        'first'=> Type::int(),
+                        'page' => Type::int(),
+                        'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
+                    ];
                 } else {
                     continue;
                 }
@@ -39,7 +46,7 @@ class ModelType extends ObjectType
                 if (!$field instanceof Field) {
                     continue;
                 }
-                $type = $typeLoader->loadForField($field, $fieldName);
+                $type = $typeLoader->loadForField($field, $key);
                 if ($field->null === false) {
                     $type = new NonNull($type);
                 }
@@ -50,7 +57,10 @@ class ModelType extends ObjectType
             if (isset($field->description)) {
                 $typeConfig['description'] = $field->description;
             }
-            $config['fields'][$fieldName] = $typeConfig;
+            if ($args !== null) {
+                $typeConfig['args'] = $args;
+            }
+            $config['fields'][$key] = $typeConfig;
         }
         ksort($config['fields']);
         parent::__construct($config);

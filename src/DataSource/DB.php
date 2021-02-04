@@ -33,11 +33,7 @@ class DB
 
     public static function findAll(string $name, array $args): stdClass
     {
-        [$models, $paginatorInfo] = self::get()->findAll($name, $args);
-        $result = new stdClass();
-        $result->paginatorInfo = $paginatorInfo;
-        $result->data = $models;
-        return $result;
+        return self::get()->findAll($name, $args);
     }
 
     public static function insert(string $modelName, array $data): stdClass

@@ -12,11 +12,6 @@ use Mrap\GraphCool\Utils\ModelFinder;
 
 class QueryType extends ObjectType
 {
-    protected $models = [
-        'Customer',
-        'Note'
-    ];
-
 
     public function __construct(TypeLoader $typeLoader)
     {
@@ -50,11 +45,11 @@ class QueryType extends ObjectType
     protected function list($type, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $typeLoader->load($type->name.'Paginator', $type),
+            'type' => $typeLoader->load('_' . $type->name.'Paginator', $type),
             'args' => [
                 'first'=> Type::int(),
                 'page' => Type::int(),
-                'where' => new WhereInputType($type, $typeLoader)
+                'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
             ]
         ];
     }
@@ -62,8 +57,9 @@ class QueryType extends ObjectType
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?\stdClass
     {
         if (is_object($info->returnType) && strpos($info->returnType->name, 'Paginator') > 0) {
-            return DB::findAll(substr($info->returnType->name, 0,-9), $args);
+            return DB::findAll(substr($info->returnType->name, 1,-9), $args);
         }
+        // TODO: how to get the nested args from $info???
         return DB::load($info->returnType, $args['id']);
     }
 

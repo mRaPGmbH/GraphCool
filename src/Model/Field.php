@@ -14,27 +14,28 @@ class Field
     public const LANGUAGE_CODE = 'LANGUAGE_CODE';
     public const LOCALE_CODE = 'LOCALE_CODE';
     public const ENUM = 'ENUM';
+    public const DECIMAL = 'DECIMAL';
+    public const DATE_TIME = 'DATE_TIME';
+    public const DATE = 'DATE';
+    public const TIME = 'TIME';
 
 
     public string $type;
-    public int $length;
+    public int $decimalPlaces;
     public bool $null = false;
     public string $description;
-    public string $default;
+    public string|int|float|bool $default;
     public bool $readonly = false;
     public array $enumValues;
 
-    protected function __construct(string $type, int $length = null)
+    protected function __construct(string $type)
     {
         $this->type = $type;
-        if ($length !== null) {
-            $this->length = $length;
-        }
     }
 
-    public static function string(int $length = null): Field
+    public static function string(): Field
     {
-        return new Field(Type::STRING, $length);
+        return new Field(Type::STRING);
     }
 
     public static function id(): Field
@@ -55,6 +56,13 @@ class Field
     public static function float(): Field
     {
         return new Field(Type::FLOAT);
+    }
+
+    public static function decimal(int $decimalPlaces = 2): Field
+    {
+        $field = new Field(static::DECIMAL);
+        $field->decimalPlaces = $decimalPlaces;
+        return $field;
     }
 
     public static function createdAt(): Field
@@ -87,6 +95,21 @@ class Field
         return new Field(static::LOCALE_CODE);
     }
 
+    public static function date(): Field
+    {
+        return new Field(static::DATE);
+    }
+
+    public static function dateTime(): Field
+    {
+        return new Field(static::DATE_TIME);
+    }
+
+    public static function time(): Field
+    {
+        return new Field(static::TIME);
+    }
+
     public static function enum(array $values): Field
     {
         $field = new Field(static::ENUM);
@@ -106,7 +129,7 @@ class Field
         return $this;
     }
 
-    public function default(string $default): Field
+    public function default(string|int|float|bool $default): Field
     {
         $this->default = $default;
         return $this;
@@ -117,62 +140,5 @@ class Field
         $this->readonly = true;
         return $this;
     }
-
-    // TODO: move elsewhere
-    public function convert($value)
-    {
-        if ($value === null && $this->null === true) {
-            return null;
-        }
-        switch ($this->type) {
-            case Type::ID:
-            case Type::STRING:
-                return (string) $value;
-            case Type::BOOLEAN:
-                return (bool) $value;
-            case Type::FLOAT:
-                return (double) $value;
-            case Type::INT:
-                return (int) $value;
-            case static::CREATED_AT:
-            case static::UPDATED_AT:
-            case static::LOCALE_CODE:
-            case static::CURRENCY_CODE:
-            case static::COUNTRY_CODE:
-            case static::LANGUAGE_CODE:
-            case static::ENUM:
-                return $value;
-        }
-    }
-
-    // TODO: move elsewhere
-    public function convertBack($value)
-    {
-        if ($value === null && $this->null === true) {
-            return null;
-        }
-        switch ($this->type) {
-            case Type::ID:
-            case Type::STRING:
-            case static::CREATED_AT:
-            case static::UPDATED_AT:
-            case static::LOCALE_CODE:
-            case static::CURRENCY_CODE:
-            case static::COUNTRY_CODE:
-            case static::LANGUAGE_CODE:
-            case static::ENUM:
-                return (string) $value;
-
-            case Type::BOOLEAN:
-            case Type::INT:
-                return (int) $value;
-
-            case Type::FLOAT:
-                throw new \Exception('TODO');
-        }
-    }
-
-
-
 
 }

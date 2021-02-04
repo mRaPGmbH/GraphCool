@@ -10,17 +10,14 @@ use GraphQL\Type\Definition\ObjectType;
 
 class PaginatorType extends ObjectType
 {
-    public function __construct(string $name, TypeLoader $typeLoader, ?ModelType $subType = null)
+    public function __construct(ModelType $type, TypeLoader $typeLoader)
     {
-        if ($subType === null) {
-            $subType = $typeLoader->load(substr($name, 0, -9))();
-        }
         $config = [
-            'name' => $name,
-            'description' => 'A paginated list of ' . $subType->name . ' items.',
+            'name' => '_' . $type->name . 'Paginator',
+            'description' => 'A paginated list of ' . $type->name . ' items.',
             'fields' => [
-                'paginatorInfo' => $typeLoader->load('paginatorInfo'),
-                'data' => new ListOfType(new NonNull($subType))
+                'paginatorInfo' => $typeLoader->load('_PaginatorInfo'),
+                'data' => new ListOfType(new NonNull($type))
             ],
         ];
         parent::__construct($config);

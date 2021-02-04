@@ -20,13 +20,13 @@ class WhereInputType extends InputObjectType
         $model = new $classname();
         $fields = [
             'column' => $this->getColumns($model, $type),
-            'operator' => $typeLoader->load('SQLOperator')(),
+            'operator' => $typeLoader->load('_SQLOperator')(),
             'value' => Type::string(),
             'AND' => new ListOfType($this),
             'OR' => new ListOfType($this)
         ];
         $config = [
-            'name' => $type->name . 'WhereConditions',
+            'name' => '_' . $type->name . 'WhereConditions',
             'fields' => $fields
         ];
         parent::__construct($config);
@@ -47,7 +47,7 @@ class WhereInputType extends InputObjectType
         }
         ksort($values);
         $config = [
-            'name' => $type->name . 'sColumn',
+            'name' => '_' . $type->name . 'sColumn',
             'description' => 'Allowed column names for the `where` argument on the query `' . strtolower($type->name). 's`.',
             'values' => $values
         ];

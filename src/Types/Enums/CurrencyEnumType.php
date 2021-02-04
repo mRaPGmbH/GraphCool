@@ -11,7 +11,7 @@ class CurrencyEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => 'CurrencyCode',
+            'name' => '_CurrencyCode',
             'description' => '3-letter currency code as defined in ISO 4217',
             'values' => [
                 'AED' => ['value' => 'AED', 'description' => 'United Arab Emirates dirham'],

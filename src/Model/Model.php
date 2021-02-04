@@ -13,6 +13,9 @@ class Model
         $this->updated_at = Field::updatedAt();
     }
 
+    public function beforeInsert(){}
+
+    public function beforeUpdate(){}
 
 
     /*

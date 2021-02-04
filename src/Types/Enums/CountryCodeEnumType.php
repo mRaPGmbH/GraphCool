@@ -10,7 +10,7 @@ class CountryCodeEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => 'CountryCode',
+            'name' => '_CountryCode',
             'description' => '2-letter country codes as defined in ISO 3166-1 alpha-2',
             'values' => [
                 'AD' => ['value' => 'AD', 'description' => 'Andorra'],

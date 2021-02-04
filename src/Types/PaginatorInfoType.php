@@ -13,7 +13,7 @@ class PaginatorInfoType extends ObjectType
     public function __construct()
     {
         $config = [
-            'name'   => 'paginatorInfo',
+            'name'   => '_PaginatorInfo',
             'description' => 'Pagination information about the corresponding list of items.',
             'fields' => [
                 'count' => new NonNull(Type::int()),
