@@ -167,8 +167,10 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertOrUpdateBelongsRelation(Relation $relation, array $data, string $childId, string $childName): void
     {
+        $keep = [];
         foreach ($data as $row) {
             $parentId = $row['id'];
+            $keep[] = '\'' . $parentId . '\'';
             unset($row['id']);
             $this->insertOrUpdateEdge($parentId, $childId, $relation->name, $childName);
             foreach ($relation as $key => $field)
@@ -186,6 +188,14 @@ class MysqlDataProvider extends DataProvider
                 }
             }
         }
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `child_id` = :child_id';
+        if (count($keep) > 0) {
+            $sql .= ' AND parent_id NOT IN (' . implode(',', $keep) . ')';
+        }
+        $statement = $this->statement($sql);
+        $statement->execute([
+            ':child_id' => $childId
+        ]);
     }
 
     protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass

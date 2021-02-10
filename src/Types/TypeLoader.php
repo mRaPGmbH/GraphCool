@@ -87,7 +87,7 @@ class TypeLoader
             return new PaginatorType($subType, $this);
         }
         if (substr($name, -5) === 'Edges') {
-            $names = explode('_', substr($name, 0, -5));
+            $names = explode('_', substr($name, 0, -5), 2);
             $key = $names[1];
             if ($parentType === null) {
                 $parentType = $this->load($names[0])();
@@ -95,7 +95,7 @@ class TypeLoader
             return new EdgesType($key, $parentType, $this);
         }
         if (substr($name, -4) === 'Edge') {
-            $names = explode('_', substr($name, 0, -4));
+            $names = explode('_', substr($name, 0, -4), 2);
             $key = $names[1];
             if ($parentType === null) {
                 $parentType = $this->load($names[0])();
@@ -109,7 +109,7 @@ class TypeLoader
             return new WhereInputType($subType, $this);
         }
         if (substr($name, -8) === 'Relation') {
-            $names = explode('_', substr($name, 0, -8));
+            $names = explode('_', substr($name, 0, -8), 2);
             $key = $names[1];
             if ($parentType === null) {
                 $parentType = $this->load($names[0])();
