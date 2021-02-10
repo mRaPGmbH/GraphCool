@@ -22,5 +22,4 @@ class PaginatorType extends ObjectType
         ];
         parent::__construct($config);
     }
-
 }

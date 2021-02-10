@@ -12,8 +12,6 @@ class EdgesType extends ObjectType
 {
     public function __construct(string $key, ModelType $parentType, TypeLoader $typeLoader)
     {
-
-
         $config = [
             'name' => '_' . $parentType->name . '_' . $key . 'Edges',
             'description' => 'A paginated list of ' . $key . ' items.',

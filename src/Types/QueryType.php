@@ -59,7 +59,6 @@ class QueryType extends ObjectType
         if (is_object($info->returnType) && strpos($info->returnType->name, 'Paginator') > 0) {
             return DB::findAll(substr($info->returnType->name, 1,-9), $args);
         }
-        // TODO: how to get the nested args from $info???
         return DB::load($info->returnType, $args['id']);
     }
 

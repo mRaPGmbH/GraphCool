@@ -6,33 +6,41 @@ namespace Mrap\GraphCool\Types;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Utils\TypeFinder;
+use stdClass;
 
 class ModelType extends ObjectType
 {
+    protected Model $model;
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $classname = 'App\\Models\\' . $name;
-        $model = new $classname();
+        $this->model = new $classname();
         $config = [
             'name' => $name,
             'fields' => [],
+            'resolveField' => function($rootValue, $args, $context, $info) {
+                return $this->resolve($rootValue, $args, $context, $info);
+            }
         ];
         /**
          * @var string $key
          * @var Field $field
          */
-        foreach ($model as $key => $field)
+        foreach ($this->model as $key => $field)
         {
             $args = null;
             if ($field instanceof Relation) {
                 if ($field->type === Relation::BELONGS_TO || $field->type === Relation::HAS_ONE) {
-                    $type = $typeLoader->load($field->name);
-                } elseif ($field->type === Relation::HAS_MANY) {
+                    $type = $typeLoader->load('_' . $name . '_' . $key . 'Edge');
+                } elseif ($field->type === Relation::HAS_MANY || $field->type === Relation::BELONGS_TO_MANY) {
                     $type = $typeLoader->load('_' . $name . '_' . $key . 'Edges', null, $this);
                     $args = [
                         'first'=> Type::int(),
@@ -65,4 +73,16 @@ class ModelType extends ObjectType
         ksort($config['fields']);
         parent::__construct($config);
     }
+
+    protected function resolve(stdClass $modelData, array $args, $context, ResolveInfo $info)
+    {
+        $field = $this->model->{$info->fieldName} ?? null;
+        if ($field instanceof Relation) {
+            $closure = $modelData->{$info->fieldName};
+            return $closure($args);
+        }
+        return $modelData->{$info->fieldName} ?? null;
+    }
+
+
 }
