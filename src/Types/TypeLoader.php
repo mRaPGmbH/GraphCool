@@ -108,6 +108,14 @@ class TypeLoader
             }
             return new WhereInputType($subType, $this);
         }
+        if (substr($name, -8) === 'Relation') {
+            $names = explode('_', substr($name, 0, -8));
+            $key = $names[1];
+            if ($parentType === null) {
+                $parentType = $this->load($names[0])();
+            }
+            return new EdgeInputType($key, $parentType, $this);
+        }
 
         if (substr($name, -4) === 'Enum') {
             throw new \Exception('TODO!');

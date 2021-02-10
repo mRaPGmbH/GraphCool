@@ -3,6 +3,7 @@
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -51,7 +52,10 @@ class MutationType extends ObjectType
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$name.'_id'] = new NonNull(Type::id());
+                    $args[$name] = new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation'));
+                }
+                if ($relation->type === Relation::BELONGS_TO_MANY) {
+                    $args[$name.'s'] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation')));
                 }
             }
 
@@ -59,7 +63,7 @@ class MutationType extends ObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                if ($field->null === true) {
+                if ($field->null === true || ($field->default ?? null) !== null) {
                     $args[$name] = $typeLoader->loadForField($field, $name);
                 } else {
                     $args[$name] = new NonNull($typeLoader->loadForField($field, $name));
@@ -87,6 +91,16 @@ class MutationType extends ObjectType
          * @var Field $field
          */
         foreach ($model as $name => $field) {
+            if ($field instanceof Relation) {
+                $relation = $field;
+                if ($relation->type === Relation::BELONGS_TO) {
+                    $args[$name] = $typeLoader->load('_' . $type->name . '_' . $name . 'Relation');
+                }
+                if ($relation->type === Relation::BELONGS_TO_MANY) {
+                    $args[$name.'s'] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation')));
+                }
+            }
+
             if (!$field instanceof Field) {
                 continue;
             }

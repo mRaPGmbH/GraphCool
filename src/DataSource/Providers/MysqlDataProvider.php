@@ -75,6 +75,9 @@ class MysqlDataProvider extends DataProvider
             }
             /** @var Field $field */
             $field = $model->$key;
+            if ($field instanceof Relation) {
+                continue;
+            }
             $node->$key = $this->convertDatabaseTypeToOutput($field, $property);
         }
 
@@ -88,7 +91,7 @@ class MysqlDataProvider extends DataProvider
                     $result !== null
                     && ($relation->type === Relation::HAS_ONE || $relation->type === Relation::BELONGS_TO)
                 ) {
-                    return $result[0];
+                    return $result[0] ?? null;
                 }
                 return $result;
             };
@@ -106,29 +109,17 @@ class MysqlDataProvider extends DataProvider
 
         $model = $this->getModel($name);
         foreach ($model as $key => $item) {
-            if ($item instanceof Relation && $item->type === Relation::BELONGS_TO) {
-                $fullKey = $key . '_id';
-                if (!isset($data[$fullKey])) {
-                    continue;
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
+                $inputs = $data[$key];
+                if ($item->type === Relation::BELONGS_TO) {
+                    $inputs = array($inputs);
                 }
-                $value = $data[$fullKey];
-                $this->insertEdge($value, $id, $item->name, $name);
+                $this->insertOrUpdateBelongsRelation($item, $inputs, $id, $name);
             } elseif ($item instanceof Field) {
-                if (!isset($data[$key])) {
-                    continue;
-                }
-                $value = $data[$key];
-                if ($value === null) {
-                    continue;
-                }
-                $dbValue = $this->convertInputTypeToDatabase($item, $value);
-                if (is_int($dbValue)) {
-                    $this->insertOrUpdateNodeProperty($id, $name, $key, $dbValue, null, null);
-                } elseif (is_float($dbValue)) {
-                    $this->insertOrUpdateNodeProperty($id, $name, $key, null, null, $dbValue);
-                } else {
-                    $this->insertOrUpdateNodeProperty($id, $name, $key, null, $dbValue, null);
-                }
+                $this->insertOrUpdateModelField($item, $data[$key], $id, $name, $key);
             }
         }
         //\App\Timer::stop(__METHOD__);
@@ -141,24 +132,60 @@ class MysqlDataProvider extends DataProvider
         $this->updateNode($data['id']);
         $model = $this->getModel($name);
         foreach ($model as $key => $item) {
-            if (!$item instanceof Field || !isset($data[$key])) {
+            if (!array_key_exists($key, $data)) {
                 continue;
             }
-            $value = $data[$key];
-            if ($value === null) {
-                $this->deleteNodeProperty($data['id'], $key);
-            }
-            $dbValue = $this->convertInputTypeToDatabase($item, $value);
-            if (is_int($dbValue)) {
-                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, $dbValue, null, null);
-            } elseif (is_float($dbValue)) {
-                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, null, null, $dbValue);
-            } else {
-                $this->insertOrUpdateNodeProperty($data['id'], $name, $key, null, $dbValue, null);
+            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
+                $inputs = $data[$key];
+                if ($item->type === Relation::BELONGS_TO) {
+                    $inputs = array($inputs);
+                }
+                $this->insertOrUpdateBelongsRelation($item, $inputs, $data['id'], $name);
+            } elseif ($item instanceof Field) {
+                $this->insertOrUpdateModelField($item, $data[$key], $data['id'], $name, $key);
             }
         }
         //\App\Timer::stop(__METHOD__);
         return $this->load($name, $data['id']);
+    }
+
+    protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
+    {
+        if ($value === null && $field->null === true) {
+            $this->deleteNodeProperty($id, $key);
+            return;
+        }
+        $dbValue = $this->convertInputTypeToDatabase($field, $value);
+        if (is_int($dbValue)) {
+            $this->insertOrUpdateNodeProperty($id, $name, $key, $dbValue, null, null);
+        } elseif (is_float($dbValue)) {
+            $this->insertOrUpdateNodeProperty($id, $name, $key, null, null, $dbValue);
+        } else {
+            $this->insertOrUpdateNodeProperty($id, $name, $key, null, $dbValue, null);
+        }
+    }
+
+    protected function insertOrUpdateBelongsRelation(Relation $relation, array $data, string $childId, string $childName): void
+    {
+        foreach ($data as $row) {
+            $parentId = $row['id'];
+            unset($row['id']);
+            $this->insertOrUpdateEdge($parentId, $childId, $relation->name, $childName);
+            foreach ($relation as $key => $field)
+            {
+                if (!isset($row[$key])) {
+                    continue;
+                }
+                $value = $this->convertInputTypeToDatabase($field, $row[$key]);
+                if (is_int($value)) {
+                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $value, null, null);
+                } elseif (is_float($value)) {
+                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, null, $value);
+                } else {
+                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, $value, null);
+                }
+            }
+        }
     }
 
     protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass
@@ -338,8 +365,11 @@ class MysqlDataProvider extends DataProvider
         };
     }
 
-    protected function convertInputTypeToDatabase(Field $field, $value): float|int|string
+    protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
     {
+        if ($field->null === false && $value === null) {
+            return $field->default;
+        }
         return match ($field->type) {
             default => (string)$value,
             Type::BOOLEAN, Type::INT => (int)$value,
@@ -504,46 +534,6 @@ class MysqlDataProvider extends DataProvider
         return $edge;
     }
 
-    /*
-    protected function findParents(
-        string $childId,
-        Relation $relation,
-        ?array $whereNode,
-        ?array $whereEdge,
-        int $limit = 10,
-        int $offset = 0,
-        string $orderBy = '`n`.`created_at` ASC'
-    ): array
-    {
-        $result = [];
-        $parentName = $relation->name;
-        foreach($this->fetchParentEdges($childId, $parentName) as $edge) {
-            $properties = $this->convertProperties($this->fetchEdgeProperties($childId, $edge->parent_id), $relation);
-            $row = [];
-            foreach ($properties as $key => $value) {
-                $row[$key] = $value;
-            }
-            $row['_node'] = $this->load($parentName, $edge->parent_id);
-            $result[] = $row;
-        }
-        return $result;
-    }
-    protected function fetchParentEdges(
-        string $childId,
-        string $parentName,
-    ): array
-    {
-        $sql = 'SELECT * FROM `edge` WHERE parent = :parent AND child_id = :id';
-        $statement = $this->statement($sql);
-        $statement->execute(
-            [
-                ':id'    => $childId,
-                ':parent' => $parentName
-            ]
-        );
-        return $statement->fetchAll(PDO::FETCH_OBJ);
-    }*/
-
     protected function convertProperties(array $properties, Model|Relation $fieldSource): array
     {
         $result = [];
@@ -572,10 +562,11 @@ class MysqlDataProvider extends DataProvider
         );
     }
 
-    protected function insertEdge(string $parentId, string $childId, string $parent, string $child): bool
+    protected function insertOrUpdateEdge(string $parentId, string $childId, string $parent, string $child): bool
     {
         $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `parent`, `child`) VALUES 
-                    (:parent_id, :child_id, :parent, :child)';
+            (:parent_id, :child_id, :parent, :child)
+            ON DUPLICATE KEY UPDATE `deleted_at` = null';
         $statement = $this->statement($sql);
         return $statement->execute(
             [
@@ -603,6 +594,37 @@ class MysqlDataProvider extends DataProvider
             [
                 ':node_id'       => $nodeId,
                 ':model'         => $name,
+                ':property'      => $propertyName,
+                ':value_int'     => $valueInt,
+                ':value_string'  => $valueString,
+                ':value_float'   => $valueFloat,
+                ':value_int2'    => $valueInt,
+                ':value_string2' => $valueString,
+                ':value_float2'   => $valueFloat
+            ]
+        );
+    }
+
+    protected function insertOrUpdateEdgeProperty(
+        string $parentId,
+        string $childId,
+        string $parent,
+        string $child,
+        string $propertyName,
+        ?int $valueInt,
+        ?string $valueString,
+        ?float $valueFloat
+    ): bool {
+        $sql = 'INSERT INTO `edge_property` (`parent_id`, `child_id`, `parent`, `child`, `property`, `value_int`, `value_string`, `value_float`) '
+            . 'VALUES (:parent_id, :child_id, :parent, :child, :property, :value_int, :value_string, :value_float) '
+            . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':parent_id'       => $parentId,
+                ':child_id'       => $childId,
+                ':parent'         => $parent,
+                ':child'         => $child,
                 ':property'      => $propertyName,
                 ':value_int'     => $valueInt,
                 ':value_string'  => $valueString,
