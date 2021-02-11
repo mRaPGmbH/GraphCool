@@ -379,7 +379,7 @@ class MysqlDataProvider extends DataProvider
                 $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
             } catch (PDOException $e) {
-                throw new RuntimeException('Could not connect to database: ' . $connection);
+                throw new RuntimeException('Could not connect to database: ' . $connection . ' - user: ' . Env::get('DB_USERNAME') . ' ' . print_r($e, true));
             }
             //\App\Timer::stop(__METHOD__);
         }
