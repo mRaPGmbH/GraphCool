@@ -6,6 +6,7 @@ use GraphQL\Error\DebugFlag;
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
@@ -29,6 +30,11 @@ class GraphCool
             ];
         }
         $instance->sendResponse($result);
+    }
+
+    public static function migrate(): void
+    {
+        DB::migrate();
     }
 
     /**

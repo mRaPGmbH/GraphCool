@@ -51,6 +51,10 @@ class DB
         return static::get()->delete($modelName, $id);
     }
 
+    public static function migrate(): void
+    {
+        static::get()->migrate();
+    }
 
 
 
