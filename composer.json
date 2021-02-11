@@ -1,7 +1,7 @@
 {
   "name": "mrap/graphcool",
-  "description": "PHP GraphQL DBMS API generator",
-  "minimum-stability": "dev",
+  "description": "A GraphQL Microframework in PHP",
+  "type": "library",
   "license": "MIT",
   "authors": [
     {
@@ -9,12 +9,14 @@
       "email": "michael.huber@hellocash.at"
     }
   ],
+  "minimum-stability": "dev",
   "autoload": {
     "psr-4": {
       "Mrap\\GraphCool\\": "src/"
     }
   },
   "require": {
+    "php": ">=8.0",
     "webonyx/graphql-php": "^14.4",
     "ext-json": "^8.0",
     "vlucas/phpdotenv": "^5.2",
