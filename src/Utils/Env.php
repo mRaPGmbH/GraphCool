@@ -10,7 +10,11 @@ class Env
 {
     public static function get(string $key, $default = null)
     {
-        $value = trim($_ENV[$key] ?? $default);
+        $value = getenv($key);
+        if ($value === false) {
+            $value = $_ENV[$key] ?? $default;
+        }
+        $value = trim($value);
         switch (strtolower($value)) {
             case 'true':
             case '(true)':
