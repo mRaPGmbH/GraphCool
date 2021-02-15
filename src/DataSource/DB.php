@@ -5,6 +5,7 @@ namespace Mrap\GraphCool\DataSource;
 
 
 use Mrap\GraphCool\DataSource\Providers\MysqlDataProvider;
+use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 
 class DB
@@ -28,32 +29,49 @@ class DB
 
     public static function load(string $name, string $id): ?stdClass
     {
-        return static::get()->load($name, $id);
+        StopWatch::start(__METHOD__);
+        $result = static::get()->load($name, $id);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function findAll(string $name, array $args): stdClass
     {
-        return self::get()->findAll($name, $args);
+        StopWatch::start(__METHOD__);
+        $result =  self::get()->findAll($name, $args);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function insert(string $modelName, array $data): stdClass
     {
-        return static::get()->insert($modelName, $data);
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->insert($modelName, $data);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function update(string $modelName, array $data): stdClass
     {
-        return static::get()->update($modelName, $data);
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->update($modelName, $data);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function delete(string $modelName, string $id): stdClass
     {
-        return static::get()->delete($modelName, $id);
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->delete($modelName, $id);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function migrate(): void
     {
+        StopWatch::start(__METHOD__);
         static::get()->migrate();
+        StopWatch::stop(__METHOD__);
     }
 
 

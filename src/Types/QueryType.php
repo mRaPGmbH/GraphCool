@@ -50,6 +50,8 @@ class QueryType extends ObjectType
                 'first'=> Type::int(),
                 'page' => Type::int(),
                 'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
+                'orderBy' => $typeLoader->load('_' . $type->name . 'OrderByClause', $type),
+                'search' => Type::string(),
             ]
         ];
     }

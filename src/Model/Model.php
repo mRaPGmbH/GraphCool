@@ -17,11 +17,4 @@ class Model
 
     public function beforeUpdate(){}
 
-
-    /*
-    protected function getCollation(): string
-    {
-        return 'COLLATE \'' . env('DB_COLLATION','utf8mb4_general_ci') . '\'';
-    }*/
-
 }

@@ -9,6 +9,8 @@ use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
+use Mrap\GraphCool\Utils\StopWatch;
 
 class TypeLoader
 {
@@ -23,6 +25,7 @@ class TypeLoader
         self::register('_LanguageCode', LanguageEnumType::class);
         self::register('_CurrencyCode', CurrencyEnumType::class);
         self::register('_LocaleCode', LocaleEnumType::class);
+        self::register('_SortOrder', SortOrderEnumType::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
@@ -107,6 +110,18 @@ class TypeLoader
                 $subType = $this->load(substr($name, 0, -15))();
             }
             return new WhereInputType($subType, $this);
+        }
+        if (substr($name, -13) === 'OrderByClause') {
+            if ($subType === null) {
+                $subType = $this->load(substr($name, 0, -13))();
+            }
+            return new OrderByClauseType($subType, $this);
+        }
+        if (substr($name, -6) === 'Column') {
+            if ($subType === null) {
+                $subType = $this->load(substr($name, 0, -6))();
+            }
+            return new ColumnType($subType, $this);
         }
         if (substr($name, -8) === 'Relation') {
             $names = explode('_', substr($name, 0, -8), 2);

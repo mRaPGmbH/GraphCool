@@ -13,6 +13,7 @@ class Relation
     public string $type;
     public string $classname;
     public string $name;
+    public bool $null = false;
 
     public function __construct(string $type, string $classname)
     {
@@ -45,13 +46,10 @@ class Relation
         return new Relation(static::HAS_ONE, $classname);
     }
 
-    public function withPivot(array $fields): Relation
+    public function nullable(): Relation
     {
-        foreach ($fields as $name => $field) {
-            $this->$name = $field;
-        }
+        $this->null = true;
         return $this;
     }
-
 
 }

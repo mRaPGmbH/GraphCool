@@ -3,8 +3,10 @@
 
 namespace Mrap\GraphCool\Utils;
 
+//StopWatch::start('.env');
 $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../..');
 $dotenv->load();
+//StopWatch::stop('.env');
 
 class Env
 {

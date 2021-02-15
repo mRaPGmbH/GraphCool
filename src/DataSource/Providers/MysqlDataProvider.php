@@ -27,6 +27,31 @@ class MysqlDataProvider extends DataProvider
         $sql = 'SET sql_notes = 0';
         $this->pdo()->exec($sql);
 
+        $sql = 'CREATE TABLE IF NOT EXISTS `node` (
+              `id` char(36) NOT NULL COMMENT \'uuid\',
+              `model` varchar(255) NOT NULL,
+              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+              `deleted_at` timestamp NULL DEFAULT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        $this->pdo()->exec($sql);
+
+        $sql = 'CREATE TABLE IF NOT EXISTS `node_property` (
+              `node_id` char(36) NOT NULL,
+              `model` varchar(255) NOT NULL,
+              `property` varchar(255) NOT NULL,
+              `value_int` bigint(20) DEFAULT NULL,
+              `value_string` longtext,
+              `value_float` double DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+              `deleted_at` timestamp NULL DEFAULT NULL,
+              PRIMARY KEY (`node_id`,`property`),
+              CONSTRAINT `node_property_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        $this->pdo()->exec($sql);
+
         $sql = 'CREATE TABLE IF NOT EXISTS `edge` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
               `child_id` char(36) NOT NULL COMMENT \'node.id\',
@@ -42,7 +67,7 @@ class MysqlDataProvider extends DataProvider
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         $this->pdo()->exec($sql);
 
-        $sql = 'CREATE TABLE `edge_property` (
+        $sql = 'CREATE TABLE IF NOT EXISTS `edge_property` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
               `child_id` char(36) NOT NULL COMMENT \'node.id\',
               `parent` varchar(255) NOT NULL COMMENT \'node.name\',
@@ -62,31 +87,6 @@ class MysqlDataProvider extends DataProvider
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         $this->pdo()->exec($sql);
 
-        $sql = 'CREATE TABLE `node` (
-              `id` char(36) NOT NULL COMMENT \'uuid\',
-              `model` varchar(255) NOT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
-        $this->pdo()->exec($sql);
-
-        $sql = 'CREATE TABLE `node_property` (
-              `node_id` char(36) NOT NULL,
-              `model` varchar(255) NOT NULL,
-              `property` varchar(255) NOT NULL,
-              `value_int` bigint(20) DEFAULT NULL,
-              `value_string` longtext,
-              `value_float` double DEFAULT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`node_id`,`property`),
-              CONSTRAINT `node_property_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-        $this->pdo()->exec($sql);
-
         $sql = 'SET sql_notes = 1';
         $this->pdo()->exec($sql);
     }
@@ -97,8 +97,13 @@ class MysqlDataProvider extends DataProvider
         $page = $args['page'] ?? 1;
         $offset = ($page - 1) * $limit;
         $where = $args['where'] ?? null;
+        $orderBy = [
+            'field' => $args['orderBy']['field'] ?? 'created_at',
+            'order' => $args['orderBy']['order'] ?? 'ASC',
+        ];
+        $search = $args['search'] ?? null;
 
-        [$ids, $total] = $this->findNodes($name, $where, $limit, $offset);
+        [$ids, $total] = $this->findNodes($name, $where, $limit, $offset, $orderBy, $search);
 
         $result = new stdClass();
         $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
@@ -120,7 +125,6 @@ class MysqlDataProvider extends DataProvider
 
     public function load(string $name, string $id): ?stdClass
     {
-        // \App\Timer::start(__METHOD__);
         $node = $this->fetchNode($id);
         if ($node === null) {
             return null;
@@ -161,13 +165,11 @@ class MysqlDataProvider extends DataProvider
             };
         }
 
-        //\App\Timer::stop(__METHOD__);
         return $node;
     }
 
     public function insert(string $name, array $data): stdClass
     {
-        //\App\Timer::start(__METHOD__);
         $id = Uuid::uuid4();
         $this->insertNode($id, $name);
 
@@ -186,13 +188,11 @@ class MysqlDataProvider extends DataProvider
                 $this->insertOrUpdateModelField($item, $data[$key], $id, $name, $key);
             }
         }
-        //\App\Timer::stop(__METHOD__);
         return $this->load($name, $id);
     }
 
     public function update(string $name, array $data): stdClass
     {
-        //\App\Timer::start(__METHOD__);
         $this->updateNode($data['id']);
         $model = $this->getModel($name);
         foreach ($model as $key => $item) {
@@ -209,7 +209,6 @@ class MysqlDataProvider extends DataProvider
                 $this->insertOrUpdateModelField($item, $data[$key], $data['id'], $name, $key);
             }
         }
-        //\App\Timer::stop(__METHOD__);
         return $this->load($name, $data['id']);
     }
 
@@ -281,10 +280,11 @@ class MysqlDataProvider extends DataProvider
         ?array $where,
         int $limit = 10,
         int $offset = 0,
-        string $orderBy = '`n`.`created_at` ASC'
+        array $orderBy,
+        ?string $search = null
     ): array {
-        [$sql, $parameters] = $this->buildFindSql($where, $name);
-        $order = 'ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
+        [$sql, $parameters, $order] = $this->buildFindSql($where, $name, $orderBy, $search);
+        $order .= ' LIMIT ' . $offset . ', ' . $limit;
 
         $statement = $this->statement('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
 
@@ -300,7 +300,7 @@ class MysqlDataProvider extends DataProvider
     }
 
 
-    protected function buildFindSql(?array $where, string $model)
+    protected function buildFindSql(?array $where, string $model, array $orderBy, ?string $search = null)
     {
         $joins = [];
         $whereSql = ' WHERE `n`.`model` = :model AND `n`.`deleted_at` IS NULL ';
@@ -311,10 +311,26 @@ class MysqlDataProvider extends DataProvider
         if (!empty($where)) {
             $whereSql .= ' AND ' . $this->buildWhereSql($where, $joins, $parameters) . ' ';
         }
+        if (in_array($orderBy['field'], ['created_at', 'updated_at', 'deleted_at', 'id'])) {
+            $orderSql = ' ORDER BY `n`.`' . $orderBy['field'] . '` ' . $orderBy['order'];
+        } else {
+            $joins[] = 'LEFT JOIN `node_property` AS `order` ON 
+                (`order`.`node_id` = `n`.`id` AND `order`.`property` = \'' . $orderBy['field'] . '\')';
+            $orderSql = ' ORDER BY `order`.`value_string` ' . $orderBy['order']
+             . ', `order`.`value_int` ' . $orderBy['order']
+             . ', `order`.`value_float` ' . $orderBy['order'];
+        }
+
+        if ($search !== null) {
+            $joins[] = 'LEFT JOIN `node_property` AS `search` ON 
+                (`search`.`node_id` = `n`.`id` AND `search`.`value_string` IS NOT NULL)';
+            $whereSql .= ' AND `search`.`value_string` LIKE :searchString ';
+            $parameters[':searchString'] = '%' . $search . '%';
+        }
 
         $sql = 'FROM `node` AS `n` ' . implode(' ', $joins) . $whereSql;
 
-        return [$sql, $parameters];
+        return [$sql, $parameters, $orderSql];
     }
 
     protected function buildWhereSql(?array $wheres, array &$joins, array &$parameters, string $mode = 'AND', string $base = 'node'): string
@@ -356,9 +372,7 @@ class MysqlDataProvider extends DataProvider
     protected function statement(string $sql): PDOStatement
     {
         if (!isset($this->statements[$sql])) {
-            //\App\Timer::start(__METHOD__);
             $this->statements[$sql] = $this->pdo()->prepare($sql);
-            //\App\Timer::stop(__METHOD__);
         }
         return $this->statements[$sql];
     }
@@ -366,7 +380,6 @@ class MysqlDataProvider extends DataProvider
     protected function pdo(): PDO
     {
         if (!isset($this->pdo)) {
-            //\App\Timer::start(__METHOD__);
             $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
                 . ';dbname=' . Env::get('DB_DATABASE');
             try {
@@ -381,7 +394,6 @@ class MysqlDataProvider extends DataProvider
             } catch (PDOException $e) {
                 throw new RuntimeException('Could not connect to database: ' . $connection . ' - user: ' . Env::get('DB_USERNAME') . ' ' . getenv('DB_USERNAME') . ' ' . print_r($_ENV, true));
             }
-            //\App\Timer::stop(__METHOD__);
         }
         return $this->pdo;
     }
@@ -734,9 +746,7 @@ class MysqlDataProvider extends DataProvider
     public function delete(string $name, string $id): stdClass
     {
         $model = $this->load($name, $id);
-        //\App\Timer::start(__METHOD__);
         $this->deleteNode($id);
-        //\App\Timer::stop(__METHOD__);
         return $model;
     }
 
