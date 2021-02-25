@@ -1,18 +1,16 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\TypeFinder;
+use Mrap\GraphCool\Types\TypeLoader;
 use stdClass;
 
 class ModelType extends ObjectType

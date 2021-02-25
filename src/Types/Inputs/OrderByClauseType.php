@@ -1,11 +1,13 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Inputs;
 
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\TypeLoader;
 
 class OrderByClauseType extends InputObjectType
 {

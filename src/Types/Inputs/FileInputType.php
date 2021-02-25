@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Inputs;
 
 
 use GraphQL\Type\Definition\EnumType;
@@ -10,8 +10,10 @@ use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\TypeLoader;
 
-class WhereInputType extends InputObjectType
+class FileInputType extends InputObjectType
 {
 
     public function __construct(ModelType $type, TypeLoader $typeLoader)

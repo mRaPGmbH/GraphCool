@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Objects;
 
 
 use GraphQL\Type\Definition\NonNull;

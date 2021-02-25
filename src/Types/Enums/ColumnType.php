@@ -1,11 +1,13 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Enums;
 
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\TypeLoader;
 
 class ColumnType extends EnumType
 {

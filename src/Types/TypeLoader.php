@@ -9,8 +9,20 @@ use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
-use Mrap\GraphCool\Utils\StopWatch;
+use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Inputs\EdgeInputType;
+use Mrap\GraphCool\Types\Inputs\ExportColumnType;
+use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
+use Mrap\GraphCool\Types\Enums\SQLOperatorType;
+use Mrap\GraphCool\Types\Inputs\WhereInputType;
+use Mrap\GraphCool\Types\Objects\EdgesType;
+use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Objects\FileExportType;
+use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Objects\PaginatorType;
 
 class TypeLoader
 {
@@ -26,6 +38,8 @@ class TypeLoader
         self::register('_CurrencyCode', CurrencyEnumType::class);
         self::register('_LocaleCode', LocaleEnumType::class);
         self::register('_SortOrder', SortOrderEnumType::class);
+        self::register('_FileExport', FileExportType::class);
+        self::register('_SheetFileEnum', SheetFileEnumType::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
@@ -81,7 +95,7 @@ class TypeLoader
         return new ModelType($name, $this);
     }
 
-    protected function createSpecial(string $name, ?ModelType $subType = null, ?ModelType $parentType = null)
+    protected function createSpecial(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): Type
     {
         if (substr($name, -9) === 'Paginator') {
             if ($subType === null) {
@@ -116,6 +130,12 @@ class TypeLoader
                 $subType = $this->load(substr($name, 0, -13))();
             }
             return new OrderByClauseType($subType, $this);
+        }
+        if (substr($name, -12) === 'ExportColumn') {
+            if ($subType === null) {
+                $subType = $this->load(substr($name, 0, -12))();
+            }
+            return new ExportColumnType($subType, $this);
         }
         if (substr($name, -6) === 'Column') {
             if ($subType === null) {

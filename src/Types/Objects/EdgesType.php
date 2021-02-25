@@ -1,12 +1,13 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Objects;
 
 
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
+use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgesType extends ObjectType
 {

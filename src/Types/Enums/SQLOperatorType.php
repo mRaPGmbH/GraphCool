@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Enums;
 
 
 use GraphQL\Type\Definition\EnumType;

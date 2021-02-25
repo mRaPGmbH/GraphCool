@@ -1,22 +1,30 @@
 <?php
 
 
-namespace Mrap\GraphCool\Types;
+namespace Mrap\GraphCool\Types\Inputs;
 
 
+use GraphQL\Type\Definition\EnumType;
+use GraphQL\Type\Definition\InputObjectType;
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\TypeLoader;
 
-class EdgeType extends ObjectType
+class EdgeInputType extends InputObjectType
 {
+
     public function __construct(string $key, ModelType $parentType, TypeLoader $typeLoader)
     {
         $classname = 'App\\Models\\' . $parentType->name;
         $model = new $classname();
         $relation = $model->$key;
-        $type = $typeLoader->load($relation->name);
-        $fields = [];
+        $fields = [
+            'id' => new NonNull(Type::id())
+        ];
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field) {
@@ -29,13 +37,13 @@ class EdgeType extends ObjectType
                 ];
             }
         }
-        $fields['_node'] = $type;
         $config = [
-            'name' => '_' . $parentType->name . '_' . $key . 'Edge',
-            'description' => 'A paginated list of ' . $key . ' items.',
+            'name' => '_' . $parentType->name . '_' . $key . 'Relation',
+            'description' => 'Input for one related ' . $key . ' item.',
             'fields' => $fields,
         ];
         parent::__construct($config);
     }
+
 
 }

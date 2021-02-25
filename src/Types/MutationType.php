@@ -12,8 +12,8 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Utils\ModelFinder;
-use Mrap\GraphCool\Utils\TypeFinder;
 use stdClass;
 
 class MutationType extends ObjectType
