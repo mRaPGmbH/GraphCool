@@ -23,7 +23,7 @@ class QueryType extends ObjectType
             $type = $typeLoader->load($name)();
             $fields[lcfirst($type->name)] = $this->read($type);
             $fields[lcfirst($type->name) . 's'] = $this->list($type, $typeLoader);
-            $fields[lcfirst($type->name) . 'Export'] = $this->export($type, $typeLoader);
+            $fields['export' . $type->name . 's'] = $this->export($type, $typeLoader);
         }
         $config = [
             'name'   => 'Query',
@@ -85,7 +85,7 @@ class QueryType extends ObjectType
 
             $type = $args['type'];
             if ($info->returnType->name === '_FileExport') {
-                $name = ucfirst(substr($info->fieldName, 0, -6));
+                $name = ucfirst(substr($info->fieldName, 6, -1));
                 $exporter = new FileExport();
                 return $exporter->export($name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type, DB::findAll($name, $args)->data ?? [], $args['columns'], $type);
             }
