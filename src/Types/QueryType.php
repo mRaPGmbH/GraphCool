@@ -9,6 +9,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\ModelFinder;
 use stdClass;
@@ -24,6 +25,7 @@ class QueryType extends ObjectType
             $fields[lcfirst($type->name)] = $this->read($type);
             $fields[lcfirst($type->name) . 's'] = $this->list($type, $typeLoader);
             $fields['export' . $type->name . 's'] = $this->export($type, $typeLoader);
+//            $fields['previewImport' . $type->name . 's'] = $this->previewImport($type, $typeLoader);
         }
         $config = [
             'name'   => 'Query',
@@ -76,6 +78,18 @@ class QueryType extends ObjectType
         ];
     }
 
+    protected function previewImport(ModelType $type, TypeLoader $typeLoader): array
+    {
+        return [
+            'type' => $typeLoader->load('_' . $type->name.'Paginator', $type),
+            'description' => 'Get a preview of what an import of a list of ' .  $type->name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
+            'args' => [
+                'data_base64' => new NonNull(Type::string()),
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn'))))
+            ]
+        ];
+    }
+
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
     {
         if (is_object($info->returnType)) {
@@ -83,7 +97,7 @@ class QueryType extends ObjectType
                 return DB::findAll(substr($info->returnType->name, 1,-9), $args);
             }
 
-            $type = $args['type'];
+            $type = $args['type'] ?? null;
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
                 $exporter = new FileExport();

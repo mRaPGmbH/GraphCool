@@ -1,0 +1,32 @@
+<?php
+
+
+namespace Mrap\GraphCool\Types\Objects;
+
+
+use GraphQL\Type\Definition\ListOfType;
+use GraphQL\Type\Definition\NonNull;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
+
+class ImportSummaryType extends ObjectType
+{
+
+    public function __construct()
+    {
+        $config = [
+            'name'   => '_ImportSummary',
+            'description' => 'Summary of import results, including newly created (inserted), modified existing (updated) and the sum of both (affected).',
+            'fields' => [
+                'inserted_rows' => new NonNull(Type::int()),
+                'inserted_ids' => new NonNull(new ListOfType(Type::string())),
+                'updated_rows' => new NonNull(Type::int()),
+                'updated_ids' => new NonNull(new ListOfType(Type::string())),
+                'affected_rows' => new NonNull(Type::int()),
+                'affected_ids' => new NonNull(new ListOfType(Type::string())),
+            ],
+        ];
+        parent::__construct($config);
+    }
+
+}

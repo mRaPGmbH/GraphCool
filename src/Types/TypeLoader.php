@@ -20,6 +20,7 @@ use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
+use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
@@ -40,6 +41,7 @@ class TypeLoader
         self::register('_SortOrder', SortOrderEnumType::class);
         self::register('_FileExport', FileExportType::class);
         self::register('_SheetFileEnum', SheetFileEnumType::class);
+        self::register('_ImportSummary', ImportSummaryType::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
