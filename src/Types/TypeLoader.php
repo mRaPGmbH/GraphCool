@@ -110,13 +110,12 @@ class TypeLoader
         if (str_ends_with($name, 'Edge')) {
             return new EdgeType($name, $this);
         }
-        /*
         if (str_ends_with($name, 'EdgeOrderByClause')) {
             return new EdgeOrderByClauseType($name, $this);
         }
         if (str_ends_with($name, 'EdgeColumn')) {
             return $this->createEdgeColumn(substr($name, 1, -10), $subType, $parentType);
-        }*/
+        }
         if (str_ends_with($name, 'WhereConditions')) {
             return new WhereInputType($name, $this);
         }

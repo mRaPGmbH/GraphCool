@@ -21,6 +21,7 @@ class MysqlDataProvider extends DataProvider
 
     protected PDO $pdo;
     protected array $statements = [];
+    protected int $search = 0;
 
     public function migrate(): void
     {
@@ -472,13 +473,15 @@ class MysqlDataProvider extends DataProvider
         $offset = ($page - 1) * $limit;
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
+        $search = $args['search'] ?? null;
+        $orderBy = '`e`.`created_at` ASC';
 
         $edges = [];
         $total = 0;
         if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-            [$edges, $total] = $this->findChildren($id, $relation, $whereNode, $whereEdge, $limit, $offset);
+            [$edges, $total] = $this->findChildren($id, $relation, $whereNode, $whereEdge, $limit, $offset, $orderBy, $search);
         } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-            [$edges, $total] = $this->findParents($id, $relation, $whereNode, $whereEdge, $limit, $offset);
+            [$edges, $total] = $this->findParents($id, $relation, $whereNode, $whereEdge, $limit, $offset, $orderBy, $search);
         }
 
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
@@ -498,10 +501,11 @@ class MysqlDataProvider extends DataProvider
         ?array $whereEdge,
         int $limit = 10,
         int $offset = 0,
-        string $orderBy = '`e`.`created_at` ASC'
+        string $orderBy = '`e`.`created_at` ASC',
+        ?string $search
     ): array
     {
-        [$sql, $parameters] = $this->buildChildFindSql($parentId, $relation->name, $whereNode, $whereEdge);
+        [$sql, $parameters] = $this->buildChildFindSql($parentId, $relation->name, $whereNode, $whereEdge, $search);
         $order = 'ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
 
         //print_r(['SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id`',$parameters]);
@@ -527,7 +531,7 @@ class MysqlDataProvider extends DataProvider
         return [$result, $total];
     }
 
-    protected function buildChildFindSql(string $parentId, string $childName, ?array $whereNode, ?array $whereEdge)
+    protected function buildChildFindSql(string $parentId, string $childName, ?array $whereNode, ?array $whereEdge, ?string $search)
     {
         $joins = [];
         $whereSql = ' WHERE `e`.`parent_id` = :parentId AND `e`.`child` = :child AND `e`.`deleted_at` IS NULL ';
@@ -543,9 +547,31 @@ class MysqlDataProvider extends DataProvider
             $whereSql .= ' AND ' . $this->buildWhereSql($whereEdge, $joins, $parameters, 'edge') . ' ';
         }
 
+        if ($search !== null) {
+            $whereSql .= $this->buildRelatedSearchSql($joins, $parameters, $search);
+        }
+
         $sql = 'FROM `edge` AS `e` LEFT JOIN `node` AS `n`ON `n`.`id` = `e`.`child_id` ' . implode(' ', $joins) . $whereSql;
 
+        //var_dump($sql);
         return [$sql, $parameters];
+    }
+
+    protected function buildRelatedSearchSql(array &$joins, array &$parameters, string $search): string
+    {
+        $joins[] = 'LEFT JOIN `edge_property` AS `search' . (++$this->search)  . '` ON 
+                (`search' . $this->search  . '`.`parent_id` = `e`.`parent_id` 
+                AND `search' . $this->search  . '`.`child_id` = `e`.`child_id`
+                AND `search' . $this->search  . '`.`value_string` IS NOT NULL)';
+        $sql = ' AND (`search' . $this->search  . '`.`value_string` LIKE :searchString' . $this->search;
+        $parameters[':searchString' . $this->search] = '%' . $search . '%';
+
+        $joins[] = 'LEFT JOIN `node_property` AS `search' . (++$this->search)  . '` ON 
+                (`search' . $this->search  . '`.`node_id` = `n`.`id` AND `search' . $this->search  . '`.`value_string` IS NOT NULL)';
+        $sql .= ' OR `search' . $this->search  . '`.`value_string` LIKE :searchString' . $this->search  . ') ';
+        $parameters[':searchString' . $this->search] = '%' . $search . '%';
+
+        return $sql;
     }
 
     protected function findParents(
@@ -555,7 +581,8 @@ class MysqlDataProvider extends DataProvider
         ?array $whereEdge,
         int $limit = 10,
         int $offset = 0,
-        string $orderBy = '`e`.`created_at` ASC'
+        string $orderBy = '`e`.`created_at` ASC',
+        ?string $search = null
     ): array
     {
         [$sql, $parameters] = $this->buildParentFindSql($childId, $relation->name, $whereNode, $whereEdge);
