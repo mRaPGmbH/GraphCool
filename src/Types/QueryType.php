@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
@@ -94,7 +94,7 @@ class QueryType extends ObjectType
     {
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
-                return DB::findAll(substr($info->returnType->name, 1,-9), $args);
+                return DB::findAll(substr($info->returnType->toString(), 1,-9), $args);
             }
 
             $type = $args['type'] ?? null;
@@ -104,7 +104,7 @@ class QueryType extends ObjectType
                 return $exporter->export($name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type, DB::findAll($name, $args)->data ?? [], $args['columns'], $type);
             }
         }
-        return DB::load($info->returnType, $args['id']);
+        return DB::load($info->returnType->toString(), $args['id']);
     }
 
 }

@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
@@ -12,14 +12,24 @@ use Box\Spout\Reader\SheetInterface;
 class FileImport
 {
 
-    public function import(string $data, array $columns): array
+    public function import(?string $data, array $columns): array
     {
-        $file = tempnam(sys_get_temp_dir(), 'import');
-        file_put_contents($file, base64_decode($data));
+        if (empty($data) && count($_FILES) > 0) {
+            $tmp = array_shift($_FILES);
+            $file = $tmp['tmp_name'];
+            $mimeType = $tmp['type'];
+            if ($mimeType === 'application/octet-stream') {
+                $mimeType = mime_content_type($file);
+            }
+        } else {
+            $file = tempnam(sys_get_temp_dir(), 'import');
+            file_put_contents($file, base64_decode($data));
+            $mimeType = mime_content_type($file);
+        }
 
-        $reader = $this->getReader(mime_content_type($file));
+        $reader = $this->getReader($mimeType);
         if ($reader === null) {
-            throw new \Exception('Could not import: Unknown MimeType: '. mime_content_type($file));
+            throw new \Exception('Could not import: Unknown MimeType: '. $mimeType);
         }
         $reader->open($file);
         $result = [];
@@ -44,8 +54,10 @@ class FileImport
                 } else {
                     $item = [];
                     foreach ($cells as $key => $cell) {
-                        $property = $mapping[$key];
-                        $item[$property] = $cell->getValue();
+                        if (isset($mapping[$key])) {
+                            $property = $mapping[$key];
+                            $item[$property] = $cell->getValue();
+                        }
                     }
                     $result[] = $item;
                 }

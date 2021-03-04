@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Mrap\GraphCool;
 
@@ -22,7 +23,7 @@ class GraphCool
         try {
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
-            $result = $instance->executeQuery($schema, $request['query'], $request['variables']);
+            $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
         } catch (Throwable $e) {
             $result = [
                 'errors' => [
@@ -48,6 +49,9 @@ class GraphCool
     {
         StopWatch::start(__METHOD__);
         $raw = file_get_contents('php://input');
+        if (empty($raw) && isset($_POST['operations'])) {
+            $raw = $_POST['operations'];
+        }
         StopWatch::stop(__METHOD__);
         return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
     }

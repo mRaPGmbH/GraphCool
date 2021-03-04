@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
@@ -147,13 +147,13 @@ class MutationType extends ObjectType
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
     {
         if (str_starts_with($info->fieldName, 'create')) {
-            return DB::insert($info->returnType, $args);
+            return DB::insert($info->returnType->toString(), $args);
         }
         if (str_starts_with($info->fieldName, 'update')) {
-            return DB::update($info->returnType, $args);
+            return DB::update($info->returnType->toString(), $args);
         }
         if (str_starts_with($info->fieldName, 'delete')) {
-            return DB::delete($info->returnType, $args['id']);
+            return DB::delete($info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
             $name = substr($info->fieldName, 6, -1);
