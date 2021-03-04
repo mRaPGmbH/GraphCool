@@ -12,25 +12,26 @@ use Mrap\GraphCool\Types\TypeLoader;
 class ColumnType extends EnumType
 {
 
-    public function __construct(ModelType $type, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $classname = 'App\\Models\\' . $type->name;
+        $typeName = substr($name, 1, -6);
+        $classname = 'App\\Models\\' . $typeName;
         $model = new $classname();
         $values = [];
-        foreach ($model as $name => $field) {
+        foreach ($model as $key => $field) {
             if (!$field instanceof Field) {
                 continue;
             }
-            $upperName = strtoupper($name);
+            $upperName = strtoupper($key);
             $values[$upperName] = [
-                'value' => $name,
+                'value' => $key,
                 'description' => $field->description ?? null
             ];
         }
         ksort($values);
         $config = [
-            'name' => '_' . $type->name . 'Column',
-            'description' => 'Allowed column names for the `where` argument on the query `' . strtolower($type->name). 's`.',
+            'name' => $name,
+            'description' => 'Allowed column names for the `where` argument on the query `' . lcfirst($typeName). 's`.',
             'values' => $values
         ];
         parent::__construct($config);

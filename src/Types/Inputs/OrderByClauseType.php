@@ -12,14 +12,14 @@ use Mrap\GraphCool\Types\TypeLoader;
 class OrderByClauseType extends InputObjectType
 {
 
-    public function __construct(ModelType $type, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
         $fields = [
-            'field' => $typeLoader->load('_' . $type->name . 'Column')(),
+            'field' => $typeLoader->load(substr($name, 0, -13) . 'Column')(),
             'order' => $typeLoader->load('_SortOrder')(),
         ];
         $config = [
-            'name' => '_' . $type->name . 'OrderByClause',
+            'name' => $name,
             'fields' => $fields,
         ];
         parent::__construct($config);

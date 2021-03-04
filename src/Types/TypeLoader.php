@@ -14,6 +14,7 @@ use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\ColumnType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
+use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\ExportColumnType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
@@ -47,9 +48,9 @@ class TypeLoader
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
     {
-        return function() use ($parentType, $name, $subType) {
+        return function() use ($name) {
             if (!isset($this->types[$name])) {
-                $this->types[$name] = $this->create($name, $subType, $parentType);
+                $this->types[$name] = $this->create($name);
             }
             return $this->types[$name];
         };
@@ -92,75 +93,47 @@ class TypeLoader
             $classname = static::$registry[$name];
             return new $classname();
         }
-        if ($name[0] === '_') {
-            return $this->createSpecial(substr($name, 1), $subType, $parentType);
+        if (str_starts_with($name, '_')) {
+            return $this->createSpecial($name);
         }
         return new ModelType($name, $this);
     }
 
     protected function createSpecial(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): Type
     {
-        if (substr($name, -9) === 'Paginator') {
-            if ($subType === null) {
-                $subType = $this->load(substr($name, 0, -9))();
-            }
-            return new PaginatorType($subType, $this);
+        if (str_ends_with($name, 'Paginator')) {
+            return new PaginatorType($name, $this);
         }
-        if (substr($name, -5) === 'Edges') {
-            $names = explode('_', substr($name, 0, -5), 2);
-            $key = $names[1];
-            if ($parentType === null) {
-                $parentType = $this->load($names[0])();
-            }
-            return new EdgesType($key, $parentType, $this);
+        if (str_ends_with($name, 'Edges')) {
+            return new EdgesType($name, $this);
         }
-        if (substr($name, -4) === 'Edge') {
-            $names = explode('_', substr($name, 0, -4), 2);
-            $key = $names[1];
-            if ($parentType === null) {
-                $parentType = $this->load($names[0])();
-            }
-            return new EdgeType($key, $parentType, $this);
+        if (str_ends_with($name, 'Edge')) {
+            return new EdgeType($name, $this);
         }
-        if (substr($name, -15) === 'WhereConditions') {
-            if ($subType === null) {
-                $subType = $this->load(substr($name, 0, -15))();
-            }
-            return new WhereInputType($subType, $this);
+        /*
+        if (str_ends_with($name, 'EdgeOrderByClause')) {
+            return new EdgeOrderByClauseType($name, $this);
         }
-        if (substr($name, -13) === 'OrderByClause') {
-            if ($subType === null) {
-                $subType = $this->load(substr($name, 0, -13))();
-            }
-            return new OrderByClauseType($subType, $this);
+        if (str_ends_with($name, 'EdgeColumn')) {
+            return $this->createEdgeColumn(substr($name, 1, -10), $subType, $parentType);
+        }*/
+        if (str_ends_with($name, 'WhereConditions')) {
+            return new WhereInputType($name, $this);
         }
-        if (substr($name, -12) === 'ExportColumn') {
-            if ($subType === null) {
-                $subType = $this->load(substr($name, 0, -12))();
-            }
-            return new ExportColumnType($subType, $this);
+        if (str_ends_with($name, 'OrderByClause')) {
+            return new OrderByClauseType($name, $this);
         }
-        if (substr($name, -6) === 'Column') {
-            if ($subType === null) {
-                $subType = $this->load(substr($name, 0, -6))();
-            }
-            return new ColumnType($subType, $this);
+        if (str_ends_with($name, 'ExportColumn')) {
+            return new ExportColumnType($name, $this);
+        }
+        if (str_ends_with($name, 'Column')) {
+            return new ColumnType($name, $this);
         }
         if (substr($name, -8) === 'Relation') {
-            $names = explode('_', substr($name, 0, -8), 2);
-            $key = $names[1];
-            if ($parentType === null) {
-                $parentType = $this->load($names[0])();
-            }
-            return new EdgeInputType($key, $parentType, $this);
-        }
-
-        if (substr($name, -4) === 'Enum') {
-            throw new \Exception('TODO!');
+            return new EdgeInputType($name, $this);
         }
 
         throw new \Exception('unhandled createSpecial: '.$name);
-
     }
 
 

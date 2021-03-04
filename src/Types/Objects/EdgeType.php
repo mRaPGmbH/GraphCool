@@ -11,9 +11,12 @@ use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeType extends ObjectType
 {
-    public function __construct(string $key, ModelType $parentType, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $classname = 'App\\Models\\' . $parentType->name;
+        $names = explode('_', substr($name, 1, -4), 2);
+        $key = $names[1];
+
+        $classname = 'App\\Models\\' . $names[0];
         $model = new $classname();
         $relation = $model->$key;
         $type = $typeLoader->load($relation->name);
@@ -32,8 +35,8 @@ class EdgeType extends ObjectType
         }
         $fields['_node'] = $type;
         $config = [
-            'name' => '_' . $parentType->name . '_' . $key . 'Edge',
-            'description' => 'A paginated list of ' . $key . ' items.',
+            'name' => $name,
+            'description' => 'A single ' . str_replace('_', '.', substr($name, 1, -4)) . ' relation.',
             'fields' => $fields,
         ];
         parent::__construct($config);

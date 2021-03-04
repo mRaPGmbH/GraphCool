@@ -11,14 +11,15 @@ use Mrap\GraphCool\Types\TypeLoader;
 
 class PaginatorType extends ObjectType
 {
-    public function __construct(ModelType $type, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
+        $typeName = substr($name, 1,-9);
         $config = [
-            'name' => '_' . $type->name . 'Paginator',
-            'description' => 'A paginated list of ' . $type->name . ' items.',
+            'name' => $name,
+            'description' => 'A paginated list of ' . $typeName . ' items.',
             'fields' => [
                 'paginatorInfo' => $typeLoader->load('_PaginatorInfo'),
-                'data' => new ListOfType(new NonNull($type))
+                'data' => new ListOfType(new NonNull($typeLoader->load($typeName)))
             ],
         ];
         parent::__construct($config);

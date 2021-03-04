@@ -17,9 +17,12 @@ use Mrap\GraphCool\Types\TypeLoader;
 class EdgeInputType extends InputObjectType
 {
 
-    public function __construct(string $key, ModelType $parentType, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $classname = 'App\\Models\\' . $parentType->name;
+        $names = explode('_', substr($name, 1, -8), 2);
+        $key = $names[1];
+
+        $classname = 'App\\Models\\' . $names[0];
         $model = new $classname();
         $relation = $model->$key;
         $fields = [
@@ -38,8 +41,8 @@ class EdgeInputType extends InputObjectType
             }
         }
         $config = [
-            'name' => '_' . $parentType->name . '_' . $key . 'Relation',
-            'description' => 'Input for one related ' . $key . ' item.',
+            'name' => $name,
+            'description' => 'Input for one ' . $names[1] . '.' . $key . ' relation.',
             'fields' => $fields,
         ];
         parent::__construct($config);

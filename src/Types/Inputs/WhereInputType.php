@@ -16,25 +16,26 @@ use Mrap\GraphCool\Types\TypeLoader;
 class WhereInputType extends InputObjectType
 {
 
-    public function __construct(ModelType $type, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $classname = 'App\\Models\\' . $type->name;
+        $modelName = substr($name, 1, -15);
+        $classname = 'App\\Models\\' . $modelName;
         $model = new $classname();
         $fields = [
-            'column' => $this->getColumns($model, $type),
+            'column' => $this->getColumns($model, $modelName),
             'operator' => $typeLoader->load('_SQLOperator')(),
             'value' => Type::string(),
             'AND' => new ListOfType($this),
             'OR' => new ListOfType($this)
         ];
         $config = [
-            'name' => '_' . $type->name . 'WhereConditions',
+            'name' => '_' . $modelName . 'WhereConditions',
             'fields' => $fields
         ];
         parent::__construct($config);
     }
 
-    protected function getColumns(Model $model, ModelType $type): EnumType
+    protected function getColumns(Model $model, string $shortName): EnumType
     {
         $values = [];
         foreach ($model as $name => $field) {
@@ -49,8 +50,8 @@ class WhereInputType extends InputObjectType
         }
         ksort($values);
         $config = [
-            'name' => '_' . $type->name . 'sColumn',
-            'description' => 'Allowed column names for the `where` argument on the query `' . strtolower($type->name). 's`.',
+            'name' => '_' . $shortName . 'sColumn',
+            'description' => 'Allowed column names for the `where` argument on the query `' . lcfirst($shortName). 's`.',
             'values' => $values
         ];
         return new EnumType($config);

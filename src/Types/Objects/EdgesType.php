@@ -11,14 +11,14 @@ use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgesType extends ObjectType
 {
-    public function __construct(string $key, ModelType $parentType, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
         $config = [
-            'name' => '_' . $parentType->name . '_' . $key . 'Edges',
-            'description' => 'A paginated list of ' . $key . ' items.',
+            'name' => $name,
+            'description' => 'A paginated list of ' . str_replace('_', '.', substr($name, 1, -5)) . ' relations.',
             'fields' => [
                 'paginatorInfo' => $typeLoader->load('_PaginatorInfo'),
-                'edges' => new ListOfType(new NonNull($typeLoader->load('_' . $parentType->name . '_' . $key . 'Edge', null, $parentType))),
+                'edges' => new ListOfType(new NonNull($typeLoader->load(substr($name, 0, -1)))),
             ],
         ];
         parent::__construct($config);

@@ -7,20 +7,19 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ExportColumnType extends InputObjectType
 {
 
-    public function __construct(ModelType $type, TypeLoader $typeLoader)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
         $fields = [
-            'column' => new NonNull($typeLoader->load('_' . $type->name . 'Column')()),
+            'column' => new NonNull($typeLoader->load(substr($name, 0, -12) . 'Column')),
             'label' => Type::string(),
         ];
         $config = [
-            'name' => '_' . $type->name . 'ExportColumn',
+            'name' => $name,
             'fields' => $fields,
         ];
         parent::__construct($config);
