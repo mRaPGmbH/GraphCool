@@ -8,6 +8,7 @@ use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
+use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
@@ -114,7 +115,7 @@ class TypeLoader
             return new EdgeOrderByClauseType($name, $this);
         }
         if (str_ends_with($name, 'EdgeColumn')) {
-            return $this->createEdgeColumn(substr($name, 1, -10), $subType, $parentType);
+            return new EdgeColumnType($name, $this);
         }
         if (str_ends_with($name, 'WhereConditions')) {
             return new WhereInputType($name, $this);

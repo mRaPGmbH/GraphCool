@@ -9,6 +9,7 @@ use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Utils\Env;
+use Mrap\GraphCool\Utils\StopWatch;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -171,7 +172,7 @@ class MysqlDataProvider extends DataProvider
 
     public function insert(string $name, array $data): stdClass
     {
-        $id = Uuid::uuid4();
+        $id = Uuid::uuid4()->toString();
         $this->insertNode($id, $name);
 
         $model = $this->getModel($name);
@@ -287,6 +288,7 @@ class MysqlDataProvider extends DataProvider
         [$sql, $parameters, $order] = $this->buildFindSql($where, $name, $orderBy, $search);
         $order .= ' LIMIT ' . $offset . ', ' . $limit;
 
+        StopWatch::start('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
         $statement = $this->statement('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
 
         $statement->execute($parameters);
@@ -294,9 +296,11 @@ class MysqlDataProvider extends DataProvider
         foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
             $result[] = $row->id;
         }
+
         $statement = $this->statement('SELECT count(DISTINCT `n`.`id`) ' . $sql);
         $statement->execute($parameters);
         $total = (int)$statement->fetchColumn();
+        StopWatch::stop('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
         return [$result, $total];
     }
 
@@ -474,7 +478,10 @@ class MysqlDataProvider extends DataProvider
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
         $search = $args['search'] ?? null;
-        $orderBy = '`e`.`created_at` ASC';
+        $orderBy = [
+            'field' => $args['orderBy']['field'] ?? 'created_at',
+            'order' => $args['orderBy']['order'] ?? 'ASC',
+        ];
 
         $edges = [];
         $total = 0;
@@ -501,16 +508,17 @@ class MysqlDataProvider extends DataProvider
         ?array $whereEdge,
         int $limit = 10,
         int $offset = 0,
-        string $orderBy = '`e`.`created_at` ASC',
+        array $orderBy,
         ?string $search
     ): array
     {
-        [$sql, $parameters] = $this->buildChildFindSql($parentId, $relation->name, $whereNode, $whereEdge, $search);
-        $order = 'ORDER BY ' . $orderBy . ' LIMIT ' . $offset . ', ' . $limit;
+        [$sql, $parameters, $orderSql] = $this->buildChildFindSql($parentId, $relation->name, $whereNode, $whereEdge, $search, $orderBy);
+        $order = ' LIMIT ' . $offset . ', ' . $limit;
 
         //print_r(['SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id`',$parameters]);
 
-        $statement = $this->statement('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' /* . $order */);
+        StopWatch::start('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $order);
+        $statement = $this->statement('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $order);
 
         $statement->execute($parameters);
         $result = [];
@@ -528,10 +536,11 @@ class MysqlDataProvider extends DataProvider
         $statement = $this->statement('SELECT count(DISTINCT `e`.`child_id`) ' . $sql);
         $statement->execute($parameters);
         $total = (int)$statement->fetchColumn();
+        StopWatch::stop('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $order );
         return [$result, $total];
     }
 
-    protected function buildChildFindSql(string $parentId, string $childName, ?array $whereNode, ?array $whereEdge, ?string $search)
+    protected function buildChildFindSql(string $parentId, string $childName, ?array $whereNode, ?array $whereEdge, ?string $search, array $orderBy)
     {
         $joins = [];
         $whereSql = ' WHERE `e`.`parent_id` = :parentId AND `e`.`child` = :child AND `e`.`deleted_at` IS NULL ';
@@ -551,10 +560,36 @@ class MysqlDataProvider extends DataProvider
             $whereSql .= $this->buildRelatedSearchSql($joins, $parameters, $search);
         }
 
+        $orderField = $orderBy['field'];
+        if (str_starts_with($orderField, '_')) {
+            // sort by edge
+            $orderField = substr($orderField, 1);
+            if (in_array($orderField, ['created_at', 'updated_at', 'deleted_at', 'id'])) {
+                $orderSql = ' ORDER BY `e`.`' . $orderField . '` ' . $orderBy['order'];
+            } else {
+                $joins[] = 'LEFT JOIN `edge_property` AS `order` ON
+                (`order`.`parent_id` = `e`.`parent_id` AND `order`.`child` = `e`.`child` AND `order`.`property` = \'' . $orderField . '\')';
+                $orderSql = ' ORDER BY max(`order`.`value_string`) ' . $orderBy['order']
+                    . ', max(`order`.`value_int`) ' . $orderBy['order']
+                    . ', max(`order`.`value_float`) ' . $orderBy['order'];
+            }
+        } else {
+            // sort by node
+            if (in_array($orderField, ['created_at', 'updated_at', 'deleted_at', 'id'])) {
+                $orderSql = ' ORDER BY `n`.`' . $orderField . '` ' . $orderBy['order'];
+            } else {
+                $joins[] = 'LEFT JOIN `node_property` AS `order` ON
+                (`order`.`node_id` = `n`.`id` AND `order`.`property` = \'' . $orderField . '\')';
+                $orderSql = ' ORDER BY max(`order`.`value_string`) ' . $orderBy['order']
+                    . ', max(`order`.`value_int`) ' . $orderBy['order']
+                    . ', max(`order`.`value_float`) ' . $orderBy['order'];
+            }
+        }
+
         $sql = 'FROM `edge` AS `e` LEFT JOIN `node` AS `n`ON `n`.`id` = `e`.`child_id` ' . implode(' ', $joins) . $whereSql;
 
         //var_dump($sql);
-        return [$sql, $parameters];
+        return [$sql, $parameters, $orderSql];
     }
 
     protected function buildRelatedSearchSql(array &$joins, array &$parameters, string $search): string
@@ -581,7 +616,7 @@ class MysqlDataProvider extends DataProvider
         ?array $whereEdge,
         int $limit = 10,
         int $offset = 0,
-        string $orderBy = '`e`.`created_at` ASC',
+        array $orderBy,
         ?string $search = null
     ): array
     {
@@ -590,7 +625,7 @@ class MysqlDataProvider extends DataProvider
 
         //print_r(['SELECT `e`.`parent_id` ' . $sql . ' GROUP BY `e`.`parent_id`',$parameters]);
 
-        $statement = $this->statement('SELECT `e`.`parent_id` ' . $sql . ' GROUP BY `e`.`parent_id` ' /* . $order */);
+        $statement = $this->statement('SELECT `e`.`parent_id` ' . $sql . ' GROUP BY `e`.`parent_id` '  . $order );
 
         $statement->execute($parameters);
         $result = [];
