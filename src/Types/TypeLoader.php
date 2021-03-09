@@ -11,6 +11,7 @@ use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\ColumnType;
@@ -45,6 +46,7 @@ class TypeLoader
         self::register('_FileExport', FileExportType::class);
         self::register('_SheetFileEnum', SheetFileEnumType::class);
         self::register('_ImportSummary', ImportSummaryType::class);
+        self::register('_Result', ResultType::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable

@@ -24,6 +24,9 @@ class Relation
         } else {
             $this->name = substr($classname, strrpos($classname, '\\') + 1);
         }
+        $this->created_at = Field::createdAt();
+        $this->updated_at = Field::updatedAt();
+        $this->deleted_at = Field::deletedAt();
     }
 
     public static function belongsTo(string $classname): Relation

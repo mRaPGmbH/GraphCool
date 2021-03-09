@@ -30,6 +30,7 @@ class MutationType extends ObjectType
             $fields['create' . $type->name] = $this->create($type, $model, $typeLoader);
             $fields['update' . $type->name] = $this->update($type, $model, $typeLoader);
             $fields['delete' . $type->name] = $this->delete($type);
+            $fields['restore' . $type->name] = $this->restore($type);
             $fields['import' . $type->name . 's'] = $this->import($type, $typeLoader);
         }
         ksort($fields);
@@ -132,6 +133,17 @@ class MutationType extends ObjectType
         ];
     }
 
+    protected function restore($type): array
+    {
+        return [
+            'type' => $type,
+            'description' => 'Restore a previously soft-deleted ' .  $type->name . ' record by ID',
+            'args' => [
+                'id' => new NonNull(Type::id())
+            ]
+        ];
+    }
+
     protected function import(ModelType $type, TypeLoader $typeLoader): array
     {
         return [
@@ -154,6 +166,9 @@ class MutationType extends ObjectType
         }
         if (str_starts_with($info->fieldName, 'delete')) {
             return DB::delete($info->returnType->toString(), $args['id']);
+        }
+        if (str_starts_with($info->fieldName, 'restore')) {
+            return DB::restore($info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
             $name = substr($info->fieldName, 6, -1);

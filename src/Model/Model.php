@@ -11,6 +11,7 @@ class Model
         $this->id = Field::id();
         $this->created_at = Field::createdAt();
         $this->updated_at = Field::updatedAt();
+        $this->deleted_at = Field::deletedAt();
     }
 
     public function beforeInsert(){}

@@ -46,6 +46,7 @@ class ModelType extends ObjectType
                         'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
                         'orderBy' => $typeLoader->load('_' . $name . '_' . $key . 'EdgeOrderByClause', null, $this),
                         'search' => Type::string(),
+                        'result' => $typeLoader->load('_Result'),
                     ];
                 } else {
                     continue;

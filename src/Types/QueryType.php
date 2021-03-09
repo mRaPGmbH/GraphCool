@@ -59,6 +59,7 @@ class QueryType extends ObjectType
                 'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
                 'orderBy' => $typeLoader->load('_' . $type->name . 'OrderByClause', $type),
                 'search' => Type::string(),
+                'result' => $typeLoader->load('_Result'),
             ]
         ];
     }
@@ -73,7 +74,8 @@ class QueryType extends ObjectType
                 'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
                 'orderBy' => $typeLoader->load('_' . $type->name . 'OrderByClause', $type),
                 'search' => Type::string(),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn'))))
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn')))),
+                'result' => $typeLoader->load('_Result'),
             ]
         ];
     }

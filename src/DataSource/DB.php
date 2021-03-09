@@ -67,6 +67,14 @@ class DB
         return $result;
     }
 
+    public static function restore(string $modelName, string $id): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->restore($modelName, $id);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
     public static function migrate(): void
     {
         StopWatch::start(__METHOD__);
