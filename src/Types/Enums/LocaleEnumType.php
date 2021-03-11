@@ -12,7 +12,7 @@ class LocaleEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => '_LocaleEnum',
+            'name' => '_LocaleCode',
             'description' => 'Locales TODO',
             'values' => [
                 'de_AT' => ['value' => 'de', 'description' => 'German (Austria)'],

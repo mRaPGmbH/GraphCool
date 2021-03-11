@@ -11,7 +11,7 @@ class LanguageEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => '_LanguageEnum',
+            'name' => '_LanguageCode',
             'description' => 'Languages TODO',
             'values' => [
                 'de' => ['value' => 'de', 'description' => 'German'],

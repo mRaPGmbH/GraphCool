@@ -5,43 +5,102 @@ namespace Mrap\GraphCool\Utils;
 
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\WriterAbstract;
+use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Model\Relation;
 use stdClass;
 
 class FileExport
 {
 
-    public function export(string $filename, array $data, array $columns, string $type = 'xlsx'): stdClass
+    public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
-        $writer = $this->getWriter($type);
+        $classname = 'App\\Models\\' . $name;
+        $model = new $classname();
 
+        $writer = $this->getWriter($type);
         $file = tempnam(sys_get_temp_dir(), 'export');
         $writer->openToFile($file);
-
-        $headers = [];
-        $i = 1;
-        foreach ($columns as $column) {
-            $headers[] = WriterEntityFactory::createCell($column['label'] ?? ('Column ' . $i));
-            $i++;
-        }
-        $writer->addRow(WriterEntityFactory::createRow($headers));
-
+        $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
         foreach ($data as $row) {
-            $cells = [];
-
-            foreach ($columns as $column) {
-                $key = $column['column'];
-                $cells[] = WriterEntityFactory::createCell($row->$key ?? null);
-            }
-            $writer->addRow(WriterEntityFactory::createRow($cells));
+            $writer->addRow(WriterEntityFactory::createRow($this->getRowCells($model, $args, $row)));
         }
         $writer->close();
 
         $result = new \stdClass();
-        $result->filename = $filename;
+        $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type;
         $result->mime_type = $this->getMimeType($type);
         $result->data_base64 = base64_encode(file_get_contents($file));
         unlink($file);
         return $result;
+    }
+
+    protected function getHeaders(Model $model, array $args): array
+    {
+        $headers = [];
+        $i = 1;
+        foreach ($args['columns'] as $column) {
+            $headers[] = WriterEntityFactory::createCell($column['label'] ?? ('Column ' . $i++));
+        }
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            if (($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) && isset($args[$key])) {
+                foreach ($args[$key] as $column) {
+                    $headers[] = WriterEntityFactory::createCell($column['label'] ?? ('Column ' . $i++));
+                }
+            }
+            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
+                foreach ($args[$key] as $related) {
+                    foreach ($related['columns'] as $column) {
+                        $headers[] = WriterEntityFactory::createCell($column['label'] ?? ('Column ' . $i++));
+                    }
+                }
+            }
+        }
+        return $headers;
+    }
+
+    protected function getRowCells(Model $model, array $args, stdClass $row): array
+    {
+        $cells = [];
+        foreach ($args['columns'] as $column) {
+            $key = $column['column'];
+            $cells[] = WriterEntityFactory::createCell($row->$key ?? null);
+        }
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            if (($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) && isset($args[$key])) {
+                foreach ($args[$key] as $column) {
+                    $closure = $row->$key;
+                    $data = $closure();
+
+                    $value = print_r($data, true);
+                    $cells[] = WriterEntityFactory::createCell($value);
+                }
+            }
+            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
+                foreach ($args[$key] as $related) {
+                    $closure = $row->$key;
+                    $data = $closure(['where' => [['column' => 'id', 'operator' => '=', 'value' => $related['id']]]]);
+                    foreach ($related['columns'] as $column) {
+                        if (count($data['edges']) === 0) {
+                            $value = null;
+                        } elseif (str_starts_with($column['column'], '_')) {
+                            $property = substr($column['column'], 1);
+                            $value = $data['edges'][0][$property] ?? null;
+                        } else {
+                            $property = $column['column'];
+                            $value = $data['edges'][0]['_node']->$property ?? null;
+                        }
+                        $cells[] = WriterEntityFactory::createCell($value);
+                    }
+                }
+            }
+        }
+        return $cells;
     }
 
 

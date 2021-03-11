@@ -11,8 +11,8 @@ class SheetFileEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => '_SheetFileEnum',
-            'description' => 'The spreadsheet file type that should be created.',
+            'name' => '_ExportFile',
+            'description' => 'The format and file type that should be exported.',
             'values' => [
                 'XLSX' => ['value' => 'xlsx', 'description' => 'Microsoft Excel Spreadsheet'],
                 'ODS' => ['value' => 'ods', 'description' => 'Open Document Spreadsheet'],

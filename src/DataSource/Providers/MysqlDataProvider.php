@@ -363,13 +363,18 @@ class MysqlDataProvider extends DataProvider
         foreach ($wheres as $where) {
             if (isset($where['operator']) || isset($where['value']) || isset($where['column'])) {
                 $i = count($parameters);
-                $joins[] = 'LEFT JOIN `' . $base . '_property` AS `' . $s . 'p' . $i . '` ON `' . $s . 'p' . $i . '`.`' . $base . '_id` = `' . $s . '`.`id`';
-                $sql = '`' . $s . 'p' . $i . '`.`property` = :' . $s . 'p' . $i . 'p AND `' . $s . 'p' . $i . '`.`deleted_at` IS NULL ';
-                $parameters[':' . $s . 'p' . $i . 'p'] = $where['column'];
-                if (is_string($where['value'])) {
-                    $sql .= ' AND ';
-                    $sql .= '`' . $s . 'p' . $i . '`.`value_string` ' . $where['operator'] . ' :' . $s . 'p' . $i . 's'; // TODO: non-strings!
-                    $parameters[':' . $s . 'p' . $i . 's'] = $where['value'];
+                if (in_array($where['column'], ['created_at', 'updated_at', 'deleted_at', 'id'])) {
+                    $sql = '`' . $s . '`.`' . $where['column'] . '` '. $where['operator'] . ' :' . $s . 'p' . $i;
+                    $parameters[':' . $s . 'p' . $i] = $where['value'];
+                } else {
+                    $joins[] = 'LEFT JOIN `' . $base . '_property` AS `' . $s . 'p' . $i . '` ON `' . $s . 'p' . $i . '`.`' . $base . '_id` = `' . $s . '`.`id`';
+                    $sql = '`' . $s . 'p' . $i . '`.`property` = :' . $s . 'p' . $i . 'p AND `' . $s . 'p' . $i . '`.`deleted_at` IS NULL ';
+                    $parameters[':' . $s . 'p' . $i . 'p'] = $where['column'];
+                    if (is_string($where['value'])) {
+                        $sql .= ' AND ';
+                        $sql .= '`' . $s . 'p' . $i . '`.`value_string` ' . $where['operator'] . ' :' . $s . 'p' . $i . 's'; // TODO: non-strings!
+                        $parameters[':' . $s . 'p' . $i . 's'] = $where['value'];
+                    }
                 }
                 $sqls[] = '(' . $sql . ')';
             }

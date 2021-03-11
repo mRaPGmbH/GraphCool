@@ -15,8 +15,10 @@ use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Inputs\EdgeExportColumnType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ExportColumnType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
@@ -28,6 +30,7 @@ use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Scalars\MixedType;
 
 class TypeLoader
 {
@@ -44,7 +47,7 @@ class TypeLoader
         self::register('_LocaleCode', LocaleEnumType::class);
         self::register('_SortOrder', SortOrderEnumType::class);
         self::register('_FileExport', FileExportType::class);
-        self::register('_SheetFileEnum', SheetFileEnumType::class);
+        self::register('_ExportFile', SheetFileEnumType::class);
         self::register('_ImportSummary', ImportSummaryType::class);
         self::register('_Result', ResultType::class);
     }
@@ -124,6 +127,12 @@ class TypeLoader
         }
         if (str_ends_with($name, 'OrderByClause')) {
             return new OrderByClauseType($name, $this);
+        }
+        if (str_ends_with($name, 'EdgeSelector')) {
+            return new EdgeSelectorType($name, $this);
+        }
+        if (str_ends_with($name, 'EdgeExportColumn')) {
+            return new EdgeExportColumnType($name, $this);
         }
         if (str_ends_with($name, 'ExportColumn')) {
             return new ExportColumnType($name, $this);

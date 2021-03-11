@@ -11,7 +11,7 @@ class SortOrderEnumType extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => '_SortOrderEnum',
+            'name' => '_SortOrder',
             'description' => 'The available direction for ordering a list of records',
             'values' => [
                 'ASC' => ['value' => 'ASC', 'description' => 'Sort records in ascending order.'],
