@@ -177,7 +177,18 @@ class MysqlDataProvider extends DataProvider
 
         $model = $this->getModel($name);
         foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $data)) {
+            if (!array_key_exists($key, $data) && (
+                    $item instanceof Relation || (
+                        $item->null && !in_array(
+                            $item->type,
+                            [
+                                Type::ID,
+                                Field::UPDATED_AT,
+                                Field::DELETED_AT,
+                                Field::CREATED_AT
+                            ],
+                            true
+                        )))) {
                 continue;
             }
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
@@ -187,7 +198,7 @@ class MysqlDataProvider extends DataProvider
                 }
                 $this->insertOrUpdateBelongsRelation($item, $inputs, $id, $name);
             } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $data[$key], $id, $name, $key);
+                $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
             }
         }
         return $this->load($name, $id);
@@ -490,7 +501,7 @@ class MysqlDataProvider extends DataProvider
     protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
     {
         if ($field->null === false && $value === null) {
-            return $field->default;
+            return $field->default ?? null;
         }
         return match ($field->type) {
             default => (string)$value,
