@@ -12,6 +12,7 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\ModelFinder;
 use stdClass;
@@ -23,13 +24,12 @@ class QueryType extends ObjectType
     {
         $fields = [];
         foreach (ModelFinder::all() as $name) {
-            $type = $typeLoader->load($name)();
             $classname = 'App\\Models\\' . $name;
             $model = new $classname();
 
-            $fields[lcfirst($type->name)] = $this->read($type);
-            $fields[lcfirst($type->name) . 's'] = $this->list($type, $typeLoader);
-            $fields['export' . $type->name . 's'] = $this->export($type, $model, $typeLoader);
+            $fields[lcfirst($name)] = $this->read($name, $typeLoader);
+            $fields[lcfirst($name) . 's'] = $this->list($name, $typeLoader);
+            $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
 //            $fields['previewImport' . $type->name . 's'] = $this->previewImport($type, $typeLoader);
         }
         ksort($fields);
@@ -43,41 +43,42 @@ class QueryType extends ObjectType
         parent::__construct($config);
     }
 
-    protected function read($type): array
+    protected function read(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $type,
-            'description' => 'Get a single ' .  $type->name . ' by it\'s ID',
+            'type' => $type = $typeLoader->load($name),
+            'description' => 'Get a single ' .  $name . ' by it\'s ID',
             'args' => [
-                'id' => new NonNull(Type::id())
+                'id' => new NonNull(Type::id()),
+                'timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
 
-    protected function list($type, TypeLoader $typeLoader): array
+    protected function list(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $typeLoader->load('_' . $type->name.'Paginator', $type),
-            'description' => 'Get a paginated list of ' .  $type->name . 's filtered by given where clauses.',
+            'type' => $typeLoader->load('_' . $name.'Paginator'),
+            'description' => 'Get a paginated list of ' .  $name . 's filtered by given where clauses.',
             'args' => [
                 'first'=> Type::int(),
                 'page' => Type::int(),
-                'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
-                'orderBy' => $typeLoader->load('_' . $type->name . 'OrderByClause', $type),
+                'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+                'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
                 'search' => Type::string(),
                 'result' => $typeLoader->load('_Result'),
             ]
         ];
     }
 
-    protected function export(Type $type, Model $model, TypeLoader $typeLoader): array
+    protected function export(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
             'type' => new NonNull($typeLoader->load('_ExportFile')),
-            'where' => $typeLoader->load('_' . $type->name . 'WhereConditions', $type),
-            'orderBy' => $typeLoader->load('_' . $type->name . 'OrderByClause', $type),
+            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+            'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
             'search' => Type::string(),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn')))),
+            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
         ];
 
         foreach ($model as $key => $relation) {
@@ -85,28 +86,28 @@ class QueryType extends ObjectType
                 continue;
             }
             if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $key . 'EdgeColumn')));
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'EdgeColumn')));
             }
             if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $key . 'EdgeSelector')));
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'EdgeSelector')));
             }
         }
         $args['result'] = $typeLoader->load('_Result');
         return [
-            'type' => $typeLoader->load('_FileExport', $type),
-            'description' => 'Export ' .  $type->name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
+            'type' => $typeLoader->load('_FileExport'),
+            'description' => 'Export ' .  $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
             'args' => $args,
         ];
     }
 
-    protected function previewImport(ModelType $type, TypeLoader $typeLoader): array
+    protected function previewImport(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $typeLoader->load('_' . $type->name.'Paginator', $type),
-            'description' => 'Get a preview of what an import of a list of ' .  $type->name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
+            'type' => $typeLoader->load('_' . $name.'Paginator'),
+            'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
             'args' => [
                 'data_base64' => new NonNull(Type::string()),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn'))))
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn'))))
             ]
         ];
     }

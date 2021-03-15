@@ -18,18 +18,15 @@ class WhereInputType extends InputObjectType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $modelName = substr($name, 1, -15);
-        $classname = 'App\\Models\\' . $modelName;
-        $model = new $classname();
         $fields = [
-            'column' => $this->getColumns($model, $modelName),
+            'column' => $typeLoader->load(substr($name, 0, -15) . 'Column'),
             'operator' => $typeLoader->load('_SQLOperator')(),
             'value' => Type::string(),
             'AND' => new ListOfType($this),
             'OR' => new ListOfType($this)
         ];
         $config = [
-            'name' => '_' . $modelName . 'WhereConditions',
+            'name' => $name,
             'fields' => $fields
         ];
         parent::__construct($config);
@@ -50,7 +47,7 @@ class WhereInputType extends InputObjectType
         }
         ksort($values);
         $config = [
-            'name' => '_' . $shortName . 'sColumn',
+            'name' => '_' . $shortName . 'Column',
             'description' => 'Allowed column names for the `where` argument on the query `' . lcfirst($shortName). 's`.',
             'values' => $values
         ];

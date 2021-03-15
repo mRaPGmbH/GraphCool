@@ -10,6 +10,7 @@ class ModelFinder
     public static function all(): array
     {
         if (!isset(static::$models)) {
+            StopWatch::start(__METHOD__);
             $files = scandir(__DIR__ . '/../../../../../app/Models');
             $classes = array_map(function($file){
                 return str_replace('.php', '', $file);
@@ -18,6 +19,7 @@ class ModelFinder
                 $classname = 'App\\Models\\' . $possibleClass;
                 return class_exists($classname);
             });
+            StopWatch::stop(__METHOD__);
         }
         return static::$models;
     }

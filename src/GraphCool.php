@@ -26,10 +26,10 @@ class GraphCool
             $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
         } catch (Throwable $e) {
             $result = [
-                'errors' => [
+                'errors' => [[
                     'message' => $e->getMessage(),
                     'e'       => print_r($e, true),
-                ]
+                ]]
             ];
         }
         StopWatch::stop(__METHOD__);
@@ -90,7 +90,7 @@ class GraphCool
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            echo '{"errors":[{"message":"Internal error"}]}';
+            echo '{"errors":[[{"message":"Internal error"}]]}';
         }
     }
 

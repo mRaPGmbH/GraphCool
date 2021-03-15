@@ -19,6 +19,7 @@ class Field
     public const DATE_TIME = 'DATE_TIME';
     public const DATE = 'DATE';
     public const TIME = 'TIME';
+    public const TIMEZONE_OFFSET = 'TIMEZONE_OFFSET';
 
 
     public string $type;
@@ -114,6 +115,11 @@ class Field
     public static function time(): Field
     {
         return new Field(static::TIME);
+    }
+
+    public static function timezoneOffset(): Field
+    {
+        return new Field(static::TIMEZONE_OFFSET);
     }
 
     public static function enum(array $values): Field

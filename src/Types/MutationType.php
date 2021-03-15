@@ -24,14 +24,13 @@ class MutationType extends ObjectType
     {
         $fields = [];
         foreach (ModelFinder::all() as $name) {
-            $type = $typeLoader->load($name)();
             $classname = 'App\\Models\\' . $name;
             $model = new $classname();
-            $fields['create' . $type->name] = $this->create($type, $model, $typeLoader);
-            $fields['update' . $type->name] = $this->update($type, $model, $typeLoader);
-            $fields['delete' . $type->name] = $this->delete($type);
-            $fields['restore' . $type->name] = $this->restore($type);
-            $fields['import' . $type->name . 's'] = $this->import($type, $typeLoader);
+            $fields['create' . $name] = $this->create($name, $model, $typeLoader);
+            $fields['update' . $name] = $this->update($name, $model, $typeLoader);
+            $fields['delete' . $name] = $this->delete($name, $typeLoader);
+            $fields['restore' . $name] = $this->restore($name, $typeLoader);
+            $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
         }
         ksort($fields);
         $config = [
@@ -44,21 +43,21 @@ class MutationType extends ObjectType
         parent::__construct($config);
     }
 
-    protected function create(ModelType $type, Model $model, TypeLoader $typeLoader): array
+    protected function create(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [];
         /**
-         * @var string $name
+         * @var string $key
          * @var Field $field
          */
-        foreach ($model as $name => $field) {
+        foreach ($model as $key => $field) {
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$name] = new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation'));
+                    $args[$key] = new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation'));
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$name] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation')));
+                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation')));
                 }
             }
 
@@ -67,15 +66,15 @@ class MutationType extends ObjectType
             }
             if ($field->readonly === false) {
                 if ($field->null === true || ($field->default ?? null) !== null) {
-                    $args[$name] = $typeLoader->loadForField($field, $name);
+                    $args[$key] = $typeLoader->loadForField($field, $key);
                 } else {
-                    $args[$name] = new NonNull($typeLoader->loadForField($field, $name));
+                    $args[$key] = new NonNull($typeLoader->loadForField($field, $key));
                 }
             }
         }
         $ret = [
-            'type' => $type,
-            'description' => 'Create a single new ' .  $type->name . ' entry',
+            'type' => $typeLoader->load($name),
+            'description' => 'Create a single new ' .  $name . ' entry',
         ];
         if (count($args) > 0) {
             ksort($args);
@@ -84,23 +83,23 @@ class MutationType extends ObjectType
         return $ret;
     }
 
-    protected function update(ModelType $type, Model $model, TypeLoader $typeLoader): array
+    protected function update(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
             'id' => new nonNull(Type::id())
         ];
         /**
-         * @var string $name
+         * @var string $key
          * @var Field $field
          */
-        foreach ($model as $name => $field) {
+        foreach ($model as $key => $field) {
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$name] = $typeLoader->load('_' . $type->name . '_' . $name . 'Relation');
+                    $args[$key] = $typeLoader->load('_' . $name . '_' . $key . 'Relation');
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$name] = new ListOfType(new NonNull($typeLoader->load('_' . $type->name . '_' . $name . 'Relation')));
+                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation')));
                 }
             }
 
@@ -108,12 +107,12 @@ class MutationType extends ObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                $args[$name] = $typeLoader->loadForField($field, $name);
+                $args[$key] = $typeLoader->loadForField($field, $key);
             }
         }
         $ret = [
-            'type' => $type,
-            'description' => 'Modify an existing ' .  $type->name . ' entry',
+            'type' => $typeLoader->load($name),
+            'description' => 'Modify an existing ' .  $name . ' entry',
         ];
         if (count($args) > 0) {
             ksort($args);
@@ -122,36 +121,36 @@ class MutationType extends ObjectType
         return $ret;
     }
 
-    protected function delete($type): array
+    protected function delete(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $type,
-            'description' => 'Delete a ' .  $type->name . ' entry by ID',
+            'type' => $typeLoader->load($name),
+            'description' => 'Delete a ' .  $name . ' entry by ID',
             'args' => [
                 'id' => new NonNull(Type::id())
             ]
         ];
     }
 
-    protected function restore($type): array
+    protected function restore(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $type,
-            'description' => 'Restore a previously soft-deleted ' .  $type->name . ' record by ID',
+            'type' => $typeLoader->load($name),
+            'description' => 'Restore a previously soft-deleted ' .  $name . ' record by ID',
             'args' => [
                 'id' => new NonNull(Type::id())
             ]
         ];
     }
 
-    protected function import(ModelType $type, TypeLoader $typeLoader): array
+    protected function import(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $typeLoader->load('_ImportSummary', $type),
-            'description' => 'Import a list of ' .  $type->name . 's from a spreadsheet. If ID\'s are present, ' .  $type->name . 's will be updated - otherwise new ' .  $type->name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
+            'type' => $typeLoader->load('_ImportSummary'),
+            'description' => 'Import a list of ' .  $name . 's from a spreadsheet. If ID\'s are present, ' .  $name . 's will be updated - otherwise new ' .  $name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
             'args' => [
                 'data_base64' => new NonNull(Type::string()),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $type->name . 'ExportColumn'))))
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn'))))
             ]
         ];
     }

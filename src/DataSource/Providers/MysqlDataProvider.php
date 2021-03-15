@@ -100,9 +100,9 @@ class MysqlDataProvider extends DataProvider
         $page = $args['page'] ?? 1;
         $offset = ($page - 1) * $limit;
         $where = $args['where'] ?? null;
-        $orderBy = [
-            'field' => $args['orderBy']['field'] ?? 'created_at',
-            'order' => $args['orderBy']['order'] ?? 'ASC',
+        $orderBy = [ // TODO: multi order
+            'field' => $args['orderBy'][0]['field'] ?? 'created_at',
+            'order' => $args['orderBy'][0]['order'] ?? 'ASC',
         ];
         $search = $args['search'] ?? null;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
@@ -115,14 +115,11 @@ class MysqlDataProvider extends DataProvider
         return $result;
     }
 
-    public function loadAll(string $name, array $ids, ?string $resultType = ResultType::DEFAULT): ?array
+    public function loadAll(string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
     {
         $result = [];
         foreach ($ids as $id) {
             $result[] = $this->load($name, $id, $resultType);
-        }
-        if (count($result) === 0) {
-            return null;
         }
         return $result;
     }
@@ -467,11 +464,8 @@ class MysqlDataProvider extends DataProvider
         return match ($field->type) {
             Type::BOOLEAN => (bool)$property->value_int,
             Type::FLOAT => (double)$property->value_float,
-            Type::INT => (int)$property->value_int,
+            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
             Field::DECIMAL => (float)($property->value_int/(10 ** $field->decimalPlaces)),
-            Field::DATE => (string)date('Y-m-d', $property->value_int),
-            Field::DATE_TIME => (string)date('Y-m-d H:i:s', $property->value_int),
-            Field::TIME => (string)date('H:i:s', $property->value_int),
             default => (string)$property->value_string,
         };
     }
@@ -483,10 +477,9 @@ class MysqlDataProvider extends DataProvider
         }
         return match ($field->type) {
             default => (string)$value,
-            Type::BOOLEAN, Type::INT => (int)$value,
+            Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
             Type::FLOAT => (float)$value,
             Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
-            Field::DATE, Field::DATE_TIME, Field::TIME => (int)strtotime($value),
         };
     }
 
@@ -498,9 +491,9 @@ class MysqlDataProvider extends DataProvider
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
         $search = $args['search'] ?? null;
-        $orderBy = [
-            'field' => $args['orderBy']['field'] ?? 'created_at',
-            'order' => $args['orderBy']['order'] ?? 'ASC',
+        $orderBy = [ // TODO: multi order
+            'field' => $args['orderBy'][0]['field'] ?? 'created_at',
+            'order' => $args['orderBy'][0]['order'] ?? 'ASC',
         ];
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 

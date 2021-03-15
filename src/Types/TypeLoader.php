@@ -30,7 +30,12 @@ use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Scalars\Date;
+use Mrap\GraphCool\Types\Scalars\DateTime;
 use Mrap\GraphCool\Types\Scalars\MixedType;
+use Mrap\GraphCool\Types\Scalars\Time;
+use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
+use Mrap\GraphCool\Utils\StopWatch;
 
 class TypeLoader
 {
@@ -50,14 +55,20 @@ class TypeLoader
         self::register('_ExportFile', SheetFileEnumType::class);
         self::register('_ImportSummary', ImportSummaryType::class);
         self::register('_Result', ResultType::class);
+        self::register('_DateTime', DateTime::class);
+        self::register('_Date', Date::class);
+        self::register('_Time', Time::class);
+        self::register('_TimezoneOffset', TimezoneOffset::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
     {
         return function() use ($name) {
+            StopWatch::start('load');
             if (!isset($this->types[$name])) {
                 $this->types[$name] = $this->create($name);
             }
+            StopWatch::stop('load');
             return $this->types[$name];
         };
     }
@@ -75,6 +86,10 @@ class TypeLoader
             Field::LANGUAGE_CODE => $this->load('_LanguageCode')(),
             Field::LOCALE_CODE => $this->load('_LocaleCode')(),
             Field::ENUM => $this->loadEnumType($name, $field),
+            Field::DATE_TIME => $this->load('_DateTime')(),
+            Field::DATE => $this->load('_Date')(),
+            Field::TIME => $this->load('_Time')(),
+            Field::TIMEZONE_OFFSET => $this->load('_TimezoneOffset')(),
         };
     }
 
@@ -93,7 +108,7 @@ class TypeLoader
     }
 
 
-    protected function create(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): Type
+    protected function create(string $name): Type
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
@@ -105,7 +120,7 @@ class TypeLoader
         return new ModelType($name, $this);
     }
 
-    protected function createSpecial(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): Type
+    protected function createSpecial(string $name): Type
     {
         if (str_ends_with($name, 'Paginator')) {
             return new PaginatorType($name, $this);

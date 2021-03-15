@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
+use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -44,7 +45,7 @@ class ModelType extends ObjectType
                         'first'=> Type::int(),
                         'page' => Type::int(),
                         'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
-                        'orderBy' => $typeLoader->load('_' . $name . '_' . $key . 'EdgeOrderByClause', null, $this),
+                        'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'EdgeOrderByClause', null, $this))),
                         'search' => Type::string(),
                         'result' => $typeLoader->load('_Result'),
                     ];
