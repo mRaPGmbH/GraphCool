@@ -178,8 +178,8 @@ class MysqlDataProvider extends DataProvider
         $model = $this->getModel($name);
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $data) && (
-                    $item instanceof Relation || (
-                        $item->null && !in_array(
+                    $item instanceof Relation ||
+                    $item->null || in_array(
                             $item->type,
                             [
                                 Type::ID,
@@ -188,7 +188,7 @@ class MysqlDataProvider extends DataProvider
                                 Field::CREATED_AT
                             ],
                             true
-                        )))) {
+                        ))) {
                 continue;
             }
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
