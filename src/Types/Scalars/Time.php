@@ -46,6 +46,8 @@ class Time extends ScalarType
                 || substr($dateTime->format('H:i:sO'), 0, -2) === $value // 11:54:04+00
                 || $dateTime->format('H:i:s.vO') === $value // 11:54:04.123+0000
                 || $dateTime->format('H:i:s.uO') === $value // 11:54:04.123456+0000
+                || $dateTime->format('H:i:s.vp') === $value // 11:54:04.123Z
+                || $dateTime->format('H:i:s.up') === $value // 11:54:04.123456Z
             )) {
             throw new Error('Invalid Time format; Try using this format instead: "11:54:04+00:00"');
         }

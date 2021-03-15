@@ -46,6 +46,8 @@ class DateTime extends ScalarType
             || substr($dateTime->format('Y-m-d\TH:i:sO'), 0, -2) === $value // 2021-03-11T11:54:04+00
             || $dateTime->format('Y-m-d\TH:i:s.vO') === $value // 2021-03-11T11:54:04.123+0000
             || $dateTime->format('Y-m-d\TH:i:s.uO') === $value // 2021-03-11T11:54:04.123456+0000
+            || $dateTime->format('Y-m-d\TH:i:s.vp') === $value // 2021-03-11T11:54:04.123Z
+            || $dateTime->format('Y-m-d\TH:i:s.up') === $value // 2021-03-11T11:54:04.123456Z
         )) {
             throw new Error('Invalid datetime format; Try using this format instead: "2021-03-11T11:54:04+00:00"');
         }
