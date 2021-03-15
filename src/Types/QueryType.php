@@ -15,6 +15,7 @@ use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\ModelFinder;
+use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
 
 class QueryType extends ObjectType
@@ -50,7 +51,7 @@ class QueryType extends ObjectType
             'description' => 'Get a single ' .  $name . ' by it\'s ID',
             'args' => [
                 'id' => new NonNull(Type::id()),
-                'timezone' => $typeLoader->load('_TimezoneOffset'),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
@@ -67,6 +68,7 @@ class QueryType extends ObjectType
                 'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
                 'search' => Type::string(),
                 'result' => $typeLoader->load('_Result'),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
@@ -79,6 +81,7 @@ class QueryType extends ObjectType
             'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
             'search' => Type::string(),
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
+            '_timezone' => $typeLoader->load('_TimezoneOffset'),
         ];
 
         foreach ($model as $key => $relation) {
@@ -93,6 +96,8 @@ class QueryType extends ObjectType
             }
         }
         $args['result'] = $typeLoader->load('_Result');
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+
         return [
             'type' => $typeLoader->load('_FileExport'),
             'description' => 'Export ' .  $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
@@ -107,13 +112,18 @@ class QueryType extends ObjectType
             'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
             'args' => [
                 'data_base64' => new NonNull(Type::string()),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn'))))
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
     {
+        if (isset($args['_timezone'])) {
+            TimeZone::set($args['_timezone']);
+        }
+
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
                 return DB::findAll(substr($info->returnType->toString(), 1,-9), $args);

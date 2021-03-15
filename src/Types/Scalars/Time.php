@@ -7,6 +7,7 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Utils\TimeZone;
 
 class Time extends ScalarType
 {
@@ -18,6 +19,7 @@ class Time extends ScalarType
     {
         $dateTime = new \DateTime();
         $dateTime->setTimestamp($value);
+        $dateTime->setTimezone(TimeZone::get());
         return $dateTime->format('H:i:sP');
     }
 

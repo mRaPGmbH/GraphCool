@@ -11,6 +11,7 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\StopWatch;
+use Mrap\GraphCool\Utils\TimeZone;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -427,6 +428,16 @@ class MysqlDataProvider extends DataProvider
         $statement = $this->statement($sql);
         $statement->execute([':id' => $id]);
         $node = $statement->fetch(PDO::FETCH_OBJ);
+
+        $dates = ['updated_at', 'created_at', 'deleted_at'];
+        foreach ($dates as $date) {
+            if ($node->$date !== null) {
+                $dateTime = new \DateTime();
+                $dateTime->setTimestamp(strtotime($node->$date));
+                $dateTime->setTimezone(TimeZone::get());
+                $node->$date = $dateTime->format(\DateTime::ATOM);
+            }
+        }
         if ($node === false) {
             return null;
         }

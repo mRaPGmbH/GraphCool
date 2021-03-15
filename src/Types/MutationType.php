@@ -15,6 +15,7 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Utils\ModelFinder;
+use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
 
 class MutationType extends ObjectType
@@ -72,6 +73,8 @@ class MutationType extends ObjectType
                 }
             }
         }
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+
         $ret = [
             'type' => $typeLoader->load($name),
             'description' => 'Create a single new ' .  $name . ' entry',
@@ -114,6 +117,8 @@ class MutationType extends ObjectType
             'type' => $typeLoader->load($name),
             'description' => 'Modify an existing ' .  $name . ' entry',
         ];
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+
         if (count($args) > 0) {
             ksort($args);
             $ret['args'] = $args;
@@ -127,7 +132,8 @@ class MutationType extends ObjectType
             'type' => $typeLoader->load($name),
             'description' => 'Delete a ' .  $name . ' entry by ID',
             'args' => [
-                'id' => new NonNull(Type::id())
+                'id' => new NonNull(Type::id()),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
@@ -138,7 +144,8 @@ class MutationType extends ObjectType
             'type' => $typeLoader->load($name),
             'description' => 'Restore a previously soft-deleted ' .  $name . ' record by ID',
             'args' => [
-                'id' => new NonNull(Type::id())
+                'id' => new NonNull(Type::id()),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
@@ -150,13 +157,18 @@ class MutationType extends ObjectType
             'description' => 'Import a list of ' .  $name . 's from a spreadsheet. If ID\'s are present, ' .  $name . 's will be updated - otherwise new ' .  $name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
             'args' => [
                 'data_base64' => new NonNull(Type::string()),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn'))))
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
     }
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
     {
+        if (isset($args['_timezone'])) {
+            TimeZone::set($args['_timezone']);
+        }
+
         if (str_starts_with($info->fieldName, 'create')) {
             return DB::insert($info->returnType->toString(), $args);
         }

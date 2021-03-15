@@ -7,6 +7,7 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Utils\TimeZone;
 
 class TimezoneOffset extends ScalarType
 {
@@ -16,23 +17,7 @@ class TimezoneOffset extends ScalarType
 
     public function serialize($value)
     {
-        if ($value < 0) {
-            $sign = '-';
-        } else {
-            $sign = '+';
-        }
-        $value = round(abs($value) / 60);
-        $minutes = $value % 60;
-        $hours = floor($value / 60);
-
-        $string = $sign
-            . str_pad((string)$hours, 2, '0', STR_PAD_LEFT)
-            . ':'
-            . str_pad((string)$minutes, 2, '0', STR_PAD_LEFT);
-
-        $dateTime = new \DateTime();
-        $dateTime->setTimezone(new \DateTimeZone($string));
-        return $dateTime->format('P');
+        return TimeZone::serialize((int) $value);
     }
 
     public function parseValue($value)
