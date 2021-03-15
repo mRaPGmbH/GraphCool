@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types;
 
 use GraphQL\Type\Definition\Type;
+use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
@@ -59,6 +60,7 @@ class TypeLoader
         self::register('_Date', Date::class);
         self::register('_Time', Time::class);
         self::register('_TimezoneOffset', TimezoneOffset::class);
+        self::register('Mixed', MixedScalar::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable

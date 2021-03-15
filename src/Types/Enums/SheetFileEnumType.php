@@ -16,7 +16,8 @@ class SheetFileEnumType extends EnumType
             'values' => [
                 'XLSX' => ['value' => 'xlsx', 'description' => 'Microsoft Excel Spreadsheet'],
                 'ODS' => ['value' => 'ods', 'description' => 'Open Document Spreadsheet'],
-                'CSV' => ['value' => 'csv', 'description' => 'Comma Separated Values']
+                'CSV' => ['value' => 'csv', 'description' => 'Comma Separated Values'],
+                'CSV_EXCEL' => ['value' => 'csv_excel', 'description' => 'CSV using semicolon instead of comma'],
             ]
         ];
         parent::__construct($config);

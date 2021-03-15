@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Utils;
 
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Writer\WriterAbstract;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
@@ -18,6 +19,16 @@ class FileExport
         $model = new $classname();
 
         $writer = $this->getWriter($type);
+        $result = new \stdClass();
+        if ($type === 'csv_excel') {
+            /** @var Writer $writer */
+            $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.csv';
+            $writer->setFieldDelimiter(';');
+            $writer->setFieldEnclosure('"');
+        } else {
+            $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type;
+        }
+
         $file = tempnam(sys_get_temp_dir(), 'export');
         $writer->openToFile($file);
         $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
@@ -26,8 +37,6 @@ class FileExport
         }
         $writer->close();
 
-        $result = new \stdClass();
-        $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type;
         $result->mime_type = $this->getMimeType($type);
         $result->data_base64 = base64_encode(file_get_contents($file));
         unlink($file);
@@ -118,7 +127,7 @@ class FileExport
         return match ($type) {
             'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-            'csv' => 'text/csv',
+            'csv', 'csv_excel' => 'text/csv',
             default => 'application/octet-stream'
         };
     }

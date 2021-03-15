@@ -368,10 +368,16 @@ class MysqlDataProvider extends DataProvider
                     $joins[] = 'LEFT JOIN `' . $base . '_property` AS `' . $s . 'p' . $i . '` ON `' . $s . 'p' . $i . '`.`' . $base . '_id` = `' . $s . '`.`id`';
                     $sql = '`' . $s . 'p' . $i . '`.`property` = :' . $s . 'p' . $i . 'p AND `' . $s . 'p' . $i . '`.`deleted_at` IS NULL ';
                     $parameters[':' . $s . 'p' . $i . 'p'] = $where['column'];
-                    if (is_string($where['value'])) {
-                        $sql .= ' AND ';
-                        $sql .= '`' . $s . 'p' . $i . '`.`value_string` ' . $where['operator'] . ' :' . $s . 'p' . $i . 's'; // TODO: non-strings!
-                        $parameters[':' . $s . 'p' . $i . 's'] = $where['value'];
+                    $sql .= ' AND ';
+                    if (is_bool($where['value']) || is_int($where['value'])) {
+                        $sql .= '`' . $s . 'p' . $i . '`.`value_int` ' . $where['operator'] . ' :' . $s . 'p' . $i . 'i';
+                        $parameters[':' . $s . 'p' . $i . 'i'] = (int) $where['value'];
+                    } elseif (is_float($where['value'])) {
+                        $sql .= '`' . $s . 'p' . $i . '`.`value_int` ' . $where['operator'] . ' :' . $s . 'p' . $i . 'f';
+                        $parameters[':' . $s . 'p' . $i . 'f'] = $where['value'];
+                    } else {
+                        $sql .= '`' . $s . 'p' . $i . '`.`value_string` ' . $where['operator'] . ' :' . $s . 'p' . $i . 's';
+                        $parameters[':' . $s . 'p' . $i . 's'] = (string) $where['value'];
                     }
                 }
                 $sqls[] = '(' . $sql . ')';
