@@ -280,10 +280,17 @@ class MysqlDataProvider extends DataProvider
         $paginatorInfo = new stdClass();
         $paginatorInfo->count = $count;
         $paginatorInfo->currentPage = $page;
-        $paginatorInfo->firstItem = 1;
+        if ($total === 0) {
+            $paginatorInfo->firstItem = 0;
+        } else {
+            $paginatorInfo->firstItem = 1;
+        }
         $paginatorInfo->hasMorePages = $total > $page * $limit;
         $paginatorInfo->lastItem = $total;
         $paginatorInfo->lastPage = ceil($total / $limit);
+        if ($paginatorInfo->lastPage < 1) {
+            $paginatorInfo->lastPage = 1;
+        }
         $paginatorInfo->perPage = $limit;
         $paginatorInfo->total = $total;
         return $paginatorInfo;
