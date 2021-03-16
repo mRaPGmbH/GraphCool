@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Scalars;
 
+use Carbon\Carbon;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
@@ -15,20 +16,19 @@ class Time extends ScalarType
     public $name = '_Time';
     public $description = 'A Time string in ISO 8601 format: "11:54:04+00:00" or "11:54:04Z"';
 
-    public function serialize($value)
+    public function serialize($value): string
     {
-        $dateTime = new \DateTime();
-        $dateTime->setTimestamp($value);
+        $dateTime = Carbon::createFromTimestampMs($value);
         $dateTime->setTimezone(TimeZone::get());
-        return $dateTime->format('H:i:sP');
+        return $dateTime->format('H:i:s.vp');
     }
 
-    public function parseValue($value)
+    public function parseValue($value): int
     {
         return $this->validate($value);
     }
 
-    public function parseLiteral(Node $valueNode, ?array $variables = null)
+    public function parseLiteral(Node $valueNode, ?array $variables = null): int
     {
         if (!$valueNode instanceof StringValueNode) {
             throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
@@ -36,22 +36,10 @@ class Time extends ScalarType
         return $this->validate($valueNode->value);
     }
 
-    protected function validate($value)
+    protected function validate($value): int
     {
-        $dateTime = \DateTime::createFromFormat('H:i:sP', $value);
-        if ($dateTime === false || !(
-                $dateTime->format('H:i:sP') === $value // 11:54:04+00:00
-                || $dateTime->format('H:i:sp') === $value // 11:54:04Z
-                || $dateTime->format('H:i:sO') === $value // 11:54:04+0000
-                || substr($dateTime->format('H:i:sO'), 0, -2) === $value // 11:54:04+00
-                || $dateTime->format('H:i:s.vO') === $value // 11:54:04.123+0000
-                || $dateTime->format('H:i:s.uO') === $value // 11:54:04.123456+0000
-                || $dateTime->format('H:i:s.vp') === $value // 11:54:04.123Z
-                || $dateTime->format('H:i:s.up') === $value // 11:54:04.123456Z
-            )) {
-            throw new Error('Invalid Time format; Try using this format instead: "11:54:04+00:00"');
-        }
-        return $dateTime->getTimestamp();
+        $dateTime = Carbon::parse($value);
+        return (int)$dateTime->getPreciseTimestamp(3);
     }
 
 }

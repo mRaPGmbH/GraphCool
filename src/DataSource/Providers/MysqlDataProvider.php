@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Providers;
 
+use Carbon\Carbon;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\Model\Field;
@@ -445,18 +446,17 @@ class MysqlDataProvider extends DataProvider
         $statement = $this->statement($sql);
         $statement->execute([':id' => $id]);
         $node = $statement->fetch(PDO::FETCH_OBJ);
+        if ($node === false) {
+            return null;
+        }
 
         $dates = ['updated_at', 'created_at', 'deleted_at'];
         foreach ($dates as $date) {
             if ($node->$date !== null) {
-                $dateTime = new \DateTime();
-                $dateTime->setTimestamp(strtotime($node->$date));
+                $dateTime = Carbon::parse($node->$date);
                 $dateTime->setTimezone(TimeZone::get());
-                $node->$date = $dateTime->format(\DateTime::ATOM);
+                $node->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
             }
-        }
-        if ($node === false) {
-            return null;
         }
         return $node;
     }
@@ -501,7 +501,10 @@ class MysqlDataProvider extends DataProvider
     protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
     {
         if ($field->null === false && $value === null) {
-            return $field->default ?? null;
+            $value = $field->default ?? null;
+            if (is_null($value)) {
+                return null;
+            }
         }
         return match ($field->type) {
             default => (string)$value,
@@ -740,6 +743,14 @@ class MysqlDataProvider extends DataProvider
         $edge = $statement->fetch(PDO::FETCH_OBJ);
         if ($edge === false) {
             return null;
+        }
+        $dates = ['updated_at', 'created_at', 'deleted_at'];
+        foreach ($dates as $date) {
+            if ($edge->$date !== null) {
+                $dateTime = Carbon::parse($edge->$date);
+                $dateTime->setTimezone(TimeZone::get());
+                $edge->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
+            }
         }
         return $edge;
     }

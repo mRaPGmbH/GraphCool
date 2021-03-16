@@ -3,23 +3,19 @@
 
 namespace Mrap\GraphCool\Utils;
 
-use DateTimeZone;
 
 class TimeZone
 {
-    protected static ?DateTimeZone $timeZone = null;
+    protected static ?string $timeZone = null;
 
-    public static function get(): DateTimeZone
+    public static function get(): string
     {
-        if (static::$timeZone === null) {
-            static:: $timeZone = new DateTimeZone("+0000");
-        }
-        return static::$timeZone;
+        return static::$timeZone ?? "+0000";
     }
 
     public static function set(int $offset): void
     {
-        static::$timeZone = new DateTimeZone(static::serialize($offset));
+        static::$timeZone = static::serialize($offset);
     }
 
     public static function serialize(int $offset): string
