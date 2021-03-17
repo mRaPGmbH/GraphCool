@@ -67,9 +67,9 @@ class MutationType extends ObjectType
             }
             if ($field->readonly === false) {
                 if ($field->null === true || ($field->default ?? null) !== null) {
-                    $args[$key] = $typeLoader->loadForField($field, $key);
+                    $args[$key] = $typeLoader->loadForField($field, $name . '_' . $key);
                 } else {
-                    $args[$key] = new NonNull($typeLoader->loadForField($field, $key));
+                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '_' . $key));
                 }
             }
         }
@@ -110,7 +110,7 @@ class MutationType extends ObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                $args[$key] = $typeLoader->loadForField($field, $key);
+                $args[$key] = $typeLoader->loadForField($field, $name . '_' . $key);
             }
         }
         $ret = [

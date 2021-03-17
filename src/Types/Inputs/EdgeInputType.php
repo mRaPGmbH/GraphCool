@@ -31,7 +31,7 @@ class EdgeInputType extends InputObjectType
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field && $field->readonly === false) {
-                $fieldType = $typeLoader->loadForField($field, $fieldKey);
+                $fieldType = $typeLoader->loadForField($field, $names[0] . '_' . $key . '_' . $fieldKey);
                 if ($field->null === false) {
                     $fieldType = new NonNull($fieldType);
                 }

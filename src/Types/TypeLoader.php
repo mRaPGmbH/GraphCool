@@ -157,7 +157,7 @@ class TypeLoader
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name, $this);
         }
-        if (substr($name, -8) === 'Relation') {
+        if (str_ends_with($name, 'Relation')) {
             return new EdgeInputType($name, $this);
         }
 

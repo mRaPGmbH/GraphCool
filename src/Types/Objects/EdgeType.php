@@ -24,7 +24,7 @@ class EdgeType extends ObjectType
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field) {
-                $fieldType = $typeLoader->loadForField($field, $fieldKey);
+                $fieldType = $typeLoader->loadForField($field, $names[0] . '_' . $key . '_' . $fieldKey);
                 if ($field->null === false) {
                     $fieldType = new NonNull($fieldType);
                 }

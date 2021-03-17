@@ -56,7 +56,7 @@ class ModelType extends ObjectType
                 if (!$field instanceof Field) {
                     continue;
                 }
-                $type = $typeLoader->loadForField($field, $key);
+                $type = $typeLoader->loadForField($field, $name . '_' . $key);
                 if ($field->null === false) {
                     $type = new NonNull($type);
                 }
