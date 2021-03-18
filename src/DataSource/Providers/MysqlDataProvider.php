@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\DataSource\Providers;
 use Carbon\Carbon;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
+use Mrap\GraphCool\DataSource\QueryBuilders\MysqlQueryBuilder;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
@@ -98,21 +99,42 @@ class MysqlDataProvider extends DataProvider
 
     public function findAll(string $name, array $args): stdClass
     {
+        StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
         $offset = ($page - 1) * $limit;
-        $where = $args['where'] ?? null;
-        $orderBy = [ // TODO: multi order
-            'field' => $args['orderBy'][0]['field'] ?? 'created_at',
-            'order' => $args['orderBy'][0]['order'] ?? 'ASC',
-        ];
-        $search = $args['search'] ?? null;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
-        [$ids, $total] = $this->findNodes($name, $where, $limit, $offset, $orderBy, $search, $resultType);
+        $classname = '\\App\\Models\\'. $name;
+        $model = new $classname();
+        $query = new MysqlQueryBuilder($model, $name);
+
+        $query->select(['id'])
+            ->limit($limit, $offset)
+            ->where($args['where'] ?? null)
+            ->orderBy($args['orderBy'] ?? [])
+            ->search($args['search'] ?? null);
+
+        match($resultType) {
+            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
+            'WITH_TRASHED' => $query->withTrashed(),
+            default => null
+        };
+
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getParameters());
+        $ids = [];
+        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+            $ids[] = $row->id;
+        }
+
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        $total = (int)$statement->fetchColumn();
 
         $result = new stdClass();
         $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
+        StopWatch::stop(__METHOD__);
         $result->data = $this->loadAll($name, $ids, $resultType);
         return $result;
     }
@@ -128,6 +150,7 @@ class MysqlDataProvider extends DataProvider
 
     public function load(string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
+        StopWatch::start(__METHOD__);
         $node = $this->fetchNode($id, $resultType);
         if ($node === null) {
             return null;
@@ -167,7 +190,7 @@ class MysqlDataProvider extends DataProvider
                 return $result;
             };
         }
-
+        StopWatch::stop(__METHOD__);
         return $node;
     }
 
@@ -296,121 +319,6 @@ class MysqlDataProvider extends DataProvider
         return $paginatorInfo;
     }
 
-    protected function findNodes(
-        string $name,
-        ?array $where,
-        int $limit = 10,
-        int $offset = 0,
-        array $orderBy,
-        string $search = null,
-        string $resultType
-    ): array {
-        [$sql, $parameters, $order] = $this->buildFindSql($where, $name, $orderBy, $search, $resultType);
-        $order .= ' LIMIT ' . $offset . ', ' . $limit;
-
-        StopWatch::start('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
-        $statement = $this->statement('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
-
-        $statement->execute($parameters);
-        $result = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-            $result[] = $row->id;
-        }
-
-        $statement = $this->statement('SELECT count(DISTINCT `n`.`id`) ' . $sql);
-        $statement->execute($parameters);
-        $total = (int)$statement->fetchColumn();
-        StopWatch::stop('SELECT `n`.`id` ' . $sql . ' GROUP BY `n`.`id` ' . $order);
-        return [$result, $total];
-    }
-
-
-    protected function buildFindSql(?array $where, string $model, array $orderBy, ?string $search = null, string $resultType)
-    {
-        $joins = [];
-        $whereSql = ' WHERE `n`.`model` = :model ';
-        $whereSql .= match($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `n`.`deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
-            default => 'AND `n`.`deleted_at` IS NULL ',
-        };
-
-        $parameters = [
-            ':model' => $model
-        ];
-
-        if (!empty($where)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($where, $joins, $parameters) . ' ';
-        }
-        if (in_array($orderBy['field'], ['created_at', 'updated_at', 'deleted_at', 'id'])) {
-            $orderSql = ' ORDER BY `n`.`' . $orderBy['field'] . '` ' . $orderBy['order'];
-        } else {
-            $joins[] = 'LEFT JOIN `node_property` AS `order` ON 
-                (`order`.`node_id` = `n`.`id` AND `order`.`property` = \'' . $orderBy['field'] . '\')';
-            $orderSql = ' ORDER BY `order`.`value_string` ' . $orderBy['order']
-             . ', `order`.`value_int` ' . $orderBy['order']
-             . ', `order`.`value_float` ' . $orderBy['order'];
-        }
-
-        if ($search !== null) {
-            $joins[] = 'LEFT JOIN `node_property` AS `search` ON 
-                (`search`.`node_id` = `n`.`id` AND `search`.`value_string` IS NOT NULL)';
-            $whereSql .= ' AND `search`.`value_string` LIKE :searchString ';
-            $parameters[':searchString'] = '%' . $search . '%';
-        }
-
-        $sql = 'FROM `node` AS `n` ' . implode(' ', $joins) . $whereSql;
-
-        return [$sql, $parameters, $orderSql];
-    }
-
-    protected function buildWhereSql(?array $wheres, array &$joins, array &$parameters, string $mode = 'AND', string $base = 'node'): string
-    {
-        $s = $base[0];
-        if (
-            isset($wheres['operator'])
-            || isset($wheres['value'])
-            || isset($wheres['column'])
-            || isset($wheres['AND'])
-            || isset($wheres['OR'])
-        ) {
-            $wheres = [$wheres];
-        }
-        $sqls = [];
-        foreach ($wheres as $where) {
-            if (isset($where['operator']) || isset($where['value']) || isset($where['column'])) {
-                $i = count($parameters);
-                if (in_array($where['column'], ['created_at', 'updated_at', 'deleted_at', 'id'])) {
-                    $sql = '`' . $s . '`.`' . $where['column'] . '` '. $where['operator'] . ' :' . $s . 'p' . $i;
-                    $parameters[':' . $s . 'p' . $i] = $where['value'];
-                } else {
-                    $joins[] = 'LEFT JOIN `' . $base . '_property` AS `' . $s . 'p' . $i . '` ON `' . $s . 'p' . $i . '`.`' . $base . '_id` = `' . $s . '`.`id`';
-                    $sql = '`' . $s . 'p' . $i . '`.`property` = :' . $s . 'p' . $i . 'p AND `' . $s . 'p' . $i . '`.`deleted_at` IS NULL ';
-                    $parameters[':' . $s . 'p' . $i . 'p'] = $where['column'];
-                    $sql .= ' AND ';
-                    if (is_bool($where['value']) || is_int($where['value'])) {
-                        $sql .= '`' . $s . 'p' . $i . '`.`value_int` ' . $where['operator'] . ' :' . $s . 'p' . $i . 'i';
-                        $parameters[':' . $s . 'p' . $i . 'i'] = (int) $where['value'];
-                    } elseif (is_float($where['value'])) {
-                        $sql .= '`' . $s . 'p' . $i . '`.`value_int` ' . $where['operator'] . ' :' . $s . 'p' . $i . 'f';
-                        $parameters[':' . $s . 'p' . $i . 'f'] = $where['value'];
-                    } else {
-                        $sql .= '`' . $s . 'p' . $i . '`.`value_string` ' . $where['operator'] . ' :' . $s . 'p' . $i . 's';
-                        $parameters[':' . $s . 'p' . $i . 's'] = (string) $where['value'];
-                    }
-                }
-                $sqls[] = '(' . $sql . ')';
-            }
-            if (isset($where['OR'])) {
-                $sqls[] = $this->buildWhereSql($where['OR'], $joins, $parameters, 'OR');
-            }
-            if (isset($where['AND'])) {
-                $sqls[] = $this->buildWhereSql($where['AND'], $joins, $parameters, 'AND');
-            }
-        }
-        return '(' . implode(' ' . $mode . ' ', $sqls) . ')';
-    }
-
     protected function statement(string $sql): PDOStatement
     {
         if (!isset($this->statements[$sql])) {
@@ -522,26 +430,51 @@ class MysqlDataProvider extends DataProvider
 
     protected function findRelatedNodes(string $id, Relation $relation, array $args): array|stdClass
     {
+        StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
         $offset = ($page - 1) * $limit;
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
         $search = $args['search'] ?? null;
-        $orderBy = [ // TODO: multi order
-            'field' => $args['orderBy'][0]['field'] ?? 'created_at',
-            'order' => $args['orderBy'][0]['order'] ?? 'ASC',
-        ];
+        $orderBy = $args['orderBy'] ?? [];
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
         $edges = [];
-        $total = 0;
-        if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-            [$edges, $total] = $this->findChildren($id, $relation, $whereNode, $whereEdge, $limit, $offset, $orderBy, $search, $resultType);
-        } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-            [$edges, $total] = $this->findParents($id, $relation, $whereNode, $whereEdge, $limit, $offset, $orderBy, $search, $resultType);
+
+        $query = new MysqlQueryBuilder($relation, $id);
+        $query->select(['_child_id', '_parent_id'])->limit($limit, $offset)->where($whereEdge)->whereRelated($whereNode)->orderBy([$orderBy])->search($search);
+        match($resultType) {
+            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
+            'WITH_TRASHED' => $query->withTrashed(),
+            default => null
+        };
+
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getParameters());
+
+        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $edgeIds) {
+            $edge = $this->fetchEdge($edgeIds->parent_id, $edgeIds->child_id);
+            if ($edge === null) {
+                continue;
+            }
+            $properties = $this->convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
+            foreach ($properties as $key => $value) {
+                $edge->$key = $value;
+            }
+            if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
+                $edge->_node = $this->load($relation->name, $edge->child_id);
+            } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
+                $edge->_node = $this->load($relation->name, $edge->parent_id);
+            }
+            $edges[] = $edge;
         }
 
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        $total = (int)$statement->fetchColumn();
+
+        StopWatch::stop(__METHOD__);
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
             $count = count($edges);
             return [
@@ -550,192 +483,6 @@ class MysqlDataProvider extends DataProvider
             ];
         }
         return $edges;
-    }
-
-    protected function findChildren(
-        string $parentId,
-        Relation $relation,
-        ?array $whereNode,
-        ?array $whereEdge,
-        int $limit = 10,
-        int $offset = 0,
-        array $orderBy,
-        ?string $search,
-        string $resultType = ResultType::DEFAULT
-    ): array
-    {
-        [$sql, $parameters, $orderSql] = $this->buildChildFindSql($parentId, $relation->name, $whereNode, $whereEdge, $search, $orderBy, $resultType);
-        $limitSql = ' LIMIT ' . $offset . ', ' . $limit;
-
-        //print_r(['SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id`',$parameters]);
-
-        StopWatch::start('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $limitSql);
-        $statement = $this->statement('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $limitSql);
-
-        $statement->execute($parameters);
-        $result = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-            $edge = $this->fetchEdge($parentId, $row->child_id);
-            $properties = $this->convertProperties($this->fetchEdgeProperties($parentId, $row->child_id), $relation);
-            $row = [];
-            foreach ($properties as $key => $value) {
-                $row[$key] = $value;
-            }
-            $row['_node'] = $this->load($edge->child, $edge->child_id);
-            $result[] = $row;
-        }
-
-        $statement = $this->statement('SELECT count(DISTINCT `e`.`child_id`) ' . $sql);
-        $statement->execute($parameters);
-        $total = (int)$statement->fetchColumn();
-        StopWatch::stop('SELECT `e`.`child_id` ' . $sql . ' GROUP BY `e`.`child_id` ' . $orderSql . ' ' . $limitSql );
-        return [$result, $total];
-    }
-
-    protected function buildChildFindSql(string $parentId, string $childName, ?array $whereNode, ?array $whereEdge, ?string $search, array $orderBy, string $resultType)
-    {
-        $joins = [];
-        $whereSql = ' WHERE `e`.`parent_id` = :parentId AND `e`.`child` = :child ';
-        $whereSql .= match($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `e`.`deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
-            default => 'AND `e`.`deleted_at` IS NULL ',
-        };
-
-        $parameters = [
-            ':parentId' => $parentId,
-            ':child' => $childName
-        ];
-
-        if (!empty($whereNode)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($whereNode, $joins, $parameters, 'node') . ' ';
-        }
-        if (!empty($whereEdge)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($whereEdge, $joins, $parameters, 'edge') . ' ';
-        }
-
-        if ($search !== null) {
-            $whereSql .= $this->buildRelatedSearchSql($joins, $parameters, $search);
-        }
-        $orderSql = $this->buildRelatedOrderBySql($joins, $orderBy);
-
-        $sql = 'FROM `edge` AS `e` LEFT JOIN `node` AS `n`ON `n`.`id` = `e`.`child_id` ' . implode(' ', $joins) . $whereSql;
-
-        //var_dump($sql);
-        return [$sql, $parameters, $orderSql];
-    }
-
-    protected function buildRelatedSearchSql(array &$joins, array &$parameters, string $search): string
-    {
-        $joins[] = 'LEFT JOIN `edge_property` AS `search' . (++$this->search)  . '` ON 
-                (`search' . $this->search  . '`.`parent_id` = `e`.`parent_id` 
-                AND `search' . $this->search  . '`.`child_id` = `e`.`child_id`
-                AND `search' . $this->search  . '`.`value_string` IS NOT NULL)';
-        $sql = ' AND (`search' . $this->search  . '`.`value_string` LIKE :searchString' . $this->search;
-        $parameters[':searchString' . $this->search] = '%' . $search . '%';
-
-        $joins[] = 'LEFT JOIN `node_property` AS `search' . (++$this->search)  . '` ON 
-                (`search' . $this->search  . '`.`node_id` = `n`.`id` AND `search' . $this->search  . '`.`value_string` IS NOT NULL)';
-        $sql .= ' OR `search' . $this->search  . '`.`value_string` LIKE :searchString' . $this->search  . ') ';
-        $parameters[':searchString' . $this->search] = '%' . $search . '%';
-
-        return $sql;
-    }
-
-    protected function buildRelatedOrderBySql(array &$joins, array $orderBy): string
-    {
-        $orderField = $orderBy['field'];
-        if (str_starts_with($orderField, '_')) { // sort by edge
-            $orderField = substr($orderField, 1);
-            if (in_array($orderField, ['created_at', 'updated_at', 'deleted_at', 'id'])) {
-                $orderSql = ' ORDER BY `e`.`' . $orderField . '` ' . $orderBy['order'];
-            } else {
-                $joins[] = 'LEFT JOIN `edge_property` AS `order` ON
-                    (`order`.`parent_id` = `e`.`parent_id` AND `order`.`child_id` = `e`.`child_id` AND `order`.`property` = \'' . $orderField . '\')';
-                $orderSql = ' ORDER BY max(`order`.`value_string`) ' . $orderBy['order']
-                    . ', max(`order`.`value_int`) ' . $orderBy['order']
-                    . ', max(`order`.`value_float`) ' . $orderBy['order'];
-            }
-        } else { // sort by node
-            if (in_array($orderField, ['created_at', 'updated_at', 'deleted_at', 'id'])) {
-                $orderSql = ' ORDER BY `n`.`' . $orderField . '` ' . $orderBy['order'];
-            } else {
-                $joins[] = 'LEFT JOIN `node_property` AS `order` ON
-                (`order`.`node_id` = `n`.`id` AND `order`.`property` = \'' . $orderField . '\')';
-                $orderSql = ' ORDER BY max(`order`.`value_string`) ' . $orderBy['order']
-                    . ', max(`order`.`value_int`) ' . $orderBy['order']
-                    . ', max(`order`.`value_float`) ' . $orderBy['order'];
-            }
-        }
-        return $orderSql;
-    }
-
-    protected function findParents(
-        string $childId,
-        Relation $relation,
-        ?array $whereNode,
-        ?array $whereEdge,
-        int $limit = 10,
-        int $offset = 0,
-        array $orderBy,
-        ?string $search = null,
-        string $resultType = ResultType::DEFAULT
-    ): array
-    {
-        [$sql, $parameters, $orderSql] = $this->buildParentFindSql($childId, $relation->name, $whereNode, $whereEdge, $search, $orderBy, $resultType);
-        $limitSql = ' LIMIT ' . $offset . ', ' . $limit;
-
-        $statement = $this->statement('SELECT `e`.`parent_id` ' . $sql . ' GROUP BY `e`.`parent_id` ' . $orderSql . ' ' . $limitSql );
-
-        $statement->execute($parameters);
-        $result = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-            $edge = $this->fetchEdge($row->parent_id, $childId);
-            $properties = $this->convertProperties($this->fetchEdgeProperties($row->parent_id, $childId), $relation);
-            $row = [];
-            foreach ($properties as $key => $value) {
-                $row[$key] = $value;
-            }
-            $row['_node'] = $this->load($edge->parent, $edge->parent_id);
-            $result[] = $row;
-        }
-
-        $statement = $this->statement('SELECT count(DISTINCT `e`.`parent_id`) ' . $sql);
-        $statement->execute($parameters);
-        $total = (int)$statement->fetchColumn();
-        return [$result, $total];
-    }
-
-    protected function buildParentFindSql(string $childId, string $parentName, ?array $whereNode, ?array $whereEdge, ?string $search, array $orderBy, string $resultType)
-    {
-        $joins = [];
-        $whereSql = ' WHERE `e`.`child_id` = :childId AND `e`.`parent` = :parent ';
-        $whereSql .= match($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `e`.`deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
-            default => 'AND `e`.`deleted_at` IS NULL ',
-        };
-
-        $parameters = [
-            ':childId' => $childId,
-            ':parent' => $parentName
-        ];
-
-        if (!empty($whereNode)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($whereNode, $joins, $parameters, 'node') . ' ';
-        }
-        if (!empty($whereEdge)) {
-            $whereSql .= ' AND ' . $this->buildWhereSql($whereEdge, $joins, $parameters, 'edge') . ' ';
-        }
-
-        if ($search !== null) {
-            $whereSql .= $this->buildRelatedSearchSql($joins, $parameters, $search);
-        }
-        $orderSql = $this->buildRelatedOrderBySql($joins, $orderBy);
-
-        $sql = 'FROM `edge` AS `e` LEFT JOIN `node` AS `n`ON `n`.`id` = `e`.`parent_id` ' . implode(' ', $joins) . $whereSql;
-
-        return [$sql, $parameters, $orderSql];
     }
 
     protected function fetchEdge(string $parentId, string $childId): ?stdClass
@@ -910,6 +657,5 @@ class MysqlDataProvider extends DataProvider
         $statement = $this->statement($sql);
         return $statement->execute([':id' => $id]);
     }
-
 
 }
