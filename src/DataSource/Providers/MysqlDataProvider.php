@@ -461,8 +461,7 @@ class MysqlDataProvider extends DataProvider
         foreach ($dates as $date) {
             if ($node->$date !== null) {
                 $dateTime = Carbon::parse($node->$date);
-                $dateTime->setTimezone(TimeZone::get());
-                $node->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
+                $node->$date = $dateTime->getPreciseTimestamp(3);
             }
         }
         return $node;
