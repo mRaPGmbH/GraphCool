@@ -166,7 +166,11 @@ class MysqlQueryBuilder
         foreach ($wheres as $where) {
             if (isset($where['operator']) || isset($where['value']) || isset($where['column'])) {
                 if (in_array($where['column'], $this->getBaseColumns())) {
-                    $sqls[] = $this->fieldName($where['column']) . ' ' . $where['operator'] . ' ' . $this->parameter($where['value']);
+                    if (isset($where['value'])) {
+                        $sqls[] = $this->fieldName($where['column']) . ' ' . $where['operator'] . ' ' . $this->parameter($where['value']);
+                    } else {
+                        $sqls[] = $this->fieldName($where['column']) . ' ' . $where['operator'];
+                    }
                 } else {
                     $join = $this->join($where['column']);
                     if (is_bool($where['value']) || is_int($where['value'])) {
