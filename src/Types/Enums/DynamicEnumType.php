@@ -4,12 +4,25 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Types\TypeLoader;
 
 class DynamicEnumType extends EnumType
 {
-    public function __construct(string $name, Field $field)
+    public function __construct(string $name, TypeLoader $typeLoader)
     {
+        $names = explode('.', substr($name, 1, -4), 3);
+        $key = $names[1];
+
+        $classname = 'App\\Models\\' . $names[0];
+        $model = new $classname();
+
+        $field = $model->$key;
+        if (isset($names[2]) && $field instanceof Relation) {
+            $key = $names[2];
+            $field = $field->$key;
+        }
+
         $values = [];
         foreach ($field->enumValues as $value) {
             $values[$this->sanitizeValue($value)] = ['value' => $value];

@@ -13,7 +13,7 @@ class EdgeType extends ObjectType
 {
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('_', substr($name, 1, -4), 2);
+        $names = explode('.', substr($name, 1, -4), 2);
         $key = $names[1];
 
         $classname = 'App\\Models\\' . $names[0];
@@ -24,7 +24,7 @@ class EdgeType extends ObjectType
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field) {
-                $fieldType = $typeLoader->loadForField($field, $names[0] . '_' . $key . '_' . $fieldKey);
+                $fieldType = $typeLoader->loadForField($field, $names[0] . '.' . $key . '.' . $fieldKey);
                 if ($field->null === false) {
                     $fieldType = new NonNull($fieldType);
                 }

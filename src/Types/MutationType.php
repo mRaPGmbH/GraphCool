@@ -55,10 +55,10 @@ class MutationType extends ObjectType
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$key] = new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation'));
+                    $args[$key] = new NonNull($typeLoader->load('_' . $name . '.' . $key . 'Relation'));
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation')));
+                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '.' . $key . 'Relation')));
                 }
             }
 
@@ -67,9 +67,9 @@ class MutationType extends ObjectType
             }
             if ($field->readonly === false) {
                 if ($field->null === true || ($field->default ?? null) !== null) {
-                    $args[$key] = $typeLoader->loadForField($field, $name . '_' . $key);
+                    $args[$key] = $typeLoader->loadForField($field, $name . '.' . $key);
                 } else {
-                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '_' . $key));
+                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '.' . $key));
                 }
             }
         }
@@ -99,10 +99,10 @@ class MutationType extends ObjectType
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$key] = $typeLoader->load('_' . $name . '_' . $key . 'Relation');
+                    $args[$key] = $typeLoader->load('_' . $name . '.' . $key . 'Relation');
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '_' . $key . 'Relation')));
+                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '.' . $key . 'Relation')));
                 }
             }
 
@@ -110,7 +110,7 @@ class MutationType extends ObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                $args[$key] = $typeLoader->loadForField($field, $name . '_' . $key);
+                $args[$key] = $typeLoader->loadForField($field, $name . '.' . $key);
             }
         }
         $ret = [

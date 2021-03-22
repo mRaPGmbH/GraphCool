@@ -15,7 +15,7 @@ class EdgesType extends ObjectType
     {
         $config = [
             'name' => $name,
-            'description' => 'A paginated list of ' . str_replace('_', '.', substr($name, 1, -5)) . ' relations.',
+            'description' => 'A paginated list of ' . substr($name, 1, -5) . ' relations.',
             'fields' => [
                 'paginatorInfo' => $typeLoader->load('_PaginatorInfo'),
                 'edges' => new ListOfType(new NonNull($typeLoader->load(substr($name, 0, -1)))),

@@ -632,7 +632,7 @@ class MysqlDataProvider extends DataProvider
         );
     }
 
-    public function delete(string $name, string $id): stdClass
+    public function delete(string $name, string $id): ?stdClass
     {
         $model = $this->load($name, $id);
         $this->deleteNode($id);

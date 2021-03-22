@@ -19,7 +19,7 @@ class EdgeInputType extends InputObjectType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('_', substr($name, 1, -8), 2);
+        $names = explode('.', substr($name, 1, -8), 2);
         $key = $names[1];
 
         $classname = 'App\\Models\\' . $names[0];
@@ -31,7 +31,7 @@ class EdgeInputType extends InputObjectType
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field && $field->readonly === false) {
-                $fieldType = $typeLoader->loadForField($field, $names[0] . '_' . $key . '_' . $fieldKey);
+                $fieldType = $typeLoader->loadForField($field, $names[0] . '.' . $key . '.' . $fieldKey);
                 if ($field->null === false) {
                     $fieldType = new NonNull($fieldType);
                 }

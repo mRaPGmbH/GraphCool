@@ -19,15 +19,13 @@ class EdgeSelectorType extends InputObjectType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('_', substr($name, 1, -12), 2);
-
         $fields = [
             'id' => new NonNull(Type::id()),
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load(substr($name, 0, -8) . 'ExportColumn')))),
         ];
         $config = [
             'name' => $name,
-            'description' => 'Selector for one ' . $names[0] . '.' . $names[1] . ' relation.',
+            'description' => 'Selector for one ' . substr($name, 1, -12) . ' relation.',
             'fields' => $fields,
         ];
         parent::__construct($config);

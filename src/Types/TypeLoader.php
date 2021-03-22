@@ -99,7 +99,7 @@ class TypeLoader
     {
         $key = '_' . $name . 'Enum';
         if (!isset($this->types[$key])) {
-            $this->types[$key] = new DynamicEnumType($key, $field);
+            $this->types[$key] = new DynamicEnumType($key, $this);
         }
         return $this->types[$key];
     }
@@ -159,6 +159,9 @@ class TypeLoader
         }
         if (str_ends_with($name, 'Relation')) {
             return new EdgeInputType($name, $this);
+        }
+        if (str_ends_with($name, 'Enum')) {
+            return new DynamicEnumType($name, $this);
         }
 
         throw new \Exception('unhandled createSpecial: '.$name);

@@ -59,7 +59,7 @@ class DB
         return $result;
     }
 
-    public static function delete(string $modelName, string $id): stdClass
+    public static function delete(string $modelName, string $id): ?stdClass
     {
         StopWatch::start(__METHOD__);
         $result =  static::get()->delete($modelName, $id);
