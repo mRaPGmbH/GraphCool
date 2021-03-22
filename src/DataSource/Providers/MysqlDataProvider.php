@@ -442,6 +442,7 @@ class MysqlDataProvider extends DataProvider
 
         $edges = [];
 
+
         $query = new MysqlQueryBuilder($relation, $id);
         $query->select(['_child_id', '_parent_id'])->limit($limit, $offset)->where($whereEdge)->whereRelated($whereNode)->orderBy([$orderBy])->search($search);
         match($resultType) {
@@ -635,6 +636,7 @@ class MysqlDataProvider extends DataProvider
     {
         $model = $this->load($name, $id);
         $this->deleteNode($id);
+        $this->deleteEdgesForNodeId($id);
         return $model;
     }
 
@@ -649,6 +651,13 @@ class MysqlDataProvider extends DataProvider
         $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` = :id';
         $statement = $this->statement($sql);
         return $statement->execute([':id' => $id]);
+    }
+
+    protected function deleteEdgesForNodeId(string $id): bool
+    {
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `parent_id` = :id1 OR `child_id` = :id2';
+        $statement = $this->statement($sql);
+        return $statement->execute([':id1' => $id, ':id2' => $id]);
     }
 
     protected function restoreNode(string $id): bool
