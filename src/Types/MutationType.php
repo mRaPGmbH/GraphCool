@@ -55,7 +55,11 @@ class MutationType extends ObjectType
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$key] = new NonNull($typeLoader->load('_' . $name . '__' . $key . 'Relation'));
+                    if ($relation->null) {
+                        $args[$key] = $typeLoader->load('_' . $name . '__' . $key . 'Relation');
+                    } else {
+                        $args[$key] = new NonNull($typeLoader->load('_' . $name . '__' . $key . 'Relation'));
+                    }
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
                     $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'Relation')));
