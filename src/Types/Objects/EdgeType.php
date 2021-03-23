@@ -13,7 +13,7 @@ class EdgeType extends ObjectType
 {
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('.', substr($name, 1, -4), 2);
+        $names = explode('__', substr($name, 1, -4), 2);
         $key = $names[1];
 
         $classname = 'App\\Models\\' . $names[0];
@@ -24,7 +24,7 @@ class EdgeType extends ObjectType
         foreach ($relation as $fieldKey => $field)
         {
             if ($field instanceof Field) {
-                $fieldType = $typeLoader->loadForField($field, $names[0] . '.' . $key . '.' . $fieldKey);
+                $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
                 if ($field->null === false) {
                     $fieldType = new NonNull($fieldType);
                 }
@@ -36,7 +36,7 @@ class EdgeType extends ObjectType
         $fields['_node'] = $type;
         $config = [
             'name' => $name,
-            'description' => 'A single ' . str_replace('_', '.', substr($name, 1, -4)) . ' relation.',
+            'description' => 'A single ' . substr($name, 1, -4) . ' relation.',
             'fields' => $fields,
         ];
         parent::__construct($config);

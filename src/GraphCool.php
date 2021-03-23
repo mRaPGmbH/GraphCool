@@ -11,6 +11,7 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\StopWatch;
 use Throwable;
 
@@ -25,6 +26,16 @@ class GraphCool
             $schema = $instance->createSchema();
             $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
         } catch (Throwable $e) {
+            $sentryDsn = Env::get('SENTRY_DSN');
+            if ($sentryDsn !== null && function_exists("\Sentry\init")) {
+                \Sentry\init([
+                    'dsn' => $sentryDsn,
+                    'environment' => Env::get('APP_ENV'),
+                    'release' => Env::get('APP_NAME') . '@' . Env::get('APP_VERSION'),
+                    'server_name' => $_SERVER['SERVER_NAME']
+                ]);
+                \Sentry\captureException($e);
+            }
             $result = [
                 'errors' => [[
                     'message' => $e->getMessage(),

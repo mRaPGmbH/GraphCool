@@ -11,7 +11,7 @@ class DynamicEnumType extends EnumType
 {
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('.', substr($name, 1, -4), 3);
+        $names = explode('__', substr($name, 1, -4), 3);
         $key = $names[1];
 
         $classname = 'App\\Models\\' . $names[0];

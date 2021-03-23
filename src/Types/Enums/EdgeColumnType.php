@@ -15,7 +15,7 @@ class EdgeColumnType extends EnumType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('.', substr($name, 1, -10), 2);
+        $names = explode('__', substr($name, 1, -10), 2);
         $key = $names[1];
         $classname = 'App\\Models\\' . $names[0];
         $parentModel = new $classname();

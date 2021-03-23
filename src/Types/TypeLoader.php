@@ -87,21 +87,12 @@ class TypeLoader
             Field::CURRENCY_CODE => $this->load('_CurrencyCode')(),
             Field::LANGUAGE_CODE => $this->load('_LanguageCode')(),
             Field::LOCALE_CODE => $this->load('_LocaleCode')(),
-            Field::ENUM => $this->loadEnumType($name, $field),
+            Field::ENUM => $this->load('_' . $name . 'Enum')(),
             Field::DATE_TIME, Field::CREATED_AT, Field::DELETED_AT, Field::UPDATED_AT => $this->load('_DateTime')(),
             Field::DATE => $this->load('_Date')(),
             Field::TIME => $this->load('_Time')(),
             Field::TIMEZONE_OFFSET => $this->load('_TimezoneOffset')(),
         };
-    }
-
-    protected function loadEnumType(string $name, Field $field): DynamicEnumType
-    {
-        $key = '_' . $name . 'Enum';
-        if (!isset($this->types[$key])) {
-            $this->types[$key] = new DynamicEnumType($key, $this);
-        }
-        return $this->types[$key];
     }
 
     public static function register($name, $classname): void

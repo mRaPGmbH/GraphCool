@@ -16,6 +16,9 @@ class Env
         if ($value === false) {
             $value = $_ENV[$key] ?? $default;
         }
+        if ($value === null) {
+            return null;
+        }
         $value = trim($value);
         switch (strtolower($value)) {
             case 'true':

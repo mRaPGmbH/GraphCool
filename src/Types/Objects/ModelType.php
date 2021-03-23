@@ -38,14 +38,14 @@ class ModelType extends ObjectType
             $args = null;
             if ($field instanceof Relation) {
                 if ($field->type === Relation::BELONGS_TO || $field->type === Relation::HAS_ONE) {
-                    $type = $typeLoader->load('_' . $name . '.' . $key . 'Edge');
+                    $type = $typeLoader->load('_' . $name . '__' . $key . 'Edge');
                 } elseif ($field->type === Relation::HAS_MANY || $field->type === Relation::BELONGS_TO_MANY) {
-                    $type = $typeLoader->load('_' . $name . '.' . $key . 'Edges', null, $this);
+                    $type = $typeLoader->load('_' . $name . '__' . $key . 'Edges', null, $this);
                     $args = [
                         'first'=> Type::int(),
                         'page' => Type::int(),
                         'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
-                        'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . '.' . $key . 'EdgeOrderByClause', null, $this))),
+                        'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause', null, $this))),
                         'search' => Type::string(),
                         'result' => $typeLoader->load('_Result'),
                     ];
@@ -56,7 +56,7 @@ class ModelType extends ObjectType
                 if (!$field instanceof Field) {
                     continue;
                 }
-                $type = $typeLoader->loadForField($field, $name . '.' . $key);
+                $type = $typeLoader->loadForField($field, $name . '__' . $key);
                 if ($field->null === false) {
                     $type = new NonNull($type);
                 }

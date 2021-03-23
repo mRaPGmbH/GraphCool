@@ -89,10 +89,10 @@ class QueryType extends ObjectType
                 continue;
             }
             if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '.' . $key . 'EdgeColumn')));
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumn')));
             }
             if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '.' . $key . 'EdgeSelector')));
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector')));
             }
         }
         $args['result'] = $typeLoader->load('_Result');
