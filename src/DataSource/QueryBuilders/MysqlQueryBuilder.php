@@ -19,6 +19,7 @@ class MysqlQueryBuilder
     protected array $parameters = [];
     protected array $where = [];
     protected array $joins = [];
+    protected string $groupBy = '';
 
 
     public function __construct(Model|Relation $base, string $name)
@@ -116,6 +117,11 @@ class MysqlQueryBuilder
             $join = $this->join(null);
             $this->where[] = $join . '.`value_string` LIKE ' . $this->parameter('%' . str_replace(' ','%' ,$value) . '%');
         }
+
+        $this->groupBy = match($this->name) {
+                        'node' => ' GROUP BY ' . $this->fieldName('id') . ' ',
+                        'edge' => ' GROUP BY ' . $this->fieldName('parent_id') . ', ' . $this->fieldName('child_id') . ' '
+                    };
         return $this;
     }
 
@@ -148,6 +154,7 @@ class MysqlQueryBuilder
         $sql .= implode(' ', $this->joins);
         $sql .= ' WHERE ' . implode(' AND ', $this->where);
         $sql .= $this->resultType;
+        $sql .= $this->groupBy;
         return $sql;
     }
 
