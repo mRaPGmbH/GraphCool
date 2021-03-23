@@ -50,7 +50,25 @@ class MysqlQueryBuilder
     public function select(array $fields): MysqlQueryBuilder
     {
         foreach ($fields as $field) {
-            $this->selects[] = $this->fieldName($field);
+            if (in_array($field, $this->getBaseColumns())) {
+                $this->selects[] = $this->fieldName($field);
+            } else {
+                $join = $this->join($field);
+                $this->selects[] = $join . '.`value_int`)';
+                $this->selects[] = $join . '.`value_float`)';
+                $this->selects[] = $join . '.`value_string`)';
+            }
+        }
+        return $this;
+    }
+
+    public function selectMax(string $field, string $alias, string $valueType = 'value_int'): MysqlQueryBuilder
+    {
+        if (in_array($field, $this->getBaseColumns())) {
+            $this->selects[] = 'max(' . $this->fieldName($field) . ') AS `' . $alias . '`';
+        } else {
+            $join = $this->join($field);
+            $this->selects[] = 'max(' . $join . '.`' . $valueType . '`) AS `' . $alias . '`';
         }
         return $this;
     }
@@ -120,7 +138,7 @@ class MysqlQueryBuilder
 
         $this->groupBy = match($this->name) {
                         'node' => ' GROUP BY ' . $this->fieldName('id') . ' ',
-                        'edge' => ' GROUP BY ' . $this->fieldName('parent_id') . ', ' . $this->fieldName('child_id') . ' '
+                        'edge' => ' GROUP BY ' . $this->fieldName('_parent_id') . ', ' . $this->fieldName('_child_id') . ' '
                     };
         return $this;
     }
@@ -203,7 +221,7 @@ class MysqlQueryBuilder
     {
         return match($this->name) {
             'node' => ['created_at', 'updated_at', 'deleted_at', 'id'],
-            'edge' => ['created_at', 'updated_at', 'deleted_at', 'id', '_created_at', '_updated_at', '_deleted_at']
+            'edge' => ['created_at', 'updated_at', 'deleted_at', 'id', '_parent_id', '_child_id', '_parent', '_child', '_created_at', '_updated_at', '_deleted_at']
         };
     }
 

@@ -35,6 +35,14 @@ class DB
         return $result;
     }
 
+    public static function getMax(string $name, string $key): float|bool|int|string
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->getMax($name, $key);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
     public static function findAll(string $name, array $args): stdClass
     {
         StopWatch::start(__METHOD__);

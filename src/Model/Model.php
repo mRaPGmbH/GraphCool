@@ -1,7 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
+
+use stdClass;
 
 class Model
 {
@@ -14,8 +17,14 @@ class Model
         $this->deleted_at = Field::deletedAt();
     }
 
-    public function beforeInsert(){}
+    public function beforeInsert(array $data): array
+    {
+        return $data;
+    }
 
-    public function beforeUpdate(){}
+    public function beforeUpdate(array $data): array
+    {
+        return $data;
+    }
 
 }

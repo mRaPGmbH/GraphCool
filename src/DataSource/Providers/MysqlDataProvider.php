@@ -139,6 +139,30 @@ class MysqlDataProvider extends DataProvider
         return $result;
     }
 
+    public function getMax(string $name, string $key): float|bool|int|string
+    {
+        $classname = '\\App\\Models\\'. $name;
+        $model = new $classname();
+        $query = new MysqlQueryBuilder($model, $name);
+
+        $valueType = match ($model->$key->type) {
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 'value_int',
+            Type::FLOAT, Field::DECIMAL => 'value_float',
+            default => 'value_string'
+        };
+
+        $query->selectMax($key, 'max', $valueType)
+            ->withTrashed();
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getParameters());
+        $result = $statement->fetch(PDO::FETCH_OBJ);
+
+        $property = new stdClass();
+        $property->$valueType = $result->max;
+
+        return $this->convertDatabaseTypeToOutput($model->$key, $property);
+    }
+
     public function loadAll(string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
     {
         $result = [];
@@ -200,6 +224,7 @@ class MysqlDataProvider extends DataProvider
         $this->insertNode($id, $name);
 
         $model = $this->getModel($name);
+        $data = $model->beforeInsert($data);
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $data) && (
                     $item instanceof Relation ||
