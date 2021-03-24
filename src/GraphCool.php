@@ -25,6 +25,14 @@ class GraphCool
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
             $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
+        } catch (JsonException $e) {
+            // TODO: be more precise about which errors to catch where
+            $result = [
+                'errors' => [[
+                    'message' => $e->getMessage(),
+                    'e'       => print_r($e, true),
+                ]]
+            ];
         } catch (Throwable $e) {
             $sentryDsn = Env::get('SENTRY_DSN');
             if ($sentryDsn !== null && function_exists("\Sentry\init")) {

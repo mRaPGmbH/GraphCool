@@ -222,7 +222,8 @@ class MysqlQueryBuilder
     protected function getFieldType(string $property): string
     {
         if (str_starts_with($property, '_')) {
-            $field = $this->relation->$property;
+            $key = substr($property, 1);
+            $field = $this->relation->$key;
         } else {
             $field = $this->model->$property;
         }

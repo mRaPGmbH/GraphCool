@@ -31,7 +31,7 @@ class ColumnType extends EnumType
         ksort($values);
         $config = [
             'name' => $name,
-            'description' => 'Allowed column names for the `where` argument on the query `' . lcfirst($typeName). 's`.',
+            'description' => 'List of column names of `' . $typeName. '` type.',
             'values' => $values
         ];
         parent::__construct($config);

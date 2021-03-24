@@ -51,7 +51,7 @@ class EdgeColumnType extends EnumType
         ksort($values);
         $config = [
             'name' => $name,
-            'description' => 'Allowed column names for the `where` argument on the relation `' . $names[0] . '.' . $names[1] . 's`.',
+            'description' => 'Column names of type `' . $relation->name . '` and pivot properties (prefixed with underscore) of the relation `' . $names[0] . '.' . $names[1] . '`.',
             'values' => $values
         ];
         parent::__construct($config);

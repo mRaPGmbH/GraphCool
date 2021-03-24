@@ -44,7 +44,8 @@ class ModelType extends ObjectType
                     $args = [
                         'first'=> Type::int(),
                         'page' => Type::int(),
-                        'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
+//                        'where' => $typeLoader->load('_' . $field->name . 'WhereConditions'),
+                        'where' => $typeLoader->load('_' . $name . '__' . $key . 'EdgeWhereConditions'),
                         'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause', null, $this))),
                         'search' => Type::string(),
                         'result' => $typeLoader->load('_Result'),
