@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\QueryBuilders;
 
+use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use RuntimeException;
@@ -14,7 +16,8 @@ class MysqlQueryBuilder
     protected array $selects;
     protected array $orderBys = [];
     protected string $resultType;
-    protected Model|Relation $base;
+    protected Model $model;
+    protected Relation $relation;
     protected string $limit = '';
     protected array $parameters = [];
     protected array $where = [];
@@ -27,6 +30,7 @@ class MysqlQueryBuilder
         if ($base instanceof Model) {
             $this->name = 'node';
             $this->where[] = $this->fieldName('model') . ' = '. $this->parameter($name);
+            $this->model = $base;
         } elseif ($base instanceof Relation) {
             $this->name = 'edge';
             if ($base->type === Relation::HAS_ONE || $base->type === Relation::HAS_MANY) {
@@ -40,10 +44,12 @@ class MysqlQueryBuilder
             } else {
                 throw new RuntimeException('Unknown relation type: ' .  $base->type);
             }
+            $this->relation = $base;
+            $classname = $base->classname;
+            $this->model = new $classname();
         } else {
             throw new RuntimeException('Base must be a Model or Relation, but got ' . get_class($base) . ' instead.');
         }
-        $this->base = $base;
         $this->resultType = ' AND ' . $this->fieldName('deleted_at') . ' IS NULL';
     }
 
@@ -173,6 +179,7 @@ class MysqlQueryBuilder
         $sql .= ' WHERE ' . implode(' AND ', $this->where);
         $sql .= $this->resultType;
         $sql .= $this->groupBy;
+        //var_dump($sql);
         return $sql;
     }
 
@@ -189,23 +196,18 @@ class MysqlQueryBuilder
         }
         $sqls = [];
         foreach ($wheres as $where) {
-            if (isset($where['operator']) || isset($where['value']) || isset($where['column'])) {
+            if (isset($where['column'])) {
                 if (in_array($where['column'], $this->getBaseColumns())) {
-                    if (isset($where['value'])) {
-                        $sqls[] = $this->fieldName($where['column']) . ' ' . $where['operator'] . ' ' . $this->parameter($where['value']);
-                    } else {
-                        $sqls[] = $this->fieldName($where['column']) . ' ' . $where['operator'];
-                    }
+                    $sql = $this->fieldName($where['column']);
                 } else {
-                    $join = $this->join($where['column']);
-                    if (is_bool($where['value']) || is_int($where['value'])) {
-                        $sqls[] = $join . '.`value_int` ' . $where['operator'] . ' ' . $this->parameter((int)$where['value']);
-                    } elseif (is_float($where['value'])) {
-                        $sqls[] = $join . '.`value_float` ' . $where['operator'] . ' ' . $this->parameter((float)$where['value']);
-                    } else {
-                        $sqls[] = $join . '.`value_string` ' . $where['operator'] . ' ' . $this->parameter((string)$where['value']);
-                    }
+                    $sql = $this->join($where['column']);
+                    $sql .= '.' . $this->getFieldType($where['column']);
                 }
+                $sql .= ' ' . $where['operator'] ?? '=';
+                if (isset($where['value'])) {
+                    $sql .= ' ' . $this->parameter($where['value']);
+                }
+                $sqls[] = $sql;
             }
             if (isset($where['OR'])) {
                 $sqls[] = '(' . $this->whereRecursive($where['OR'], 'OR') .')';
@@ -215,6 +217,20 @@ class MysqlQueryBuilder
             }
         }
         return implode(' ' . $mode . ' ', $sqls);
+    }
+
+    protected function getFieldType(string $property): string
+    {
+        if (str_starts_with($property, '_')) {
+            $field = $this->relation->$property;
+        } else {
+            $field = $this->model->$property;
+        }
+        return match($field->type) {
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL => '`value_int`',
+            Type::FLOAT => '`value_float`',
+            default => '`value_string`'
+        };
     }
 
     protected function getBaseColumns(): array
