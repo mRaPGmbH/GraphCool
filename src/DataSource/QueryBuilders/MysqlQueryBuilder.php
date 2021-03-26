@@ -7,6 +7,7 @@ use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use RuntimeException;
 
 class MysqlQueryBuilder
@@ -27,11 +28,13 @@ class MysqlQueryBuilder
 
     public function __construct(Model|Relation $base, string $name)
     {
+        $this->where[] = '`node`.`tenant_id` = ' . $this->parameter(JwtAuthentication::tenantId());
         if ($base instanceof Model) {
             $this->name = 'node';
             $this->where[] = $this->fieldName('model') . ' = '. $this->parameter($name);
             $this->model = $base;
         } elseif ($base instanceof Relation) {
+            $this->where[] = '`edge`.`tenant_id` = ' . $this->parameter(JwtAuthentication::tenantId());
             $this->name = 'edge';
             if ($base->type === Relation::HAS_ONE || $base->type === Relation::HAS_MANY) {
                 $this->where[] = $this->fieldName('_parent_id') . ' = '. $this->parameter($name);

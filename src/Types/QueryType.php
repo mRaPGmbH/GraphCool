@@ -14,6 +14,7 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\FileExport;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ModelFinder;
 use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
@@ -120,6 +121,8 @@ class QueryType extends ObjectType
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
     {
+        JwtAuthentication::authenticate();
+
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
         }

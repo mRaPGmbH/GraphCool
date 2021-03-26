@@ -11,7 +11,7 @@ class ModelFinder
     {
         if (!isset(static::$models)) {
             StopWatch::start(__METHOD__);
-            $files = scandir(__DIR__ . '/../../../../../app/Models');
+            $files = scandir(self::rootPath() . '/app/Models');
             $classes = array_map(function($file){
                 return str_replace('.php', '', $file);
             }, $files);
@@ -22,6 +22,11 @@ class ModelFinder
             StopWatch::stop(__METHOD__);
         }
         return static::$models;
+    }
+
+    public static function rootPath(): string
+    {
+        return dirname($_SERVER['SCRIPT_FILENAME'], 2);
     }
 
 }

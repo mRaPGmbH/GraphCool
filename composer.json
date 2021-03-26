@@ -29,10 +29,14 @@
     "ramsey/uuid": "^4.1",
     "box/spout": "^3.1",
     "mll-lab/graphql-php-scalars": "^4.0",
-    "nesbot/carbon": "^2.46"
+    "nesbot/carbon": "^2.46",
+    "lcobucci/jwt": "^4.1"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"
+  },
+  "suggest": {
+    "sentry/sdk": "^3.1"
   },
   "scripts": {
     "test": "phpunit"

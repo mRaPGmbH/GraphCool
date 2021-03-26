@@ -12,6 +12,7 @@ use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\Env;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
 use Throwable;
 

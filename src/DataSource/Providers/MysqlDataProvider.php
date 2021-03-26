@@ -12,6 +12,7 @@ use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Utils\Env;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
 use PDO;
@@ -35,6 +36,7 @@ class MysqlDataProvider extends DataProvider
 
         $sql = 'CREATE TABLE IF NOT EXISTS `node` (
               `id` char(36) NOT NULL COMMENT \'uuid\',
+              `tenant_id` int(11) NOT NULL,
               `model` varchar(255) NOT NULL,
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -61,6 +63,7 @@ class MysqlDataProvider extends DataProvider
         $sql = 'CREATE TABLE IF NOT EXISTS `edge` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
               `child_id` char(36) NOT NULL COMMENT \'node.id\',
+              `tenant_id` int(11) NOT NULL,
               `parent` varchar(255) NOT NULL,
               `child` varchar(255) NOT NULL,
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -376,7 +379,7 @@ class MysqlDataProvider extends DataProvider
 
     protected function fetchNode(string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
+        $sql = 'SELECT * FROM `node` WHERE `node`.`tenant_id` = :tenant_id AND `id` = :id ';
         $sql .= match($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
             'WITH_TRASHED' => '',
@@ -384,7 +387,10 @@ class MysqlDataProvider extends DataProvider
         };
 
         $statement = $this->statement($sql);
-        $statement->execute([':id' => $id]);
+        $statement->execute([
+            ':tenant_id' => JwtAuthentication::tenantId(),
+            ':id' => $id
+        ]);
         $node = $statement->fetch(PDO::FETCH_OBJ);
         if ($node === false) {
             return null;
@@ -513,9 +519,10 @@ class MysqlDataProvider extends DataProvider
 
     protected function fetchEdge(string $parentId, string $childId): ?stdClass
     {
-        $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
+        $sql = 'SELECT * FROM `edge` WHERE `tenant_id` = :tenant_id AND `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
         $statement = $this->statement($sql);
         $statement->execute([
+            'tenant_id' => JwtAuthentication::tenantId(),
             'parent_id' => $parentId,
             'child_id' => $childId
         ]);
@@ -552,11 +559,12 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertNode(string $id, string $name): bool
     {
-        $sql = 'INSERT INTO `node` (`id`, `model`) VALUES (:id, :model)';
+        $sql = 'INSERT INTO `node` (`id`, `tenant_id`, `model`) VALUES (:id, :tenant_id, :model)';
         $statement = $this->statement($sql);
         return $statement->execute(
             [
                 ':id'    => $id,
+                ':tenant_id' => JwtAuthentication::tenantId(),
                 ':model' => $name
             ]
         );
@@ -564,14 +572,15 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertOrUpdateEdge(string $parentId, string $childId, string $parent, string $child): bool
     {
-        $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `parent`, `child`) VALUES 
-            (:parent_id, :child_id, :parent, :child)
+        $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `tenant_id`, `parent`, `child`) VALUES 
+            (:parent_id, :child_id, :tenant_id, :parent, :child)
             ON DUPLICATE KEY UPDATE `deleted_at` = null';
         $statement = $this->statement($sql);
         return $statement->execute(
             [
                 ':parent_id' => $parentId,
                 ':child_id'  => $childId,
+                ':tenant_id' => JwtAuthentication::tenantId(),
                 ':parent'    => $parent,
                 ':child'     => $child,
             ]
@@ -639,9 +648,12 @@ class MysqlDataProvider extends DataProvider
 
     protected function updateNode(string $id): bool
     {
-        $sql = 'UPDATE node SET updated_at = now() WHERE id = :id';
+        $sql = 'UPDATE `node` SET `updated_at` = now() WHERE `tenant_id` = :tenant_id AND id = :id';
         $statement = $this->statement($sql);
-        return $statement->execute([':id' => $id]);
+        return $statement->execute([
+            ':id' => $id,
+            ':tenant_id' => JwtAuthentication::tenantId()
+        ]);
     }
 
     protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
@@ -673,23 +685,33 @@ class MysqlDataProvider extends DataProvider
 
     protected function deleteNode(string $id): bool
     {
-        $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` = :id';
+        $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `tenant_id` = :tenant_id AND `id` = :id';
         $statement = $this->statement($sql);
-        return $statement->execute([':id' => $id]);
+        return $statement->execute([
+            ':id' => $id,
+            ':tenant_id' => JwtAuthentication::tenantId()
+        ]);
     }
 
     protected function deleteEdgesForNodeId(string $id): bool
     {
-        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `parent_id` = :id1 OR `child_id` = :id2';
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `tenant_id` = :tenant_id AND `parent_id` = :id1 OR `child_id` = :id2';
         $statement = $this->statement($sql);
-        return $statement->execute([':id1' => $id, ':id2' => $id]);
+        return $statement->execute([
+            ':tenant_id' => JwtAuthentication::tenantId(),
+            ':id1' => $id,
+            ':id2' => $id
+        ]);
     }
 
     protected function restoreNode(string $id): bool
     {
-        $sql = 'UPDATE `node` SET `deleted_at` = NULL WHERE `id` = :id';
+        $sql = 'UPDATE `node` SET `deleted_at` = NULL WHERE `tenant_id` = :tenant_id AND `id` = :id';
         $statement = $this->statement($sql);
-        return $statement->execute([':id' => $id]);
+        return $statement->execute([
+            ':id' => $id,
+            ':tenant_id' => JwtAuthentication::tenantId()
+        ]);
     }
 
 }
