@@ -25,7 +25,7 @@ class JwtAuthentication
         $config = Configuration::forAsymmetricSigner(
             new Signer\Rsa\Sha256(),
             InMemory::empty(),
-            LocalFileReference::file(ModelFinder::rootPath() . '/jwtkey-public.pem')
+            LocalFileReference::file(ClassFinder::rootPath() . '/jwtkey-public.pem')
         );
 
         if (!isset($_SERVER['HTTP_AUTHENTICATION'])) {

@@ -1,10 +1,8 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
 
-use stdClass;
 
 class Model
 {

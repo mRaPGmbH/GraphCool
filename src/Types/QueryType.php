@@ -15,24 +15,31 @@ use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
-use Mrap\GraphCool\Utils\ModelFinder;
+use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
 
 class QueryType extends ObjectType
 {
 
+    protected array $customResolvers =  [];
+
     public function __construct(TypeLoader $typeLoader)
     {
         $fields = [];
-        foreach (ModelFinder::all() as $name) {
-            $classname = 'App\\Models\\' . $name;
+        foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
-
             $fields[lcfirst($name)] = $this->read($name, $typeLoader);
             $fields[lcfirst($name) . 's'] = $this->list($name, $typeLoader);
             $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
 //            $fields['previewImport' . $type->name . 's'] = $this->previewImport($type, $typeLoader);
+        }
+        foreach (ClassFinder::queries() as $name => $classname) {
+            $query = new $classname($typeLoader);
+            $fields[$query->name] = $query->config;
+            $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+                return $query->resolve($rootValue, $args, $context, $info);
+            };
         }
         ksort($fields);
         $config = [
@@ -119,14 +126,16 @@ class QueryType extends ObjectType
         ];
     }
 
-    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
+    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
         JwtAuthentication::authenticate();
 
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
         }
-
+        if (isset($this->customResolvers[$info->fieldName])) {
+            return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
+        }
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
                 return DB::findAll(substr($info->returnType->toString(), 1,-9), $args);

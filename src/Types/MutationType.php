@@ -15,18 +15,19 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
-use Mrap\GraphCool\Utils\ModelFinder;
+use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
 
 class MutationType extends ObjectType
 {
 
+    protected array $customResolvers =  [];
+
     public function __construct(TypeLoader $typeLoader)
     {
         $fields = [];
-        foreach (ModelFinder::all() as $name) {
-            $classname = 'App\\Models\\' . $name;
+        foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
             $fields['create' . $name] = $this->create($name, $model, $typeLoader);
             $fields['update' . $name] = $this->update($name, $model, $typeLoader);
@@ -34,6 +35,14 @@ class MutationType extends ObjectType
             $fields['restore' . $name] = $this->restore($name, $typeLoader);
             $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
         }
+        foreach (ClassFinder::mutations() as $name => $classname) {
+            $query = new $classname($typeLoader);
+            $fields[$query->name] = $query->config;
+            $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+                return $query->resolve($rootValue, $args, $context, $info);
+            };
+        }
+
         ksort($fields);
         $config = [
             'name'   => 'Mutation',
@@ -174,6 +183,10 @@ class MutationType extends ObjectType
 
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
+        }
+
+        if (isset($this->customResolvers[$info->fieldName])) {
+            return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
         }
 
         if (str_starts_with($info->fieldName, 'create')) {
