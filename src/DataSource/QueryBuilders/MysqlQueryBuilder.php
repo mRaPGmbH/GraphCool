@@ -160,6 +160,7 @@ class MysqlQueryBuilder
     public function toSql(): string
     {
         $sql = 'SELECT ' . implode(', ', $this->selects) . ' ' . $this->createSql();
+        $sql .= $this->groupBy;
         if (count($this->orderBys) > 0) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBys);
         }
@@ -181,7 +182,6 @@ class MysqlQueryBuilder
         $sql .= implode(' ', $this->joins);
         $sql .= ' WHERE ' . implode(' AND ', $this->where);
         $sql .= $this->resultType;
-        $sql .= $this->groupBy;
         //var_dump($sql);
         return $sql;
     }

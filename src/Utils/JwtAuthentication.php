@@ -28,14 +28,14 @@ class JwtAuthentication
             LocalFileReference::file(ClassFinder::rootPath() . '/jwtkey-public.pem')
         );
 
-        if (!isset($_SERVER['HTTP_AUTHENTICATION'])) {
-            throw new \RuntimeException('Authentication header is missing in request.');
+        if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            throw new \RuntimeException('Authorization header is missing in request.');
         }
-        if (!str_starts_with($_SERVER['HTTP_AUTHENTICATION'], 'Bearer ')) {
-            throw new \RuntimeException('Authentication header in request does not appear to be a JWT.');
+        if (!str_starts_with($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ')) {
+            throw new \RuntimeException('Authorization header in request does not appear to be a JWT.');
         }
 
-        $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHENTICATION'], 7));
+        $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
 
         $constraints = [];
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());

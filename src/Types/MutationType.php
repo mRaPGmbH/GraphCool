@@ -12,7 +12,6 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
