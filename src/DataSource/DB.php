@@ -67,6 +67,14 @@ class DB
         return $result;
     }
 
+    public static function updateAll(string $modelName, array $data): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->updateMany($modelName, $data);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
     public static function delete(string $modelName, string $id): ?stdClass
     {
         StopWatch::start(__METHOD__);

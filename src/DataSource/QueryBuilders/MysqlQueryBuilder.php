@@ -14,16 +14,19 @@ class MysqlQueryBuilder
 {
 
     protected string $name;
-    protected array $selects;
+    protected ?string $mode = null;
+    protected array $columns;
     protected array $orderBys = [];
     protected string $resultType;
     protected Model $model;
     protected Relation $relation;
     protected string $limit = '';
     protected array $parameters = [];
+    protected array $updateParameters = [];
     protected array $where = [];
     protected array $joins = [];
     protected string $groupBy = '';
+    protected string $sql;
 
 
     public function __construct(Model|Relation $base, string $name)
@@ -58,14 +61,54 @@ class MysqlQueryBuilder
 
     public function select(array $fields): MysqlQueryBuilder
     {
+        if ($this->mode !== null) {
+            throw new \RuntimeException('Cannot do SELECT on a query that\' already set to ' . $this->mode);
+        }
+        $this->mode = 'SELECT';
         foreach ($fields as $field) {
             if (in_array($field, $this->getBaseColumns())) {
-                $this->selects[] = $this->fieldName($field);
+                $this->columns[] = $this->fieldName($field);
             } else {
                 $join = $this->join($field);
-                $this->selects[] = $join . '.`value_int`)';
-                $this->selects[] = $join . '.`value_float`)';
-                $this->selects[] = $join . '.`value_string`)';
+                $this->columns[] = $join . '.`value_int`)';
+                $this->columns[] = $join . '.`value_float`)';
+                $this->columns[] = $join . '.`value_string`)';
+            }
+        }
+        return $this;
+    }
+
+    public function delete(): MysqlQueryBuilder
+    {
+        if ($this->mode !== null) {
+            throw new \RuntimeException('Cannot do DELETE on a query that\'s already set to ' . $this->mode);
+        }
+        $this->mode = 'DELETE';
+        return $this;
+    }
+
+    public function update(array $fieldValues): MysqlQueryBuilder
+    {
+        if ($this->mode !== null) {
+            throw new \RuntimeException('Cannot do UPDATE on a query that\' already set to ' . $this->mode);
+        }
+        $this->mode = 'UPDATE';
+        $this->columns[] = $this->fieldName('updated_at') . ' = now()';
+        foreach ($fieldValues as $field => $value) {
+            if (str_starts_with($field, '_')) {
+                continue;
+            }
+            if (in_array($field, $this->getBaseColumns())) {
+                $this->columns[] = $this->fieldName($field) . ' = ' . $this->updateParameter($value);
+            } else {
+                $join = $this->join($field);
+                if (is_int($value)) {
+                    $this->columns[] = $join . '.`value_int` = ' . $this->updateParameter($value);
+                } elseif (is_float($value)) {
+                    $this->columns[] = $join . '.`value_float` = ' . $this->updateParameter($value);
+                } else {
+                    $this->columns[] = $join . '.`value_string` = ' . $this->updateParameter($value);
+                }
             }
         }
         return $this;
@@ -73,11 +116,12 @@ class MysqlQueryBuilder
 
     public function selectMax(string $field, string $alias, string $valueType = 'value_int'): MysqlQueryBuilder
     {
+        $this->mode = 'SELECT';
         if (in_array($field, $this->getBaseColumns())) {
-            $this->selects[] = 'max(' . $this->fieldName($field) . ') AS `' . $alias . '`';
+            $this->columns[] = 'max(' . $this->fieldName($field) . ') AS `' . $alias . '`';
         } else {
             $join = $this->join($field);
-            $this->selects[] = 'max(' . $join . '.`' . $valueType . '`) AS `' . $alias . '`';
+            $this->columns[] = 'max(' . $join . '.`' . $valueType . '`) AS `' . $alias . '`';
         }
         return $this;
     }
@@ -157,9 +201,23 @@ class MysqlQueryBuilder
         return $this->parameters;
     }
 
+    public function getUpdateParameters(): array
+    {
+        return array_merge($this->parameters, $this->updateParameters);
+    }
+
     public function toSql(): string
     {
-        $sql = 'SELECT ' . implode(', ', $this->selects) . ' ' . $this->createSql();
+        return match($this->mode) {
+            'SELECT' => $this->toSelectSql(),
+            'UPDATE' => $this->toUpdateSql(),
+            'DELETE' => $this->toDeleteSql()
+        };
+    }
+
+    protected function toSelectSql(): string
+    {
+        $sql = 'SELECT ' . implode(', ', $this->columns) . ' ' . $this->createSql();
         $sql .= $this->groupBy;
         if (count($this->orderBys) > 0) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBys);
@@ -168,6 +226,21 @@ class MysqlQueryBuilder
         return $sql;
     }
 
+    protected function toDeleteSql(): string
+    {
+        throw new RuntimeException('not implemented yet'); // TODO
+    }
+
+    protected function toUpdateSql(): string
+    {
+        $sql = 'UPDATE `' . $this->name . '` ';
+        $sql .= implode(' ', $this->joins);
+        $sql .= ' SET ' . implode(', ', $this->columns);
+        $sql .= ' WHERE ' . implode(' AND ', $this->where);
+        return $sql;
+    }
+
+
     public function toCountSql(): string
     {
         return 'SELECT count(*) ' . $this->createSql();
@@ -175,15 +248,16 @@ class MysqlQueryBuilder
 
     protected function createSql(): string
     {
-        sort($this->where); // sort to optimize statement re-use
-        sort($this->selects);
+        if (!isset($this->sql)) {
+            sort($this->where); // sort to optimize statement re-use
+            sort($this->columns);
 
-        $sql = 'FROM `' . $this->name . '` ';
-        $sql .= implode(' ', $this->joins);
-        $sql .= ' WHERE ' . implode(' AND ', $this->where);
-        $sql .= $this->resultType;
-        //var_dump($sql);
-        return $sql;
+            $this->sql = 'FROM `' . $this->name . '` ';
+            $this->sql .= implode(' ', $this->joins);
+            $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
+            $this->sql .= $this->resultType;
+        }
+        return $this->sql;
     }
 
     protected function whereRecursive(array $wheres, string $mode = 'AND'): string
@@ -278,6 +352,12 @@ class MysqlQueryBuilder
     {
         $key = ':p' . count($this->parameters);
         $this->parameters[$key] = $value;
+        return $key;
+    }
+
+    protected function updateParameter($value) {
+        $key = ':u' . count($this->updateParameters);
+        $this->updateParameters[$key] = $value;
         return $key;
     }
 

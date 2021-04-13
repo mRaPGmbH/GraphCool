@@ -29,7 +29,8 @@ class MutationType extends ObjectType
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
             $fields['create' . $name] = $this->create($name, $model, $typeLoader);
-            $fields['update' . $name] = $this->update($name, $model, $typeLoader);
+            $fields['update' . $name] = $this->update($name, $typeLoader);
+            $fields['updateMany' . $name . 's'] = $this->updateMany($name, $typeLoader);
             $fields['delete' . $name] = $this->delete($name, $typeLoader);
             $fields['restore' . $name] = $this->restore($name, $typeLoader);
             $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
@@ -99,44 +100,29 @@ class MutationType extends ObjectType
         return $ret;
     }
 
-    protected function update(string $name, Model $model, TypeLoader $typeLoader): array
+    protected function update(string $name, TypeLoader $typeLoader): array
     {
-        $args = [
-            'id' => new nonNull(Type::id())
-        ];
-        /**
-         * @var string $key
-         * @var Field $field
-         */
-        foreach ($model as $key => $field) {
-            if ($field instanceof Relation) {
-                $relation = $field;
-                if ($relation->type === Relation::BELONGS_TO) {
-                    $args[$key] = $typeLoader->load('_' . $name . '__' . $key . 'Relation');
-                }
-                if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'Relation')));
-                }
-            }
-
-            if (!$field instanceof Field) {
-                continue;
-            }
-            if ($field->readonly === false) {
-                $args[$key] = $typeLoader->loadForField($field, $name . '__' . $key);
-            }
-        }
-        $ret = [
+        return [
             'type' => $typeLoader->load($name),
             'description' => 'Modify an existing ' .  $name . ' entry',
+            'args' => [
+                'id' => new nonNull(Type::id()),
+                '_timezone' => $typeLoader->load('_TimezoneOffset'),
+                'data' => new NonNull($typeLoader->load('_' . $name . 'Input')),
+            ]
         ];
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+    }
 
-        if (count($args) > 0) {
-            ksort($args);
-            $ret['args'] = $args;
-        }
-        return $ret;
+    protected function updateMany(string $name, TypeLoader $typeLoader): array
+    {
+        return [
+            'type' => $typeLoader->load('_UpdateManyResult'),
+            'description' => 'Modify multiple existing ' . $name . ' entries, using where.',
+            'args' => [
+                'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+                'data' => new NonNull($typeLoader->load('_' . $name . 'Input')),
+            ]
+        ];
     }
 
     protected function delete(string $name, TypeLoader $typeLoader): array
@@ -191,6 +177,9 @@ class MutationType extends ObjectType
         if (str_starts_with($info->fieldName, 'create')) {
             return DB::insert($info->returnType->toString(), $args);
         }
+        if (str_starts_with($info->fieldName, 'updateMany')) {
+            return DB::updateAll(substr($info->fieldName, 10, -1), $args);
+        }
         if (str_starts_with($info->fieldName, 'update')) {
             return DB::update($info->returnType->toString(), $args);
         }
@@ -223,7 +212,7 @@ class MutationType extends ObjectType
             $result->affected_ids = array_merge($result->inserted_ids, $result->updated_ids);
             return $result;
         }
-        throw new \Exception(print_r($info->fieldName, true));
+        throw new \RuntimeException(print_r($info->fieldName, true));
     }
 
 

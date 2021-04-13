@@ -21,6 +21,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ExportColumnType;
+use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Inputs\WhereInputType;
@@ -31,9 +32,9 @@ use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Objects\UpdateManyResult;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
-use Mrap\GraphCool\Types\Scalars\MixedType;
 use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\StopWatch;
@@ -61,6 +62,7 @@ class TypeLoader
         self::register('_Time', Time::class);
         self::register('_TimezoneOffset', TimezoneOffset::class);
         self::register('Mixed', MixedScalar::class);
+        self::register('_UpdateManyResult', UpdateManyResult::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
@@ -153,6 +155,9 @@ class TypeLoader
         }
         if (str_ends_with($name, 'Enum')) {
             return new DynamicEnumType($name, $this);
+        }
+        if (str_ends_with($name, 'Input')) {
+            return new ModelInputType($name, $this);
         }
 
         throw new \Exception('unhandled createSpecial: '.$name);

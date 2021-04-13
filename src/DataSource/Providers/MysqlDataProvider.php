@@ -108,8 +108,7 @@ class MysqlDataProvider extends DataProvider
         $offset = ($page - 1) * $limit;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
-        $classname = '\\App\\Models\\'. $name;
-        $model = new $classname();
+        $model = $this->getModel($name);
         $query = new MysqlQueryBuilder($model, $name);
 
         $query->select(['id'])
@@ -144,8 +143,7 @@ class MysqlDataProvider extends DataProvider
 
     public function getMax(string $name, string $key): float|bool|int|string
     {
-        $classname = '\\App\\Models\\'. $name;
-        $model = new $classname();
+        $model = $this->getModel($name);
         $query = new MysqlQueryBuilder($model, $name);
 
         $valueType = match ($model->$key->type) {
@@ -226,10 +224,11 @@ class MysqlDataProvider extends DataProvider
         $id = Uuid::uuid4()->toString();
         $this->insertNode($id, $name);
 
+        $updates = $data['data'] ?? [];
         $model = $this->getModel($name);
-        $data = $model->beforeInsert($data);
+        $updates = $model->beforeInsert($updates);
         foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $data) && (
+            if (!array_key_exists($key, $updates) && (
                     $item instanceof Relation ||
                     $item->null || in_array(
                             $item->type,
@@ -244,13 +243,13 @@ class MysqlDataProvider extends DataProvider
                 continue;
             }
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
-                $inputs = $data[$key];
+                $inputs = $updates[$key];
                 if ($item->type === Relation::BELONGS_TO) {
                     $inputs = array($inputs);
                 }
                 $this->insertOrUpdateBelongsRelation($item, $inputs, $id, $name);
             } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
+                $this->insertOrUpdateModelField($item, $updates[$key] ?? null, $id, $name, $key);
             }
         }
         return $this->load($name, $id);
@@ -260,21 +259,48 @@ class MysqlDataProvider extends DataProvider
     {
         $this->updateNode($data['id']);
         $model = $this->getModel($name);
+
+        $updates = $data['data'] ?? [];
         foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $data)) {
+            if (!array_key_exists($key, $updates)) {
                 continue;
             }
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
-                $inputs = $data[$key];
+                $inputs = $updates[$key];
                 if ($item->type === Relation::BELONGS_TO) {
                     $inputs = array($inputs);
                 }
                 $this->insertOrUpdateBelongsRelation($item, $inputs, $data['id'], $name);
             } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $data[$key], $data['id'], $name, $key);
+                $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
         return $this->load($name, $data['id']);
+    }
+
+    public function updateMany(string $name, array $data): stdClass
+    {
+        $model = $this->getModel($name);
+        $query = new MysqlQueryBuilder($model, $name);
+
+        $query->update($data['data'] ?? [])
+            ->where($data['where'] ?? null);
+
+        match($args['result'] ?? ResultType::DEFAULT) {
+            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            ResultType::WITH_TRASHED => $query->withTrashed(),
+            default => null
+        };
+
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        $result = new stdClass();
+        $result->updated_rows = (int)$statement->fetchColumn();
+
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getUpdateParameters());
+
+        return $result;
     }
 
     protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
