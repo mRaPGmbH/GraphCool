@@ -29,35 +29,43 @@ class MysqlQueryBuilder
     protected string $sql;
 
 
-    public function __construct(Model|Relation $base, string $name)
+    protected function __construct(){}
+
+    public static function forModel(Model $model, string $name): MysqlQueryBuilder
     {
-        $this->where[] = '`node`.`tenant_id` = ' . $this->parameter(JwtAuthentication::tenantId());
-        if ($base instanceof Model) {
-            $this->name = 'node';
-            $this->where[] = $this->fieldName('model') . ' = '. $this->parameter($name);
-            $this->model = $base;
-        } elseif ($base instanceof Relation) {
-            $this->where[] = '`edge`.`tenant_id` = ' . $this->parameter(JwtAuthentication::tenantId());
-            $this->name = 'edge';
-            if ($base->type === Relation::HAS_ONE || $base->type === Relation::HAS_MANY) {
-                $this->where[] = $this->fieldName('_parent_id') . ' = '. $this->parameter($name);
-                $this->where[] = $this->fieldName('_child') . ' = '. $this->parameter($base->name);
-                $this->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $this->fieldName('_child_id');
-            } elseif ($base->type === Relation::BELONGS_TO || $base->type === Relation::BELONGS_TO_MANY) {
-                $this->where[] = $this->fieldName('_child_id') . ' = '. $this->parameter($name);
-                $this->where[] = $this->fieldName('_parent') . ' = '. $this->parameter($base->name);
-                $this->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $this->fieldName('_parent_id');
-            } else {
-                throw new RuntimeException('Unknown relation type: ' .  $base->type);
-            }
-            $this->relation = $base;
-            $classname = $base->classname;
-            $this->model = new $classname();
-        } else {
-            throw new RuntimeException('Base must be a Model or Relation, but got ' . get_class($base) . ' instead.');
-        }
-        $this->resultType = ' AND ' . $this->fieldName('deleted_at') . ' IS NULL';
+        $builder = new MysqlQueryBuilder();
+        $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
+        $builder->name = 'node';
+        $builder->where[] = $builder->fieldName('model') . ' = '. $builder->parameter($name);
+        $builder->model = $model;
+        $builder->resultType = ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
+        return $builder;
     }
+
+    public static function forRelation(Relation $relation, array $parentIds): MysqlQueryBuilder
+    {
+        $builder = new MysqlQueryBuilder();
+        $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
+        $builder->where[] = '`edge`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
+        $builder->name = 'edge';
+        if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
+            $builder->where[] = $builder->fieldName('_parent_id') . ' IN '. $builder->parameterArray($parentIds);
+            $builder->where[] = $builder->fieldName('_child') . ' = '. $builder->parameter($relation->name);
+            $builder->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $builder->fieldName('_child_id');
+        } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
+            $builder->where[] = $builder->fieldName('_child_id') . ' IN '. $builder->parameterArray($parentIds);
+            $builder->where[] = $builder->fieldName('_parent') . ' = '. $builder->parameter($relation->name);
+            $builder->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $builder->fieldName('_parent_id');
+        } else {
+            throw new RuntimeException('Unknown relation type: ' .  $relation->type);
+        }
+        $builder->relation = $relation;
+        $classname = $relation->classname;
+        $builder->model = new $classname();
+        $builder->resultType = ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
+        return $builder;
+    }
+
 
     public function select(array $fields): MysqlQueryBuilder
     {
@@ -90,7 +98,7 @@ class MysqlQueryBuilder
     public function update(array $fieldValues): MysqlQueryBuilder
     {
         if ($this->mode !== null) {
-            throw new \RuntimeException('Cannot do UPDATE on a query that\' already set to ' . $this->mode);
+            throw new \RuntimeException('Cannot do UPDATE on a query that\'s already set to ' . $this->mode);
         }
         $this->mode = 'UPDATE';
         $this->columns[] = $this->fieldName('updated_at') . ' = now()';
@@ -106,7 +114,7 @@ class MysqlQueryBuilder
                     $this->columns[] = $join . '.`value_int` = ' . $this->updateParameter($value);
                 } elseif (is_float($value)) {
                     $this->columns[] = $join . '.`value_float` = ' . $this->updateParameter($value);
-                } else {
+                } elseif (is_string($value)) {
                     $this->columns[] = $join . '.`value_string` = ' . $this->updateParameter($value);
                 }
             }
@@ -348,11 +356,20 @@ class MysqlQueryBuilder
         return $name;
     }
 
-    protected function parameter($value)
+    protected function parameter($value): string
     {
         $key = ':p' . count($this->parameters);
         $this->parameters[$key] = $value;
         return $key;
+    }
+
+    protected function parameterArray(array $array): string
+    {
+        $params = [];
+        foreach ($array as $value) {
+            $params[] = $this->parameter($value);
+        }
+        return '(' . implode(',', $params) . ')';
     }
 
     protected function updateParameter($value) {

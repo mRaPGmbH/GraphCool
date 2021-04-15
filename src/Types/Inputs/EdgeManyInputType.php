@@ -6,23 +6,26 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class EdgeInputType extends InputObjectType
+class EdgeManyInputType extends InputObjectType
 {
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $names = explode('__', substr($name, 1, -8), 2);
+        $names = explode('__', substr($name, 1, -12), 2);
         $key = $names[1];
 
         $classname = 'App\\Models\\' . $names[0];
         $model = new $classname();
+        /** @var Relation $relation */
         $relation = $model->$key;
+
         $fields = [
-            'id' => new NonNull(Type::id())
+            'where' => new NonNull($typeLoader->load('_' . $relation->name . 'WhereConditions')),
+            'mode' => $typeLoader->load('_RelationUpdateMode'),
         ];
         foreach ($relation as $fieldKey => $field)
         {
@@ -38,7 +41,7 @@ class EdgeInputType extends InputObjectType
         }
         $config = [
             'name' => $name,
-            'description' => 'Input for ' . $names[0] . '.' . $key . ' relations.',
+            'description' => 'Input for many ' . $names[0] . '.' . $key . ' relations using where.',
             'fields' => $fields,
         ];
         parent::__construct($config);

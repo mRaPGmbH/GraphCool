@@ -12,12 +12,14 @@ use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\ColumnType;
 use Mrap\GraphCool\Types\Inputs\EdgeExportColumnType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
+use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ExportColumnType;
@@ -63,6 +65,7 @@ class TypeLoader
         self::register('_TimezoneOffset', TimezoneOffset::class);
         self::register('Mixed', MixedScalar::class);
         self::register('_UpdateManyResult', UpdateManyResult::class);
+        self::register('_RelationUpdateMode', RelationUpdateModeEnum::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
@@ -149,6 +152,9 @@ class TypeLoader
         }
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name, $this);
+        }
+        if (str_ends_with($name, 'ManyRelation')) {
+            return new EdgeManyInputType($name, $this);
         }
         if (str_ends_with($name, 'Relation')) {
             return new EdgeInputType($name, $this);

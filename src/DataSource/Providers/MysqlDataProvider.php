@@ -109,7 +109,7 @@ class MysqlDataProvider extends DataProvider
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
         $model = $this->getModel($name);
-        $query = new MysqlQueryBuilder($model, $name);
+        $query = MysqlQueryBuilder::forModel($model, $name);
 
         $query->select(['id'])
             ->limit($limit, $offset)
@@ -144,7 +144,7 @@ class MysqlDataProvider extends DataProvider
     public function getMax(string $name, string $key): float|bool|int|string
     {
         $model = $this->getModel($name);
-        $query = new MysqlQueryBuilder($model, $name);
+        $query = MysqlQueryBuilder::forModel($model, $name);
 
         $valueType = match ($model->$key->type) {
             Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 'value_int',
@@ -224,11 +224,10 @@ class MysqlDataProvider extends DataProvider
         $id = Uuid::uuid4()->toString();
         $this->insertNode($id, $name);
 
-        $updates = $data['data'] ?? [];
         $model = $this->getModel($name);
-        $updates = $model->beforeInsert($updates);
+        $data = $model->beforeInsert($data);
         foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $updates) && (
+            if (!array_key_exists($key, $data) && (
                     $item instanceof Relation ||
                     $item->null || in_array(
                             $item->type,
@@ -243,13 +242,17 @@ class MysqlDataProvider extends DataProvider
                 continue;
             }
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
-                $inputs = $updates[$key];
+                $inputs = $data[$key];
                 if ($item->type === Relation::BELONGS_TO) {
-                    $inputs = array($inputs);
+                    $parentId = $inputs['id'];
+                    unset($inputs['id']);
+                    $this->deleteAllRelations([$id], $item->name);
+                    $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$id], $name);
+                } else {
+                    $this->insertOrUpdateBelongsManyRelation($item, $inputs, [$id], $name);
                 }
-                $this->insertOrUpdateBelongsRelation($item, $inputs, $id, $name);
             } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $updates[$key] ?? null, $id, $name, $key);
+                $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
             }
         }
         return $this->load($name, $id);
@@ -268,9 +271,13 @@ class MysqlDataProvider extends DataProvider
             if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
                 $inputs = $updates[$key];
                 if ($item->type === Relation::BELONGS_TO) {
-                    $inputs = array($inputs);
+                    $parentId = $inputs['id'];
+                    unset($inputs['id']);
+                    $this->deleteAllRelations([$data['id']], $item->name);
+                    $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$data['id']], $name);
+                } else {
+                    $this->insertOrUpdateBelongsManyRelation($item, $inputs, [$data['id']], $name);
                 }
-                $this->insertOrUpdateBelongsRelation($item, $inputs, $data['id'], $name);
             } elseif ($item instanceof Field) {
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
@@ -281,9 +288,43 @@ class MysqlDataProvider extends DataProvider
     public function updateMany(string $name, array $data): stdClass
     {
         $model = $this->getModel($name);
-        $query = new MysqlQueryBuilder($model, $name);
 
-        $query->update($data['data'] ?? [])
+        $updateData = $data['data'] ?? [];
+        $updates = [];
+        $relations = [];
+        foreach ($model as $key => $item) {
+            if (!isset($updateData[$key])) {
+                continue;
+            }
+            if ($item instanceof Field) {
+                $updates[$key] = $updateData[$key];
+            } elseif ($item instanceof Relation) {
+                $relations[$key] = $updateData[$key];
+            }
+        }
+
+        if (count($relations) > 0) {
+            $ids = [];
+            $query = MysqlQueryBuilder::forModel($model, $name);
+            $query->select(['id'])
+                ->where($data['where'] ?? null);
+            match($args['result'] ?? ResultType::DEFAULT) {
+                ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+                ResultType::WITH_TRASHED => $query->withTrashed(),
+                default => null
+            };
+            $statement = $this->statement($query->toSql());
+            $statement->execute($query->getUpdateParameters());
+            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+                $ids[] = $row->id;
+            }
+            foreach ($relations as $key => $relationData) {
+                $this->insertOrUpdateBelongsManyRelation($model->$key, $relationData, $ids, $key);
+            }
+        }
+
+        $query = MysqlQueryBuilder::forModel($model, $name);
+        $query->update($updates)
             ->where($data['where'] ?? null);
 
         match($args['result'] ?? ResultType::DEFAULT) {
@@ -319,20 +360,16 @@ class MysqlDataProvider extends DataProvider
         }
     }
 
-    protected function insertOrUpdateBelongsRelation(Relation $relation, array $data, string $childId, string $childName): void
+    protected function insertOrUpdateBelongsRelation(Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
     {
-        $keep = [];
-        foreach ($data as $row) {
-            $parentId = $row['id'];
-            $keep[] = '\'' . $parentId . '\'';
-            unset($row['id']);
+        foreach ($childIds as $childId) {
             $this->insertOrUpdateEdge($parentId, $childId, $relation->name, $childName);
             foreach ($relation as $key => $field)
             {
-                if (!isset($row[$key])) {
+                if (!isset($data[$key])) {
                     continue;
                 }
-                $value = $this->convertInputTypeToDatabase($field, $row[$key]);
+                $value = $this->convertInputTypeToDatabase($field, $data[$key]);
                 if (is_int($value)) {
                     $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $value, null, null);
                 } elseif (is_float($value)) {
@@ -342,14 +379,74 @@ class MysqlDataProvider extends DataProvider
                 }
             }
         }
-        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `child_id` = :child_id';
-        if (count($keep) > 0) {
-            $sql .= ' AND parent_id NOT IN (' . implode(',', $keep) . ')';
+    }
+
+    protected function insertOrUpdateBelongsManyRelation(Relation $relation, array $data, array $childIds, string $childName): void
+    {
+        $mode = $data['mode'] ?? 'ADD';
+        if ($mode === 'REPLACE') {
+            $this->deleteAllRelations($childIds, $relation->name);
         }
+        $classname = $relation->classname;
+        $model = new $classname();
+        $query = MysqlQueryBuilder::forModel($model, $relation->name);
+        $query->select(['id'])
+            ->where($data['where'] ?? []);
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getParameters());
+        if ($mode === 'REMOVE') {
+            $ids = [];
+            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+                $ids[] = $row->id;
+            }
+            $this->deleteRelations($childIds, $ids);
+        } else {
+            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+                $this->insertOrUpdateBelongsRelation($relation, $data['data'] ?? [], $row->id, $childIds, $childName);
+            }
+        }
+    }
+
+    protected function deleteAllRelations(array $childIds, string $parentName): void
+    {
+        if (count($childIds) === 0) {
+            return;
+        }
+        $params = [];
+        $i = 1;
+        foreach ($childIds as $childId) {
+            $params[':child_id' . $i++] = $childId;
+        }
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `child_id` IN ';
+        $sql .= '(' . implode(',', array_keys($params)). ') ';
+        $sql .= ' AND parent = :parent';
+        $params[':parent'] = $parentName;
+
         $statement = $this->statement($sql);
-        $statement->execute([
-            ':child_id' => $childId
-        ]);
+        $statement->execute($params);
+    }
+
+    protected function deleteRelations(array $childIds, array $parentIds): void
+    {
+        if (count($childIds) === 0 || count($parentIds) === 0) {
+            return;
+        }
+        $params = [];
+        $i = 1;
+        foreach ($childIds as $childId) {
+            $params[':child_id' . $i++] = $childId;
+        }
+        $params2 = [];
+        $i = 1;
+        foreach ($parentIds as $parentId) {
+            $params2[':parent_id' . $i++] = $parentId;
+        }
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `child_id` IN ';
+        $sql .= '(' . implode(',', array_keys($params)) . ') ';
+        $sql .= ' AND `parent_id` IN (' . implode(',', array_keys($params2)) . ')';
+
+        $statement = $this->statement($sql);
+        $statement->execute(array_merge($params, $params2));
     }
 
     protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass
@@ -500,7 +597,7 @@ class MysqlDataProvider extends DataProvider
         $edges = [];
 
 
-        $query = new MysqlQueryBuilder($relation, $id);
+        $query = MysqlQueryBuilder::forRelation($relation, [$id]);
         $query->select(['_child_id', '_parent_id'])->limit($limit, $offset)->where($whereEdge)->whereRelated($whereNode)->orderBy($orderBy)->search($search);
         match($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
