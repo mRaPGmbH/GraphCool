@@ -62,7 +62,8 @@ class MysqlQueryBuilder
         $builder->relation = $relation;
         $classname = $relation->classname;
         $builder->model = new $classname();
-        $builder->resultType = ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
+        $builder->resultType = ' AND ' . $builder->fieldName('_deleted_at') . ' IS NULL';
+        $builder->resultType .= ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
         return $builder;
     }
 
@@ -166,6 +167,9 @@ class MysqlQueryBuilder
     public function onlySoftDeleted(): MysqlQueryBuilder
     {
         $this->resultType = ' AND ' . $this->fieldName('deleted_at') . ' IS NOT NULL';
+        if ($this->mode === 'edge') {
+            $this->resultType .= ' AND ' . $this->fieldName('_deleted_at') . ' IS NOT NULL';
+        }
         return $this;
     }
 

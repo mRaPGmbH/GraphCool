@@ -282,7 +282,7 @@ class MysqlDataProvider extends DataProvider
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
-        return $this->load($name, $data['id']);
+        return $this->load($name, $data['id'], ResultType::WITH_TRASHED);
     }
 
     public function updateMany(string $name, array $data): stdClass
@@ -364,12 +364,18 @@ class MysqlDataProvider extends DataProvider
     {
         foreach ($childIds as $childId) {
             $this->insertOrUpdateEdge($parentId, $childId, $relation->name, $childName);
+            /** @var Field $field */
             foreach ($relation as $key => $field)
             {
                 if (!isset($data[$key])) {
-                    continue;
+                    if (($field->default ?? null) !== null) {
+                        $value = $this->convertInputTypeToDatabase($field, $field->default);
+                    } else {
+                        continue;
+                    }
+                } else {
+                    $value = $this->convertInputTypeToDatabase($field, $data[$key]);
                 }
-                $value = $this->convertInputTypeToDatabase($field, $data[$key]);
                 if (is_int($value)) {
                     $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $value, null, null);
                 } elseif (is_float($value)) {
@@ -609,9 +615,9 @@ class MysqlDataProvider extends DataProvider
         $statement->execute($query->getParameters());
 
         foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $edgeIds) {
-            $edge = $this->fetchEdge($edgeIds->parent_id, $edgeIds->child_id);
+            $edge = $this->fetchEdge($edgeIds->parent_id, $edgeIds->child_id, $resultType);
             if ($edge === null) {
-                continue;
+                continue; // TODO: throw exception? this should not happen...
             }
             $properties = $this->convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
             foreach ($properties as $key => $value) {
@@ -640,9 +646,15 @@ class MysqlDataProvider extends DataProvider
         return $edges;
     }
 
-    protected function fetchEdge(string $parentId, string $childId): ?stdClass
+    protected function fetchEdge(string $parentId, string $childId, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        $sql = 'SELECT * FROM `edge` WHERE `tenant_id` = :tenant_id AND `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
+        $sql = 'SELECT * FROM `edge` WHERE `tenant_id` = :tenant_id AND `parent_id` = :parent_id AND `child_id` = :child_id ';
+        $sql .= match($resultType) {
+            'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
+            'WITH_TRASHED' => '',
+            default => 'AND `deleted_at` IS NULL ',
+        };
+
         $statement = $this->statement($sql);
         $statement->execute([
             'tenant_id' => JwtAuthentication::tenantId(),
