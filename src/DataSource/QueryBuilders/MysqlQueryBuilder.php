@@ -229,6 +229,7 @@ class MysqlQueryBuilder
 
     protected function toSelectSql(): string
     {
+        sort($this->columns); // sort to optimize statement re-use
         $sql = 'SELECT ' . implode(', ', $this->columns) . ' ' . $this->createSql();
         $sql .= $this->groupBy;
         if (count($this->orderBys) > 0) {
@@ -262,8 +263,6 @@ class MysqlQueryBuilder
     {
         if (!isset($this->sql)) {
             sort($this->where); // sort to optimize statement re-use
-            sort($this->columns);
-
             $this->sql = 'FROM `' . $this->name . '` ';
             $this->sql .= implode(' ', $this->joins);
             $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
@@ -293,8 +292,12 @@ class MysqlQueryBuilder
                     $sql .= '.' . $this->getFieldType($where['column']);
                 }
                 $sql .= ' ' . $where['operator'] ?? '=';
-                if (isset($where['value'])) {
-                    $sql .= ' ' . $this->parameter($where['value']);
+                if ($where['operator'] !== 'IS NULL' && $where['operator'] !== 'IS NOT NULL') {
+                    if ($where['operator'] === 'IN' || $where['operator'] === 'NOT IN') {
+                        $sql .= ' ' . $this->parameterArray($where['value']);
+                    } else {
+                        $sql .= ' ' . $this->parameter($where['value']);
+                    }
                 }
                 $sqls[] = $sql;
             }

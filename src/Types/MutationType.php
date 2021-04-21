@@ -162,7 +162,7 @@ class MutationType extends ObjectType
         ];
     }
 
-    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): ?stdClass
+    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
         JwtAuthentication::authenticate();
 

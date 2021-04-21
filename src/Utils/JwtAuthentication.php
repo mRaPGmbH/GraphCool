@@ -56,12 +56,17 @@ class JwtAuthentication
         if (!isset(static::$claims['tid'])) {
             throw new \RuntimeException('Tenant ID (tid) is missing from JWT.');
         }
-
+        static::$claims['tid'] = (string) static::$claims['tid'];
     }
 
-    public static function tenantId(): ?int
+    public static function tenantId(): ?string
     {
         return static::$claims['tid'] ?? null;
+    }
+
+    public static function overrideTenantId(string $id): void
+    {
+        static::$claims['tid'] = $id;
     }
 
 
