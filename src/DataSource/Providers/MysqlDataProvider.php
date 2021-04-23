@@ -249,7 +249,9 @@ class MysqlDataProvider extends DataProvider
                     $this->deleteAllRelations([$id], $item->name);
                     $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$id], $name);
                 } else {
-                    $this->insertOrUpdateBelongsManyRelation($item, $inputs, [$id], $name);
+                    foreach ($inputs as $input) {
+                        $this->insertOrUpdateBelongsManyRelation($item, $input, [$id], $name);
+                    }
                 }
             } elseif ($item instanceof Field) {
                 $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
@@ -276,7 +278,9 @@ class MysqlDataProvider extends DataProvider
                     $this->deleteAllRelations([$data['id']], $item->name);
                     $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$data['id']], $name);
                 } else {
-                    $this->insertOrUpdateBelongsManyRelation($item, $inputs, [$data['id']], $name);
+                    foreach ($inputs as $input) {
+                        $this->insertOrUpdateBelongsManyRelation($item, $input, [$data['id']], $name);
+                    }
                 }
             } elseif ($item instanceof Field) {
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
@@ -318,8 +322,10 @@ class MysqlDataProvider extends DataProvider
             foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
                 $ids[] = $row->id;
             }
-            foreach ($relations as $key => $relationData) {
-                $this->insertOrUpdateBelongsManyRelation($model->$key, $relationData, $ids, $key);
+            foreach ($relations as $key => $relationDatas) {
+                foreach ($relationDatas as $relationData) {
+                    $this->insertOrUpdateBelongsManyRelation($model->$key, $relationData, $ids, $key);
+                }
             }
         }
 
@@ -408,7 +414,7 @@ class MysqlDataProvider extends DataProvider
             $this->deleteRelations($childIds, $ids);
         } else {
             foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-                $this->insertOrUpdateBelongsRelation($relation, $data['data'] ?? [], $row->id, $childIds, $childName);
+                $this->insertOrUpdateBelongsRelation($relation, $data, $row->id, $childIds, $childName);
             }
         }
     }
