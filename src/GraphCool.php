@@ -8,12 +8,15 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\Model\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
+use RuntimeException;
 use Throwable;
 
 class GraphCool
@@ -27,7 +30,6 @@ class GraphCool
             $schema = $instance->createSchema();
             $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
         } catch (JsonException $e) {
-            // TODO: be more precise about which errors to catch where
             $result = [
                 'errors' => [[
                     'message' => $e->getMessage(),
@@ -35,6 +37,7 @@ class GraphCool
                 ]]
             ];
         } catch (Throwable $e) {
+            // TODO: be more precise about which errors to catch where
             $sentryDsn = Env::get('SENTRY_DSN');
             if ($sentryDsn !== null && function_exists("\Sentry\init")) {
                 \Sentry\init([
@@ -54,6 +57,23 @@ class GraphCool
         }
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
+    }
+
+    public static function runScript(array $args): void
+    {
+        $scriptName = trim(strtolower(array_shift($args)));
+        foreach (ClassFinder::scripts() as $shortname => $classname) {
+            if ($scriptName === strtolower($shortname)) {
+                $script = new $classname();
+                if ($script instanceof Script) {
+                    $script->run($args);
+                } else {
+                    throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)');
+                }
+            } else {
+                throw new RuntimeException($scriptName . ' is not a known script.');
+            }
+        }
     }
 
     public static function migrate(): void

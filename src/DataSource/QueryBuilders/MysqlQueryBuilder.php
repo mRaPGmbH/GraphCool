@@ -34,7 +34,9 @@ class MysqlQueryBuilder
     public static function forModel(Model $model, string $name): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
-        $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
+        if (PHP_SAPI !== 'cli') { // TODO: better way to handle this?!?
+            $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
+        }
         $builder->name = 'node';
         $builder->where[] = $builder->fieldName('model') . ' = '. $builder->parameter($name);
         $builder->model = $model;
@@ -295,6 +297,11 @@ class MysqlQueryBuilder
                 if ($where['operator'] !== 'IS NULL' && $where['operator'] !== 'IS NOT NULL') {
                     if ($where['operator'] === 'IN' || $where['operator'] === 'NOT IN') {
                         $sql .= ' ' . $this->parameterArray($where['value']);
+                    } elseif ($where['operator'] === 'BETWEEN' || $where['operator'] === 'NOT BETWEEN') {
+                        if (!is_array($where['value'])) {
+                            throw new RuntimeException($where['operator']. ' requires the value to be an array.');
+                        }
+                        $sql .= ' ' . $this->parameter($where['value'][0]) . ' AND ' . $where['value'][1];
                     } else {
                         $sql .= ' ' . $this->parameter($where['value']);
                     }

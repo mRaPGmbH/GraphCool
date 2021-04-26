@@ -20,9 +20,9 @@ class Model
         return $data;
     }
 
-    public function beforeUpdate(array $data): array
+    public function beforeUpdate(string $id, array $updates): array
     {
-        return $data;
+        return $updates;
     }
 
 }

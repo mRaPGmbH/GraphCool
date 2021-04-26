@@ -8,6 +8,7 @@ class ClassFinder
     protected static $models;
     protected static $queries;
     protected static $mutations;
+    protected static $scripts;
 
     public static function models(): array
     {
@@ -21,6 +22,9 @@ class ClassFinder
 
     public static function rootPath(): string
     {
+        if (PHP_SAPI === 'cli') {
+            return dirname($_SERVER['SCRIPT_FILENAME'], 1);
+        }
         return dirname($_SERVER['SCRIPT_FILENAME'], 2);
     }
 
@@ -42,6 +46,17 @@ class ClassFinder
             StopWatch::stop(__METHOD__);
         }
         return static::$mutations;
+    }
+
+    public static function scripts(): array
+    {
+        if (!isset(static::$scripts)) {
+            StopWatch::start(__METHOD__);
+            var_dump(self::rootPath());
+            static::$scripts = static::findClasses(self::rootPath() . '/app/Scripts', 'App\\Scripts\\');
+            StopWatch::stop(__METHOD__);
+        }
+        return static::$scripts;
     }
 
     protected static function findClasses(string $path, string $namespace): array

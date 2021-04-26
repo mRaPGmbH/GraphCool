@@ -111,6 +111,8 @@ class MysqlDataProvider extends DataProvider
         $model = $this->getModel($name);
         $query = MysqlQueryBuilder::forModel($model, $name);
 
+        $args['where'] = $this->convertWhereValues($model, $args['where']);
+
         $query->select(['id'])
             ->limit($limit, $offset)
             ->where($args['where'] ?? null)
@@ -122,6 +124,9 @@ class MysqlDataProvider extends DataProvider
             'WITH_TRASHED' => $query->withTrashed(),
             default => null
         };
+
+        //var_dump($query->toSql());
+        //var_dump($query->getParameters());
 
         $statement = $this->statement($query->toSql());
         $statement->execute($query->getParameters());
@@ -139,6 +144,41 @@ class MysqlDataProvider extends DataProvider
         StopWatch::stop(__METHOD__);
         $result->data = $this->loadAll($name, $ids, $resultType);
         return $result;
+    }
+
+    public function convertWhereValues(Model $model, array &$where): array
+    {
+        if (isset($where['column']) && array_key_exists('value', $where)) {
+            $column = $where['column'];
+            /** @var Field $field */
+            $field = $model->$column;
+            if (is_array($where['value'])) {
+                foreach ($where['value'] as $key => $value) {
+                    // TODO: is there a better way to do this? are there other types that need special treatment?
+                    if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
+                        $value = strtotime($value) * 1000;
+                    }
+                    $where['value'][$key] = $this->convertInputTypeToDatabase($model->$column, $value);
+                }
+            } else {
+                // TODO: is there a better way to do this? are there other types that need special treatment?
+                if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
+                    $where['value'] = strtotime($where['value']) * 1000;
+                }
+                $where['value'] = $this->convertInputTypeToDatabase($model->$column, $where['value']);
+            }
+        }
+        if (isset($where['AND'])) {
+            foreach($where['AND'] as $key => $subWhere) {
+                $where['AND'][$key] = $this->convertWhereValues($model, $subWhere);
+            }
+        }
+        if (isset($where['OR'])) {
+            foreach($where['OR'] as $key => $subWhere) {
+                $where['OR'][$key] = $this->convertWhereValues($model, $subWhere);
+            }
+        }
+        return $where;
     }
 
     public function getMax(string $name, string $key): float|bool|int|string
@@ -266,6 +306,8 @@ class MysqlDataProvider extends DataProvider
         $model = $this->getModel($name);
 
         $updates = $data['data'] ?? [];
+        $updates = $model->beforeUpdate($data['id'], $updates);
+
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $updates)) {
                 continue;
@@ -514,7 +556,11 @@ class MysqlDataProvider extends DataProvider
 
     protected function fetchNode(string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        $sql = 'SELECT * FROM `node` WHERE `node`.`tenant_id` = :tenant_id AND `id` = :id ';
+        if (PHP_SAPI === 'cli') {
+            $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
+        } else {
+            $sql = 'SELECT * FROM `node` WHERE `node`.`tenant_id` = :tenant_id AND `id` = :id ';
+        }
         $sql .= match($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
             'WITH_TRASHED' => '',
@@ -522,10 +568,16 @@ class MysqlDataProvider extends DataProvider
         };
 
         $statement = $this->statement($sql);
-        $statement->execute([
-            ':tenant_id' => JwtAuthentication::tenantId(),
-            ':id' => $id
-        ]);
+        if (PHP_SAPI === 'cli') {
+            $statement->execute([
+                ':id' => $id
+            ]);
+        } else {
+            $statement->execute([
+                ':tenant_id' => JwtAuthentication::tenantId(),
+                ':id' => $id
+            ]);
+        }
         $node = $statement->fetch(PDO::FETCH_OBJ);
         if ($node === false) {
             return null;
