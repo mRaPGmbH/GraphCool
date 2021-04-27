@@ -175,19 +175,19 @@ class MutationType extends ObjectType
         }
 
         if (str_starts_with($info->fieldName, 'create')) {
-            return DB::insert($info->returnType->toString(), $args);
+            return DB::insert(JwtAuthentication::tenantId(), $info->returnType->toString(), $args);
         }
         if (str_starts_with($info->fieldName, 'updateMany')) {
-            return DB::updateAll(substr($info->fieldName, 10, -1), $args);
+            return DB::updateAll(JwtAuthentication::tenantId(), substr($info->fieldName, 10, -1), $args);
         }
         if (str_starts_with($info->fieldName, 'update')) {
-            return DB::update($info->returnType->toString(), $args);
+            return DB::update(JwtAuthentication::tenantId(), $info->returnType->toString(), $args);
         }
         if (str_starts_with($info->fieldName, 'delete')) {
-            return DB::delete($info->returnType->toString(), $args['id']);
+            return DB::delete(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'restore')) {
-            return DB::restore($info->returnType->toString(), $args['id']);
+            return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
             $name = substr($info->fieldName, 6, -1);
@@ -199,11 +199,11 @@ class MutationType extends ObjectType
             $result->inserted_ids = [];
             foreach ($importer->import($args['data_base64'], $args['columns']) as $item) {
                 if (isset($item['id'])) {
-                    $item = DB::update($name, $item);
+                    $item = DB::update(JwtAuthentication::tenantId(), $name, $item);
                     $result->updated_rows += 1;
                     $result->updated_ids[] = $item->id;
                 } else {
-                    $item = DB::insert($name, $item);
+                    $item = DB::insert(JwtAuthentication::tenantId(), $name, $item);
                     $result->inserted_rows += 1;
                     $result->inserted_ids[] = $item->id;
                 }

@@ -14,7 +14,6 @@ use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
-use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use Throwable;
@@ -61,7 +60,7 @@ class GraphCool
 
     public static function runScript(array $args): void
     {
-        $scriptName = trim(strtolower(array_shift($args)));
+        $scriptName = strtolower(trim(array_shift($args)));
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
                 $script = new $classname();

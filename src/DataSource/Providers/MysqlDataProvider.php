@@ -100,7 +100,7 @@ class MysqlDataProvider extends DataProvider
         $this->pdo()->exec($sql);
     }
 
-    public function findAll(string $name, array $args): stdClass
+    public function findAll(?string $tenantId, string $name, array $args): stdClass
     {
         StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
@@ -109,7 +109,7 @@ class MysqlDataProvider extends DataProvider
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
         $model = $this->getModel($name);
-        $query = MysqlQueryBuilder::forModel($model, $name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         $args['where'] = $this->convertWhereValues($model, $args['where']);
 
@@ -142,11 +142,222 @@ class MysqlDataProvider extends DataProvider
         $result = new stdClass();
         $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
         StopWatch::stop(__METHOD__);
-        $result->data = $this->loadAll($name, $ids, $resultType);
+        $result->data = $this->loadAll($tenantId, $name, $ids, $resultType);
         return $result;
     }
 
-    public function convertWhereValues(Model $model, array &$where): array
+    public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
+    {
+        $model = $this->getModel($name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+
+        $valueType = match ($model->$key->type) {
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 'value_int',
+            Type::FLOAT, Field::DECIMAL => 'value_float',
+            default => 'value_string'
+        };
+
+        $query->selectMax($key, 'max', $valueType)
+            ->withTrashed();
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getParameters());
+        $result = $statement->fetch(PDO::FETCH_OBJ);
+
+        $property = new stdClass();
+        $property->$valueType = $result->max;
+
+        return $this->convertDatabaseTypeToOutput($model->$key, $property);
+    }
+
+    public function loadAll(?string $tenantId, string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
+    {
+        $result = [];
+        foreach ($ids as $id) {
+            $result[] = $this->load($tenantId, $name, $id, $resultType);
+        }
+        return $result;
+    }
+
+    public function load(?string $tenantId, string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $node = $this->fetchNode($tenantId, $id, $resultType);
+        if ($node === null) {
+            return null;
+        }
+        if ($node->model !== $name) {
+            throw new RuntimeException(
+                'Class mismatch: expected "' . $name . '" but found "'
+                . $node->model . '" instead (id:"' . $id . '")'
+            );
+        }
+        $model = $this->getModel($name);
+        foreach ($this->fetchNodeProperties($id) as $property) {
+            $key = $property->property;
+            if (!property_exists($model, $key)) {
+                continue;
+            }
+            /** @var Field $field */
+            $field = $model->$key;
+            if ($field instanceof Relation) {
+                continue;
+            }
+            $node->$key = $this->convertDatabaseTypeToOutput($field, $property);
+        }
+
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            $node->$key = function (array $args) use ($id, $relation, $tenantId) {
+                $result = $this->findRelatedNodes($tenantId, $id, $relation, $args);
+                if (
+                    $result !== null
+                    && ($relation->type === Relation::HAS_ONE || $relation->type === Relation::BELONGS_TO)
+                ) {
+                    return $result[0] ?? null;
+                }
+                return $result;
+            };
+        }
+        StopWatch::stop(__METHOD__);
+        return $node;
+    }
+
+    public function insert(string $tenantId, string $name, array $data): stdClass
+    {
+        $id = Uuid::uuid4()->toString();
+        $this->insertNode($tenantId, $id, $name);
+
+        $model = $this->getModel($name);
+        $data = $model->beforeInsert($tenantId, $data);
+        foreach ($model as $key => $item) {
+            if (!array_key_exists($key, $data) && (
+                    $item instanceof Relation ||
+                    $item->null || in_array(
+                            $item->type,
+                            [
+                                Type::ID,
+                                Field::UPDATED_AT,
+                                Field::DELETED_AT,
+                                Field::CREATED_AT
+                            ],
+                            true
+                        ))) {
+                continue;
+            }
+            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
+                $inputs = $data[$key];
+                if ($item->type === Relation::BELONGS_TO) {
+                    $parentId = $inputs['id'];
+                    unset($inputs['id']);
+                    $this->deleteAllRelations([$id], $item->name);
+                    $this->insertOrUpdateBelongsRelation($tenantId, $item, $inputs, $parentId, [$id], $name);
+                } else {
+                    foreach ($inputs as $input) {
+                        $this->insertOrUpdateBelongsManyRelation($tenantId, $item, $input, [$id], $name);
+                    }
+                }
+            } elseif ($item instanceof Field) {
+                $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
+            }
+        }
+        return $this->load($tenantId, $name, $id);
+    }
+
+    public function update(string $tenantId, string $name, array $data): stdClass
+    {
+        $this->updateNode($tenantId, $data['id']);
+        $model = $this->getModel($name);
+
+        $updates = $data['data'] ?? [];
+        $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
+
+        foreach ($model as $key => $item) {
+            if (!array_key_exists($key, $updates)) {
+                continue;
+            }
+            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
+                $inputs = $updates[$key];
+                if ($item->type === Relation::BELONGS_TO) {
+                    $parentId = $inputs['id'];
+                    unset($inputs['id']);
+                    $this->deleteAllRelations([$data['id']], $item->name);
+                    $this->insertOrUpdateBelongsRelation($tenantId, $item, $inputs, $parentId, [$data['id']], $name);
+                } else {
+                    foreach ($inputs as $input) {
+                        $this->insertOrUpdateBelongsManyRelation($tenantId, $item, $input, [$data['id']], $name);
+                    }
+                }
+            } elseif ($item instanceof Field) {
+                $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
+            }
+        }
+        return $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+    }
+
+    public function updateMany(string $tenantId, string $name, array $data): stdClass
+    {
+        $model = $this->getModel($name);
+
+        $updateData = $data['data'] ?? [];
+        $updates = [];
+        $relations = [];
+        foreach ($model as $key => $item) {
+            if (!isset($updateData[$key])) {
+                continue;
+            }
+            if ($item instanceof Field) {
+                $updates[$key] = $updateData[$key];
+            } elseif ($item instanceof Relation) {
+                $relations[$key] = $updateData[$key];
+            }
+        }
+
+        if (count($relations) > 0) {
+            $ids = [];
+            $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+            $query->select(['id'])
+                ->where($data['where'] ?? null);
+            match($args['result'] ?? ResultType::DEFAULT) {
+                ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+                ResultType::WITH_TRASHED => $query->withTrashed(),
+                default => null
+            };
+            $statement = $this->statement($query->toSql());
+            $statement->execute($query->getUpdateParameters());
+            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+                $ids[] = $row->id;
+            }
+            foreach ($relations as $key => $relationDatas) {
+                foreach ($relationDatas as $relationData) {
+                    $this->insertOrUpdateBelongsManyRelation($tenantId, $model->$key, $relationData, $ids, $key);
+                }
+            }
+        }
+
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+        $query->update($updates)
+            ->where($data['where'] ?? null);
+
+        match($args['result'] ?? ResultType::DEFAULT) {
+            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            ResultType::WITH_TRASHED => $query->withTrashed(),
+            default => null
+        };
+
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        $result = new stdClass();
+        $result->updated_rows = (int)$statement->fetchColumn();
+
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getUpdateParameters());
+
+        return $result;
+    }
+
+    protected function convertWhereValues(Model $model, array &$where): array
     {
         if (isset($where['column']) && array_key_exists('value', $where)) {
             $column = $where['column'];
@@ -181,217 +392,6 @@ class MysqlDataProvider extends DataProvider
         return $where;
     }
 
-    public function getMax(string $name, string $key): float|bool|int|string
-    {
-        $model = $this->getModel($name);
-        $query = MysqlQueryBuilder::forModel($model, $name);
-
-        $valueType = match ($model->$key->type) {
-            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 'value_int',
-            Type::FLOAT, Field::DECIMAL => 'value_float',
-            default => 'value_string'
-        };
-
-        $query->selectMax($key, 'max', $valueType)
-            ->withTrashed();
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getParameters());
-        $result = $statement->fetch(PDO::FETCH_OBJ);
-
-        $property = new stdClass();
-        $property->$valueType = $result->max;
-
-        return $this->convertDatabaseTypeToOutput($model->$key, $property);
-    }
-
-    public function loadAll(string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
-    {
-        $result = [];
-        foreach ($ids as $id) {
-            $result[] = $this->load($name, $id, $resultType);
-        }
-        return $result;
-    }
-
-    public function load(string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
-        StopWatch::start(__METHOD__);
-        $node = $this->fetchNode($id, $resultType);
-        if ($node === null) {
-            return null;
-        }
-        if ($node->model !== $name) {
-            throw new RuntimeException(
-                'Class mismatch: expected "' . $name . '" but found "'
-                . $node->model . '" instead (id:"' . $id . '")'
-            );
-        }
-        $model = $this->getModel($name);
-        foreach ($this->fetchNodeProperties($id) as $property) {
-            $key = $property->property;
-            if (!property_exists($model, $key)) {
-                continue;
-            }
-            /** @var Field $field */
-            $field = $model->$key;
-            if ($field instanceof Relation) {
-                continue;
-            }
-            $node->$key = $this->convertDatabaseTypeToOutput($field, $property);
-        }
-
-        foreach ($model as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            $node->$key = function (array $args) use ($id, $relation) {
-                $result = $this->findRelatedNodes($id, $relation, $args);
-                if (
-                    $result !== null
-                    && ($relation->type === Relation::HAS_ONE || $relation->type === Relation::BELONGS_TO)
-                ) {
-                    return $result[0] ?? null;
-                }
-                return $result;
-            };
-        }
-        StopWatch::stop(__METHOD__);
-        return $node;
-    }
-
-    public function insert(string $name, array $data): stdClass
-    {
-        $id = Uuid::uuid4()->toString();
-        $this->insertNode($id, $name);
-
-        $model = $this->getModel($name);
-        $data = $model->beforeInsert($data);
-        foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $data) && (
-                    $item instanceof Relation ||
-                    $item->null || in_array(
-                            $item->type,
-                            [
-                                Type::ID,
-                                Field::UPDATED_AT,
-                                Field::DELETED_AT,
-                                Field::CREATED_AT
-                            ],
-                            true
-                        ))) {
-                continue;
-            }
-            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
-                $inputs = $data[$key];
-                if ($item->type === Relation::BELONGS_TO) {
-                    $parentId = $inputs['id'];
-                    unset($inputs['id']);
-                    $this->deleteAllRelations([$id], $item->name);
-                    $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$id], $name);
-                } else {
-                    foreach ($inputs as $input) {
-                        $this->insertOrUpdateBelongsManyRelation($item, $input, [$id], $name);
-                    }
-                }
-            } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
-            }
-        }
-        return $this->load($name, $id);
-    }
-
-    public function update(string $name, array $data): stdClass
-    {
-        $this->updateNode($data['id']);
-        $model = $this->getModel($name);
-
-        $updates = $data['data'] ?? [];
-        $updates = $model->beforeUpdate($data['id'], $updates);
-
-        foreach ($model as $key => $item) {
-            if (!array_key_exists($key, $updates)) {
-                continue;
-            }
-            if ($item instanceof Relation && ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY)) {
-                $inputs = $updates[$key];
-                if ($item->type === Relation::BELONGS_TO) {
-                    $parentId = $inputs['id'];
-                    unset($inputs['id']);
-                    $this->deleteAllRelations([$data['id']], $item->name);
-                    $this->insertOrUpdateBelongsRelation($item, $inputs, $parentId, [$data['id']], $name);
-                } else {
-                    foreach ($inputs as $input) {
-                        $this->insertOrUpdateBelongsManyRelation($item, $input, [$data['id']], $name);
-                    }
-                }
-            } elseif ($item instanceof Field) {
-                $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
-            }
-        }
-        return $this->load($name, $data['id'], ResultType::WITH_TRASHED);
-    }
-
-    public function updateMany(string $name, array $data): stdClass
-    {
-        $model = $this->getModel($name);
-
-        $updateData = $data['data'] ?? [];
-        $updates = [];
-        $relations = [];
-        foreach ($model as $key => $item) {
-            if (!isset($updateData[$key])) {
-                continue;
-            }
-            if ($item instanceof Field) {
-                $updates[$key] = $updateData[$key];
-            } elseif ($item instanceof Relation) {
-                $relations[$key] = $updateData[$key];
-            }
-        }
-
-        if (count($relations) > 0) {
-            $ids = [];
-            $query = MysqlQueryBuilder::forModel($model, $name);
-            $query->select(['id'])
-                ->where($data['where'] ?? null);
-            match($args['result'] ?? ResultType::DEFAULT) {
-                ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-                ResultType::WITH_TRASHED => $query->withTrashed(),
-                default => null
-            };
-            $statement = $this->statement($query->toSql());
-            $statement->execute($query->getUpdateParameters());
-            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-                $ids[] = $row->id;
-            }
-            foreach ($relations as $key => $relationDatas) {
-                foreach ($relationDatas as $relationData) {
-                    $this->insertOrUpdateBelongsManyRelation($model->$key, $relationData, $ids, $key);
-                }
-            }
-        }
-
-        $query = MysqlQueryBuilder::forModel($model, $name);
-        $query->update($updates)
-            ->where($data['where'] ?? null);
-
-        match($args['result'] ?? ResultType::DEFAULT) {
-            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-            ResultType::WITH_TRASHED => $query->withTrashed(),
-            default => null
-        };
-
-        $statement = $this->statement($query->toCountSql());
-        $statement->execute($query->getParameters());
-        $result = new stdClass();
-        $result->updated_rows = (int)$statement->fetchColumn();
-
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getUpdateParameters());
-
-        return $result;
-    }
-
     protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
     {
         if ($value === null && $field->null === true) {
@@ -408,10 +408,10 @@ class MysqlDataProvider extends DataProvider
         }
     }
 
-    protected function insertOrUpdateBelongsRelation(Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
+    protected function insertOrUpdateBelongsRelation(string $tenantId, Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
     {
         foreach ($childIds as $childId) {
-            $this->insertOrUpdateEdge($parentId, $childId, $relation->name, $childName);
+            $this->insertOrUpdateEdge($tenantId, $parentId, $childId, $relation->name, $childName);
             /** @var Field $field */
             foreach ($relation as $key => $field)
             {
@@ -435,7 +435,7 @@ class MysqlDataProvider extends DataProvider
         }
     }
 
-    protected function insertOrUpdateBelongsManyRelation(Relation $relation, array $data, array $childIds, string $childName): void
+    protected function insertOrUpdateBelongsManyRelation(?string $tenantId, Relation $relation, array $data, array $childIds, string $childName): void
     {
         $mode = $data['mode'] ?? 'ADD';
         if ($mode === 'REPLACE') {
@@ -443,7 +443,7 @@ class MysqlDataProvider extends DataProvider
         }
         $classname = $relation->classname;
         $model = new $classname();
-        $query = MysqlQueryBuilder::forModel($model, $relation->name);
+        $query = MysqlQueryBuilder::forModel($model, $relation->name)->tenant($tenantId);
         $query->select(['id'])
             ->where($data['where'] ?? []);
         $statement = $this->statement($query->toSql());
@@ -456,7 +456,7 @@ class MysqlDataProvider extends DataProvider
             $this->deleteRelations($childIds, $ids);
         } else {
             foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-                $this->insertOrUpdateBelongsRelation($relation, $data, $row->id, $childIds, $childName);
+                $this->insertOrUpdateBelongsRelation($tenantId, $relation, $data, $row->id, $childIds, $childName);
             }
         }
     }
@@ -554,12 +554,14 @@ class MysqlDataProvider extends DataProvider
     }
 
 
-    protected function fetchNode(string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
+    protected function fetchNode(?string $tenantId, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        if (PHP_SAPI === 'cli') {
-            $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
-        } else {
-            $sql = 'SELECT * FROM `node` WHERE `node`.`tenant_id` = :tenant_id AND `id` = :id ';
+        // TODO: use queryBuilder
+        $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
+        $params = [':id' => $id];
+        if ($tenantId !== null) {
+            $sql .= 'AND `node`.`tenant_id` = :tenant_id ';
+            $params[':tenant_id'] = $tenantId;
         }
         $sql .= match($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
@@ -568,16 +570,7 @@ class MysqlDataProvider extends DataProvider
         };
 
         $statement = $this->statement($sql);
-        if (PHP_SAPI === 'cli') {
-            $statement->execute([
-                ':id' => $id
-            ]);
-        } else {
-            $statement->execute([
-                ':tenant_id' => JwtAuthentication::tenantId(),
-                ':id' => $id
-            ]);
-        }
+        $statement->execute($params);
         $node = $statement->fetch(PDO::FETCH_OBJ);
         if ($node === false) {
             return null;
@@ -646,7 +639,7 @@ class MysqlDataProvider extends DataProvider
         };
     }
 
-    protected function findRelatedNodes(string $id, Relation $relation, array $args): array|stdClass
+    protected function findRelatedNodes(?string $tenantId, string $id, Relation $relation, array $args): array|stdClass
     {
         StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
@@ -682,9 +675,9 @@ class MysqlDataProvider extends DataProvider
                 $edge->$key = $value;
             }
             if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-                $edge->_node = $this->load($relation->name, $edge->child_id);
+                $edge->_node = $this->load($tenantId, $relation->name, $edge->child_id);
             } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-                $edge->_node = $this->load($relation->name, $edge->parent_id);
+                $edge->_node = $this->load($tenantId, $relation->name, $edge->parent_id);
             }
             $edges[] = $edge;
         }
@@ -750,20 +743,20 @@ class MysqlDataProvider extends DataProvider
     }
 
 
-    protected function insertNode(string $id, string $name): bool
+    protected function insertNode(string $tenantId, string $id, string $name): bool
     {
         $sql = 'INSERT INTO `node` (`id`, `tenant_id`, `model`) VALUES (:id, :tenant_id, :model)';
         $statement = $this->statement($sql);
         return $statement->execute(
             [
                 ':id'    => $id,
-                ':tenant_id' => JwtAuthentication::tenantId(),
+                ':tenant_id' => $tenantId,
                 ':model' => $name
             ]
         );
     }
 
-    protected function insertOrUpdateEdge(string $parentId, string $childId, string $parent, string $child): bool
+    protected function insertOrUpdateEdge(string $tenantId, string $parentId, string $childId, string $parent, string $child): bool
     {
         $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `tenant_id`, `parent`, `child`) VALUES 
             (:parent_id, :child_id, :tenant_id, :parent, :child)
@@ -773,7 +766,7 @@ class MysqlDataProvider extends DataProvider
             [
                 ':parent_id' => $parentId,
                 ':child_id'  => $childId,
-                ':tenant_id' => JwtAuthentication::tenantId(),
+                ':tenant_id' => $tenantId,
                 ':parent'    => $parent,
                 ':child'     => $child,
             ]
@@ -839,14 +832,16 @@ class MysqlDataProvider extends DataProvider
     }
 
 
-    protected function updateNode(string $id): bool
+    protected function updateNode(string $tenantId, string $id): bool
     {
-        $sql = 'UPDATE `node` SET `updated_at` = now() WHERE `tenant_id` = :tenant_id AND id = :id';
+        $sql = 'UPDATE `node` SET `updated_at` = now() WHERE id = :id';
+        $params = [':id' => $id];
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
         $statement = $this->statement($sql);
-        return $statement->execute([
-            ':id' => $id,
-            ':tenant_id' => JwtAuthentication::tenantId()
-        ]);
+        return $statement->execute($params);
     }
 
     protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
@@ -862,49 +857,54 @@ class MysqlDataProvider extends DataProvider
         );
     }
 
-    public function delete(string $name, string $id): ?stdClass
+    public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
-        $model = $this->load($name, $id);
-        $this->deleteNode($id);
-        $this->deleteEdgesForNodeId($id);
+        $model = $this->load($tenantId, $name, $id);
+        $this->deleteNode($tenantId, $id);
+        $this->deleteEdgesForNodeId($tenantId, $id);
         return $model;
     }
 
-    public function restore(string $name, string $id): stdClass
+    public function restore(?string $tenantId, string $name, string $id): stdClass
     {
-        $this->restoreNode($id);
-       return $this->load($name, $id);
+        $this->restoreNode($tenantId, $id);
+       return $this->load($tenantId, $name, $id);
     }
 
-    protected function deleteNode(string $id): bool
+    protected function deleteNode(?string $tenantId, string $id): bool
     {
-        $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `tenant_id` = :tenant_id AND `id` = :id';
+        $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` = :id';
+        $params = [':id' => $id];
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
         $statement = $this->statement($sql);
-        return $statement->execute([
-            ':id' => $id,
-            ':tenant_id' => JwtAuthentication::tenantId()
-        ]);
+        return $statement->execute($params);
     }
 
-    protected function deleteEdgesForNodeId(string $id): bool
+    protected function deleteEdgesForNodeId(?string $tenantId, string $id): bool
     {
-        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `tenant_id` = :tenant_id AND `parent_id` = :id1 OR `child_id` = :id2';
+        $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE (`parent_id` = :id1 OR `child_id` = :id2)';
+        $params = [':id1' => $id, ':id2' => $id];
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
         $statement = $this->statement($sql);
-        return $statement->execute([
-            ':tenant_id' => JwtAuthentication::tenantId(),
-            ':id1' => $id,
-            ':id2' => $id
-        ]);
+        return $statement->execute($params);
     }
 
-    protected function restoreNode(string $id): bool
+    protected function restoreNode(?string $tenantId, string $id): bool
     {
-        $sql = 'UPDATE `node` SET `deleted_at` = NULL WHERE `tenant_id` = :tenant_id AND `id` = :id';
+        $sql = 'UPDATE `node` SET `deleted_at` = NULL WHERE `id` = :id';
+        $params = [':id' => $id];
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
         $statement = $this->statement($sql);
-        return $statement->execute([
-            ':id' => $id,
-            ':tenant_id' => JwtAuthentication::tenantId()
-        ]);
+        return $statement->execute($params);
     }
 
 }

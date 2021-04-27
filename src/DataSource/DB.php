@@ -27,66 +27,66 @@ class DB
     }
 
 
-    public static function load(string $name, string $id): ?stdClass
+    public static function load(?string $tenantId, string $name, string $id): ?stdClass
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->load($name, $id);
+        $result = static::get()->load($tenantId, $name, $id);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function getMax(string $name, string $key): float|bool|int|string
+    public static function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->getMax($name, $key);
+        $result = static::get()->getMax($tenantId, $name, $key);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function findAll(string $name, array $args): stdClass
+    public static function findAll(?string $tenantId, string $name, array $args): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  self::get()->findAll($name, $args);
+        $result =  self::get()->findAll($tenantId, $name, $args);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function insert(string $modelName, array $data): stdClass
+    public static function insert(string $tenantId, string $modelName, array $data): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  static::get()->insert($modelName, $data);
+        $result =  static::get()->insert($tenantId, $modelName, $data);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function update(string $modelName, array $data): stdClass
+    public static function update(string $tenantId, string $modelName, array $data): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  static::get()->update($modelName, $data);
+        $result =  static::get()->update($tenantId, $modelName, $data);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function updateAll(string $modelName, array $data): stdClass
+    public static function updateAll(string $tenantId, string $modelName, array $data): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  static::get()->updateMany($modelName, $data);
+        $result =  static::get()->updateMany($tenantId, $modelName, $data);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function delete(string $modelName, string $id): ?stdClass
+    public static function delete(string $tenantId, string $modelName, string $id): ?stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  static::get()->delete($modelName, $id);
+        $result =  static::get()->delete($tenantId, $modelName, $id);
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    public static function restore(string $modelName, string $id): stdClass
+    public static function restore(string $tenantId, string $modelName, string $id): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result =  static::get()->restore($modelName, $id);
+        $result =  static::get()->restore($tenantId, $modelName, $id);
         StopWatch::stop(__METHOD__);
         return $result;
     }

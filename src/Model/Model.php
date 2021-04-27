@@ -15,12 +15,12 @@ class Model
         $this->deleted_at = Field::deletedAt();
     }
 
-    public function beforeInsert(array $data): array
+    public function beforeInsert(string $tenantId, array $data): array
     {
         return $data;
     }
 
-    public function beforeUpdate(string $id, array $updates): array
+    public function beforeUpdate(string $tenantId, string $id, array $updates): array
     {
         return $updates;
     }

@@ -34,9 +34,6 @@ class MysqlQueryBuilder
     public static function forModel(Model $model, string $name): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
-        if (PHP_SAPI !== 'cli') { // TODO: better way to handle this?!?
-            $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
-        }
         $builder->name = 'node';
         $builder->where[] = $builder->fieldName('model') . ' = '. $builder->parameter($name);
         $builder->model = $model;
@@ -47,8 +44,6 @@ class MysqlQueryBuilder
     public static function forRelation(Relation $relation, array $parentIds): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
-        $builder->where[] = '`node`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
-        $builder->where[] = '`edge`.`tenant_id` = ' . $builder->parameter(JwtAuthentication::tenantId());
         $builder->name = 'edge';
         if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
             $builder->where[] = $builder->fieldName('_parent_id') . ' IN '. $builder->parameterArray($parentIds);
@@ -67,6 +62,17 @@ class MysqlQueryBuilder
         $builder->resultType = ' AND ' . $builder->fieldName('_deleted_at') . ' IS NULL';
         $builder->resultType .= ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
         return $builder;
+    }
+
+    public function tenant(?string $tenantId): MysqlQueryBuilder
+    {
+        if ($tenantId !== null) {
+            $this->where[] = '`node`.`tenant_id` = ' . $this->parameter($tenantId);
+            if ($this->name === 'edge') {
+                $this->where[] = '`edge`.`tenant_id` = ' . $this->parameter($tenantId);
+            }
+        }
+        return $this;
     }
 
 
@@ -296,6 +302,9 @@ class MysqlQueryBuilder
                 $sql .= ' ' . $where['operator'] ?? '=';
                 if ($where['operator'] !== 'IS NULL' && $where['operator'] !== 'IS NOT NULL') {
                     if ($where['operator'] === 'IN' || $where['operator'] === 'NOT IN') {
+                        if (!is_array($where['value'])) {
+                            throw new RuntimeException($where['operator']. ' requires the value to be an array.');
+                        }
                         $sql .= ' ' . $this->parameterArray($where['value']);
                     } elseif ($where['operator'] === 'BETWEEN' || $where['operator'] === 'NOT BETWEEN') {
                         if (!is_array($where['value'])) {

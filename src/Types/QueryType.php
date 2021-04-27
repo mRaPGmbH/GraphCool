@@ -11,13 +11,10 @@ use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Types\Objects\ModelType;
-use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
-use stdClass;
 
 class QueryType extends ObjectType
 {
@@ -55,7 +52,7 @@ class QueryType extends ObjectType
     protected function read(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $type = $typeLoader->load($name),
+            'type' => $typeLoader->load($name),
             'description' => 'Get a single ' .  $name . ' by it\'s ID',
             'args' => [
                 'id' => new NonNull(Type::id()),
@@ -138,17 +135,17 @@ class QueryType extends ObjectType
         }
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
-                return DB::findAll(substr($info->returnType->toString(), 1,-9), $args);
+                return DB::findAll(JwtAuthentication::tenantId(), substr($info->returnType->toString(), 1,-9), $args);
             }
 
             $type = $args['type'] ?? null;
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
                 $exporter = new FileExport();
-                return $exporter->export($name, DB::findAll($name, $args)->data ?? [], $args, $type);
+                return $exporter->export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
             }
         }
-        return DB::load($info->returnType->toString(), $args['id']);
+        return DB::load(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
     }
 
 }
