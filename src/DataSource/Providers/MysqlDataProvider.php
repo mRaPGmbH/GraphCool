@@ -357,8 +357,11 @@ class MysqlDataProvider extends DataProvider
         return $result;
     }
 
-    protected function convertWhereValues(Model $model, array &$where): array
+    protected function convertWhereValues(Model $model, ?array &$where): array
     {
+        if ($where === null) {
+            return $where;
+        }
         if (isset($where['column']) && array_key_exists('value', $where)) {
             $column = $where['column'];
             /** @var Field $field */
