@@ -111,7 +111,9 @@ class MysqlDataProvider extends DataProvider
         $model = $this->getModel($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
-        $args['where'] = $this->convertWhereValues($model, $args['where']);
+        if (isset($args['where'])) {
+            $args['where'] = $this->convertWhereValues($model, $args['where']);
+        }
 
         $query->select(['id'])
             ->limit($limit, $offset)
