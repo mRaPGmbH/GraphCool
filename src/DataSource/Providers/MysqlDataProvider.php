@@ -357,7 +357,7 @@ class MysqlDataProvider extends DataProvider
         return $result;
     }
 
-    protected function convertWhereValues(Model $model, ?array &$where): array
+    protected function convertWhereValues(Model $model, ?array &$where): ?array
     {
         if ($where === null) {
             return $where;

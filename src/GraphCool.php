@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool;
 
-use Exception;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\Error;
 use GraphQL\GraphQL;
