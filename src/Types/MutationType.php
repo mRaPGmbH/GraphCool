@@ -155,7 +155,8 @@ class MutationType extends ObjectType
             'type' => $typeLoader->load('_ImportSummary'),
             'description' => 'Import a list of ' .  $name . 's from a spreadsheet. If ID\'s are present, ' .  $name . 's will be updated - otherwise new ' .  $name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
             'args' => [
-                'data_base64' => new NonNull(Type::string()),
+                'file' => $typeLoader->load('_Upload'),
+                'data_base64' => Type::string(),
                 'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
@@ -197,7 +198,7 @@ class MutationType extends ObjectType
             $result->updated_ids = [];
             $result->inserted_rows = 0;
             $result->inserted_ids = [];
-            foreach ($importer->import($args['data_base64'], $args['columns']) as $item) {
+            foreach ($importer->import($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $rootValue['index'] ?? 0) as $item) {
                 if (isset($item['id'])) {
                     $item = DB::update(JwtAuthentication::tenantId(), $name, $item);
                     $result->updated_rows += 1;

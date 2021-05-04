@@ -39,6 +39,7 @@ use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
 use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
+use Mrap\GraphCool\Types\Scalars\Upload;
 use Mrap\GraphCool\Utils\StopWatch;
 
 class TypeLoader
@@ -66,6 +67,7 @@ class TypeLoader
         self::register('Mixed', MixedScalar::class);
         self::register('_UpdateManyResult', UpdateManyResult::class);
         self::register('_RelationUpdateMode', RelationUpdateModeEnum::class);
+        self::register('_Upload', Upload::class);
     }
 
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable

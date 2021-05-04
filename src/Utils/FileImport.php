@@ -8,14 +8,19 @@ use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\ReaderAbstract;
 use Box\Spout\Reader\SheetInterface;
+use GraphQL\Error\Error;
+use JsonException;
 
 class FileImport
 {
 
-    public function import(?string $data, array $columns): array
+    public function import(?string $data, array $columns, int $index): array
     {
-        if (empty($data) && count($_FILES) > 0) {
-            $tmp = array_shift($_FILES);
+        if ($data === null) {
+            $tmp = $this->getFile($index);
+            if ($tmp === null) {
+                throw new Error('File is missing.');
+            }
             $file = $tmp['tmp_name'];
             $mimeType = $tmp['type'];
             if ($mimeType === 'application/octet-stream') {
@@ -29,7 +34,7 @@ class FileImport
 
         $reader = $this->getReader($mimeType);
         if ($reader === null) {
-            throw new \Exception('Could not import: Unknown MimeType: '. $mimeType);
+            throw new Error('Could not import file: Unknown MimeType: '. $mimeType);
         }
         $reader->open($file);
         $result = [];
@@ -67,6 +72,34 @@ class FileImport
         $reader->close();
         unlink($file);
         return $result;
+    }
+
+    protected function getFile(int $index): ?array
+    {
+        if (!isset($_REQUEST['map'])) {
+            throw new Error('Neither data_base64 nor file received.');
+        }
+
+        try {
+            $map = json_decode($_REQUEST['map'], true, 512, JSON_THROW_ON_ERROR);
+        } catch(JsonException $e) {
+            throw new Error('Could not parse file map - not a valid JSON.');
+        }
+        $fileNumber = $this->findInMap($map, $index);
+        return $_FILES[$fileNumber] ?? null;
+    }
+
+    protected function findInMap(array $map, int $index): ?int
+    {
+        $key = 'variables.file';
+        foreach ($map as $fileNumber => $variableNames) {
+            foreach ($variableNames as $variableName) {
+                if ($variableName === $key || $variableName === $index.'.'.$key) {
+                    return $fileNumber;
+                }
+            }
+        }
+        return null;
     }
 
     protected function getReader(string $mimeType): ?ReaderAbstract

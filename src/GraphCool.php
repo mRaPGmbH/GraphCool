@@ -17,6 +17,7 @@ use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
+use stdClass;
 use Throwable;
 
 class GraphCool
@@ -28,7 +29,10 @@ class GraphCool
         try {
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
-            $result = $instance->executeQuery($schema, $request['query'], $request['variables'] ?? []);
+            foreach ($request as $index => $query) {
+                $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
+            }
+
         } catch (\Throwable $e) {
             $result = $instance->handleError($e);
         }
@@ -58,10 +62,6 @@ class GraphCool
         DB::migrate();
     }
 
-    /**
-     * @return array
-     * @throws Error
-     */
     protected function parseRequest(): array
     {
         StopWatch::start(__METHOD__);
@@ -78,6 +78,9 @@ class GraphCool
         } catch (JsonException $e) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
+        }
+        if (!is_array($request)) {
+            $request = [$request];
         }
         StopWatch::stop(__METHOD__);
         return $request;
@@ -100,10 +103,10 @@ class GraphCool
         return $schema;
     }
 
-    protected function executeQuery(Schema $schema, string $query, ?array $variables): array
+    protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
-        $result = GraphQL::executeQuery($schema, $query, [], null, $variables)->toArray(
+        $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)->toArray(
             DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE
         );
         StopWatch::stop(__METHOD__);
