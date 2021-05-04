@@ -310,7 +310,7 @@ class MysqlQueryBuilder
                         if (!is_array($where['value'])) {
                             throw new RuntimeException($where['operator']. ' requires the value to be an array.');
                         }
-                        $sql .= ' ' . $this->parameter($where['value'][0]) . ' AND ' . $where['value'][1];
+                        $sql .= ' ' . $this->parameter($where['value'][0]) . ' AND ' . $this->parameter($where['value'][1]);
                     } else {
                         $sql .= ' ' . $this->parameter($where['value']);
                     }
