@@ -79,7 +79,7 @@ class GraphCool
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
         }
-        if (!is_array($request)) {
+        if (isset($request['query'])) {
             $request = [$request];
         }
         StopWatch::stop(__METHOD__);
