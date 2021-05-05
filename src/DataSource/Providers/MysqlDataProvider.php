@@ -267,7 +267,7 @@ class MysqlDataProvider extends DataProvider
         return $this->load($tenantId, $name, $id);
     }
 
-    public function update(string $tenantId, string $name, array $data): stdClass
+    public function update(string $tenantId, string $name, array $data): ?stdClass
     {
         $this->updateNode($tenantId, $data['id']);
         $model = $this->getModel($name);
@@ -628,21 +628,6 @@ class MysqlDataProvider extends DataProvider
         };
     }
 
-    protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
-    {
-        if ($field->null === false && $value === null) {
-            $value = $field->default ?? null;
-            if (is_null($value)) {
-                return null;
-            }
-        }
-        return match ($field->type) {
-            default => (string)$value,
-            Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
-            Type::FLOAT => (float)$value,
-            Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
-        };
-    }
 
     protected function findRelatedNodes(?string $tenantId, string $id, Relation $relation, array $args): array|stdClass
     {

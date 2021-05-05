@@ -6,7 +6,8 @@ namespace Mrap\GraphCool\Utils;
 
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
-use Box\Spout\Reader\ReaderAbstract;
+use Box\Spout\Reader\CSV\Reader as CSVReader;
+use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use GraphQL\Error\Error;
 use JsonException;
@@ -36,6 +37,10 @@ class FileImport
         if ($reader === null) {
             throw new Error('Could not import file: Unknown MimeType: '. $mimeType);
         }
+        if ($reader instanceof CSVReader) {
+            $reader = $this->detectSeparator($reader, $file);
+        }
+
         $reader->open($file);
         $result = [];
 
@@ -62,6 +67,9 @@ class FileImport
                         if (isset($mapping[$key])) {
                             $property = $mapping[$key];
                             $item[$property] = $cell->getValue();
+                            if ($property === 'id' && empty($item[$property])) {
+                                unset($item[$property]);
+                            }
                         }
                     }
                     $result[] = $item;
@@ -102,7 +110,7 @@ class FileImport
         return null;
     }
 
-    protected function getReader(string $mimeType): ?ReaderAbstract
+    protected function getReader(string $mimeType): ?ReaderInterface
     {
         return match ($mimeType) {
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(),
@@ -110,6 +118,19 @@ class FileImport
             'text/csv', 'text/plain', 'application/csv' => ReaderEntityFactory::createCSVReader(),
             default => null
         };
+    }
+
+    protected function detectSeparator(CSVReader $reader, string $file): CSVReader
+    {
+        $handle = fopen($file, 'rb');
+        $sample = fread($handle, 100);
+        fclose($handle);
+
+        if (strlen(str_replace(';', '', $sample)) < strlen(str_replace(',', '', $sample))) {
+            $reader->setFieldDelimiter(';');
+        }
+
+        return $reader;
     }
 
 }

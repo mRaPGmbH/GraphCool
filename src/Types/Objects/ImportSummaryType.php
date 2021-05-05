@@ -24,6 +24,8 @@ class ImportSummaryType extends ObjectType
                 'updated_ids' => new NonNull(new ListOfType(Type::string())),
                 'affected_rows' => new NonNull(Type::int()),
                 'affected_ids' => new NonNull(new ListOfType(Type::string())),
+                'failed_rows' => new NonNull(Type::int()),
+                'failed_row_numbers' => new NonNull(new ListOfType(Type::int())),
             ],
         ];
         parent::__construct($config);

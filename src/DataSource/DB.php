@@ -59,7 +59,7 @@ class DB
         return $result;
     }
 
-    public static function update(string $tenantId, string $modelName, array $data): stdClass
+    public static function update(string $tenantId, string $modelName, array $data): ?stdClass
     {
         StopWatch::start(__METHOD__);
         $result =  static::get()->update($tenantId, $modelName, $data);
@@ -96,6 +96,14 @@ class DB
         StopWatch::start(__METHOD__);
         static::get()->migrate();
         StopWatch::stop(__METHOD__);
+    }
+
+    public static function import(string $tenantId, string $modelName, array $data): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result =  static::get()->import($tenantId, $modelName, $data);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
 

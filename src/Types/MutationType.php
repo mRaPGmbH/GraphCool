@@ -191,27 +191,7 @@ class MutationType extends ObjectType
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            $name = substr($info->fieldName, 6, -1);
-            $importer = new FileImport();
-            $result = new stdClass();
-            $result->updated_rows = 0;
-            $result->updated_ids = [];
-            $result->inserted_rows = 0;
-            $result->inserted_ids = [];
-            foreach ($importer->import($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $rootValue['index'] ?? 0) as $item) {
-                if (isset($item['id'])) {
-                    $item = DB::update(JwtAuthentication::tenantId(), $name, $item);
-                    $result->updated_rows += 1;
-                    $result->updated_ids[] = $item->id;
-                } else {
-                    $item = DB::insert(JwtAuthentication::tenantId(), $name, $item);
-                    $result->inserted_rows += 1;
-                    $result->inserted_ids[] = $item->id;
-                }
-            }
-            $result->affected_rows = $result->inserted_rows + $result->updated_rows;
-            $result->affected_ids = array_merge($result->inserted_ids, $result->updated_ids);
-            return $result;
+            return DB::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args);
         }
         throw new \RuntimeException(print_r($info->fieldName, true));
     }
