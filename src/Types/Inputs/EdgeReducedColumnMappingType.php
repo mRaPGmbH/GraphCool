@@ -7,16 +7,15 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\Type;
-use GraphQL\Type\Definition\UnionType;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class EdgeExportColumnType extends InputObjectType
+class EdgeReducedColumnMappingType extends InputObjectType
 {
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $fields = [
-            'column' => new NonNull($typeLoader->load(substr($name, 0, -16) . 'EdgeColumn')),
+            'column' => new NonNull($typeLoader->load(substr($name, 0, -24) . 'EdgeReducedColumn')),
             'label' => Type::string(),
         ];
         $config = [

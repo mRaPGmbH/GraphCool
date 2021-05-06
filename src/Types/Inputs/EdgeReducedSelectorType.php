@@ -14,18 +14,18 @@ use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class EdgeSelectorType extends InputObjectType
+class EdgeReducedSelectorType extends InputObjectType
 {
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $fields = [
             'id' => new NonNull(Type::id()),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load(substr($name, 0, -8) . 'ColumnMapping')))),
+            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load(substr($name, 0, -15) . 'ReducedColumnMapping')))),
         ];
         $config = [
             'name' => $name,
-            'description' => 'Selector for one ' . substr($name, 1, -12) . ' relation.',
+            'description' => 'Selector for one ' . substr($name, 1, -19) . ' relation.',
             'fields' => $fields,
         ];
         parent::__construct($config);

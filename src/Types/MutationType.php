@@ -151,15 +151,35 @@ class MutationType extends ObjectType
 
     protected function import(string $name, TypeLoader $typeLoader): array
     {
+        $args = [
+            'file' => $typeLoader->load('_Upload'),
+            'data_base64' => Type::string(),
+            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
+        ];
+
+        $classname = '\\App\\Models\\' . $name;
+        $model = new $classname();
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            /*
+            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumn')));
+            }*/
+
+            if ($relation->type === Relation::BELONGS_TO_MANY) {
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeReducedSelector')));
+            }
+        }
+
+
+
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
         return [
             'type' => $typeLoader->load('_ImportSummary'),
             'description' => 'Import a list of ' .  $name . 's from a spreadsheet. If ID\'s are present, ' .  $name . 's will be updated - otherwise new ' .  $name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
-            'args' => [
-                'file' => $typeLoader->load('_Upload'),
-                'data_base64' => Type::string(),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
-            ]
+            'args' => $args
         ];
     }
 
@@ -191,7 +211,8 @@ class MutationType extends ObjectType
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            return DB::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args);
+            $importer = new FileImport(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1));
+            return $importer->import($args);
         }
         throw new \RuntimeException(print_r($info->fieldName, true));
     }

@@ -17,21 +17,21 @@ class FileImportTest extends TestCase
     public function testBasicCsv(): void
     {
         $import = new FileImport();
-        $result = $import->import($this->csv, $this->columns);
+        $result = $import->importFile($this->csv, $this->columns);
         self::assertEquals($this->data, $result, 'Imported data did not match csv contents.');
     }
 
     public function testBasicXlsx(): void
     {
         $import = new FileImport();
-        $result = $import->import($this->csv, $this->columns);
+        $result = $import->importFile($this->csv, $this->columns);
         self::assertEquals($this->data, $result, 'Imported data did not match Xlsx contents.');
     }
 
     public function testBasicOds(): void
     {
         $import = new FileImport();
-        $result = $import->import($this->ods, $this->columns);
+        $result = $import->importFile($this->ods, $this->columns);
         self::assertEquals($this->data, $result, 'Imported data did not match Ods contents.');
     }
 

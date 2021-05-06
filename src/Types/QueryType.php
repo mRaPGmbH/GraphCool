@@ -85,8 +85,7 @@ class QueryType extends ObjectType
             'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
             'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
             'search' => Type::string(),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
-            '_timezone' => $typeLoader->load('_TimezoneOffset'),
+            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
         ];
 
         foreach ($model as $key => $relation) {

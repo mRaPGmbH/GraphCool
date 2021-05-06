@@ -10,6 +10,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
+use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
 use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
@@ -17,12 +18,14 @@ use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\ColumnType;
-use Mrap\GraphCool\Types\Inputs\EdgeExportColumnType;
+use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
-use Mrap\GraphCool\Types\Inputs\ExportColumnType;
+use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
@@ -134,6 +137,9 @@ class TypeLoader
         if (str_ends_with($name, 'EdgeOrderByClause')) {
             return new EdgeOrderByClauseType($name, $this);
         }
+        if (str_ends_with($name, 'EdgeReducedColumn')) {
+            return new EdgeReducedColumnType($name, $this);
+        }
         if (str_ends_with($name, 'EdgeColumn')) {
             return new EdgeColumnType($name, $this);
         }
@@ -143,14 +149,20 @@ class TypeLoader
         if (str_ends_with($name, 'OrderByClause')) {
             return new OrderByClauseType($name, $this);
         }
+        if (str_ends_with($name, 'EdgeReducedSelector')) {
+            return new EdgeReducedSelectorType($name, $this);
+        }
         if (str_ends_with($name, 'EdgeSelector')) {
             return new EdgeSelectorType($name, $this);
         }
-        if (str_ends_with($name, 'EdgeExportColumn')) {
-            return new EdgeExportColumnType($name, $this);
+        if (str_ends_with($name, 'EdgeReducedColumnMapping')) {
+            return new EdgeReducedColumnMappingType($name, $this);
         }
-        if (str_ends_with($name, 'ExportColumn')) {
-            return new ExportColumnType($name, $this);
+        if (str_ends_with($name, 'EdgeColumnMapping')) {
+            return new EdgeColumnMappingType($name, $this);
+        }
+        if (str_ends_with($name, 'ColumnMapping')) {
+            return new ColumnMappingType($name, $this);
         }
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name, $this);

@@ -11,13 +11,111 @@ use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use GraphQL\Error\Error;
 use JsonException;
+use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Types\Scalars\Date;
+use Mrap\GraphCool\Types\Scalars\DateTime;
+use Mrap\GraphCool\Types\Scalars\Time;
+use stdClass;
 
 class FileImport
 {
 
-    public function import(?string $data, array $columns, int $index): array
+    protected string $tenantId;
+    protected string $name;
+    protected Model $model;
+
+    public function __construct(string $tenantId, string $name)
     {
-        if ($data === null) {
+        $this->tenantId = $tenantId;
+        $this->name = $name;
+        $classname = '\\App\\Models\\' . $name;
+        $this->model = new $classname();
+    }
+
+
+    public function import(array $args): stdClass
+    {
+        $result = new stdClass();
+        $result->updated_rows = 0;
+        $result->updated_ids = [];
+        $result->inserted_rows = 0;
+        $result->inserted_ids = [];
+        $result->failed_rows = 0;
+        $result->failed_row_numbers = [];
+        $edgeColumns = [];
+        foreach ($this->model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
+                $edgeColumns[$key] = $args[$key];
+            }
+        }
+
+        foreach ($this->importFile($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $edgeColumns, $rootValue['index'] ?? 0) as $i => $item) {
+            $item = $this->convertItem($item);
+            if (isset($item['id'])) {
+                $outer = [
+                    'id' => $item['id'],
+                    'data' => $item
+                ];
+                unset($outer['data']['id']);
+                $item = DB::update($this->tenantId, $this->name, $outer);
+                if (is_null($item)) {
+                    $result->failed_rows += 1;
+                    $result->failed_row_numbers[] = ($i + 2);
+                } else {
+                    $result->updated_rows += 1;
+                    $result->updated_ids[] = $item->id;
+                }
+            } else {
+                $item = DB::insert($this->tenantId, $this->name, $item);
+                $result->inserted_rows += 1;
+                $result->inserted_ids[] = $item->id;
+            }
+        }
+        $result->affected_rows = $result->inserted_rows + $result->updated_rows;
+        $result->affected_ids = array_merge($result->inserted_ids, $result->updated_ids);
+        return $result;
+    }
+
+    protected function convertItem(array $item): array
+    {
+        foreach ($item as $key => $value) {
+            if (isset($this->model->$key) && $this->model->$key instanceof Field) {
+                $item[$key] = $this->convertField($this->model->$key, $value);
+            }
+        }
+        return $item;
+    }
+
+    protected function convertField(Field $field, $value): float|int|string
+    {
+        switch ($field->type) {
+            case Field::DATE:
+                $date = new Date();
+                return $date->parseValue($value);
+            case Field::DATE_TIME:
+                $dateTime = new DateTime();
+                return $dateTime->parseValue($value);
+            case Field::TIME:
+                $time = new Time();
+                return $time->parseValue($value);
+            case Field::DECIMAL:
+                return (float) $value;
+            default:
+                return (string) $value;
+        }
+    }
+
+
+
+    public function importFile(?string $input, array $columns, array $edgeColumns, int $index): array
+    {
+        if ($input === null) {
             $tmp = $this->getFile($index);
             if ($tmp === null) {
                 throw new Error('File is missing.');
@@ -29,7 +127,7 @@ class FileImport
             }
         } else {
             $file = tempnam(sys_get_temp_dir(), 'import');
-            file_put_contents($file, base64_decode($data));
+            file_put_contents($file, base64_decode($input));
             $mimeType = mime_content_type($file);
         }
 
@@ -48,38 +146,78 @@ class FileImport
         foreach ($reader->getSheetIterator() as $sheet) {
             $firstRow = true;
             $mapping = [];
+            $edgeMapping = [];
             /** @var Row $row */
             foreach ($sheet->getRowIterator() as $row) {
-                $cells = $row->getCells();
                 if ($firstRow) {
-                    foreach ($cells as $key => $cell) {
-                        $header = $cell->getValue();
-                        foreach ($columns as $column) {
-                            if ($column['label'] === $header) {
-                                $mapping[$key] = $column['column'];
-                            }
-                        }
-                    }
+                    [$mapping, $edgeMapping] = $this->getHeaderMapping($row, $columns, $edgeColumns);
                     $firstRow = false;
-                } else {
-                    $item = [];
-                    foreach ($cells as $key => $cell) {
-                        if (isset($mapping[$key])) {
-                            $property = $mapping[$key];
-                            $item[$property] = $cell->getValue();
-                            if ($property === 'id' && empty($item[$property])) {
-                                unset($item[$property]);
-                            }
-                        }
-                    }
-                    $result[] = $item;
+                    continue;
                 }
+                $item = [];
+                foreach ($row->getCells() as $key => $cell) {
+                    if (isset($mapping[$key])) {
+                        $property = $mapping[$key];
+                        $item[$property] = $cell->getValue();
+                        if ($property === 'id' && empty($item[$property])) {
+                            unset($item[$property]);
+                        }
+                    } elseif (isset($edgeMapping[$key])) {
+                        $property = $edgeMapping[$key]['nodeProperty'];
+                        $relatedId = $edgeMapping[$key]['relatedId'];
+                        $edgeProperty = $edgeMapping[$key]['edgeProperty'];
+                        $field = $this->model->$property->$edgeProperty;
+                        if (!isset($item[$property])) {
+                            $item[$property] = [];
+                        }
+                        if (!isset($item[$property][$relatedId])) {
+                            $item[$property][$relatedId] = [
+                                'where' => [
+                                    'column' => 'id',
+                                    'operator' => '=',
+                                    'value' => $relatedId
+                                ]
+                            ];
+                        }
+                        $item[$property][$relatedId][$edgeProperty] = $this->convertField($field, $cell->getValue());
+                    }
+                }
+                $result[] = $item;
             }
             break; // only the first sheet will be used
         }
         $reader->close();
         unlink($file);
         return $result;
+    }
+
+    protected function getHeaderMapping(Row $row, array $columns, array $edgeColumns): array
+    {
+        $mapping = [];
+        $edgeMapping = [];
+        foreach ($row->getCells() as $key => $cell) {
+            $header = $cell->getValue();
+            foreach ($columns as $column) {
+                if ($column['label'] === $header) {
+                    $mapping[$key] = $column['column'];
+                }
+            }
+            foreach ($edgeColumns as $relationName => $edges) {
+                foreach ($edges as $edge) {
+                    foreach ($edge['columns'] as $column) {
+                        if ($column['label'] === $header) {
+                            $property = substr($column['column'], 1);
+                            $edgeMapping[$key] = [
+                                'nodeProperty' => $relationName,
+                                'relatedId' => $edge['id'],
+                                'edgeProperty' => $property,
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+        return [$mapping, $edgeMapping];
     }
 
     protected function getFile(int $index): ?array
