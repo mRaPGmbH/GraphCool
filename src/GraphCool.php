@@ -17,7 +17,6 @@ use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
-use stdClass;
 use Throwable;
 
 class GraphCool

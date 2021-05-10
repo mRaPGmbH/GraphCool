@@ -656,8 +656,15 @@ class MysqlDataProvider extends DataProvider
         $statement->execute($query->getParameters());
 
         foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $edgeIds) {
-            $edge = $this->fetchEdge($edgeIds->parent_id, $edgeIds->child_id, $resultType);
+            $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
             if ($edge === null) {
+                var_dump([
+                    'parent_id' => $edgeIds->parent_id,
+                    'child_id' => $edgeIds->child_id,
+                    'resultType' => $resultType
+                ]);
+
+                die('WTF!!!');
                 continue; // TODO: throw exception? this should not happen...
             }
             $properties = $this->convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
@@ -687,9 +694,18 @@ class MysqlDataProvider extends DataProvider
         return $edges;
     }
 
-    protected function fetchEdge(string $parentId, string $childId, ?string $resultType = ResultType::DEFAULT): ?stdClass
+    protected function fetchEdge(?string $tenantId, string $parentId, string $childId, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        $sql = 'SELECT * FROM `edge` WHERE `tenant_id` = :tenant_id AND `parent_id` = :parent_id AND `child_id` = :child_id ';
+        $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';
+        $parameters = [
+            'parent_id' => $parentId,
+            'child_id' => $childId
+        ];
+
+        if ($tenantId !== null) {
+            $sql .= 'AND `tenant_id` = :tenant_id ';
+            $parameters['tenant_id'] = $tenantId;
+        }
         $sql .= match($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
             'WITH_TRASHED' => '',
@@ -697,11 +713,7 @@ class MysqlDataProvider extends DataProvider
         };
 
         $statement = $this->statement($sql);
-        $statement->execute([
-            'tenant_id' => JwtAuthentication::tenantId(),
-            'parent_id' => $parentId,
-            'child_id' => $childId
-        ]);
+        $statement->execute($parameters);
         $edge = $statement->fetch(PDO::FETCH_OBJ);
         if ($edge === false) {
             return null;

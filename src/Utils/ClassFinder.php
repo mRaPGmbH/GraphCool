@@ -22,10 +22,18 @@ class ClassFinder
 
     public static function rootPath(): string
     {
-        if (PHP_SAPI === 'cli') {
-            return dirname($_SERVER['SCRIPT_FILENAME'], 1);
+        if (defined('APP_ROOT_PATH')) {
+            return APP_ROOT_PATH;
         }
-        return dirname($_SERVER['SCRIPT_FILENAME'], 2);
+        $levels = 2;
+        if (PHP_SAPI === 'cli') {
+            $levels = 1;
+        }
+        $path = dirname($_SERVER['SCRIPT_FILENAME'], $levels);
+        if ($path === '.') {
+            return $_SERVER['PWD'];
+        }
+        return $path;
     }
 
     public static function queries(): array
@@ -52,7 +60,6 @@ class ClassFinder
     {
         if (!isset(static::$scripts)) {
             StopWatch::start(__METHOD__);
-            var_dump(self::rootPath());
             static::$scripts = static::findClasses(self::rootPath() . '/app/Scripts', 'App\\Scripts\\');
             StopWatch::stop(__METHOD__);
         }
