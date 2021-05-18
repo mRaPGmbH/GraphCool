@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Model;
 
 
+use stdClass;
+
 class Model
 {
 
@@ -24,5 +26,10 @@ class Model
     {
         return $updates;
     }
+
+    public function afterInsert(stdClass $data): void {}
+    public function afterUpdate(stdClass $data): void {}
+    public function afterDelete(stdClass $data): void {}
+    public function afterBulkUpdate(callable $closure): void {}
 
 }

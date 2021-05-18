@@ -12,7 +12,6 @@ use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Utils\Env;
-use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
 use PDO;
@@ -264,7 +263,11 @@ class MysqlDataProvider extends DataProvider
                 $this->insertOrUpdateModelField($item, $data[$key] ?? null, $id, $name, $key);
             }
         }
-        return $this->load($tenantId, $name, $id);
+        $loaded = $this->load($tenantId, $name, $id);
+        if ($loaded !== null) {
+            $model->afterInsert($loaded);
+        }
+        return $loaded;
     }
 
     public function update(string $tenantId, string $name, array $data): ?stdClass
@@ -295,12 +298,17 @@ class MysqlDataProvider extends DataProvider
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
-        return $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+        $loaded = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+        if ($loaded !== null) {
+            $model->afterUpdate($loaded);
+        }
+        return $loaded;
     }
 
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
         $model = $this->getModel($name);
+        $resultType = $data['result'] ?? ResultType::DEFAULT;
 
         $updateData = $data['data'] ?? [];
         $updates = [];
@@ -316,21 +324,9 @@ class MysqlDataProvider extends DataProvider
             }
         }
 
+        $ids = null;
         if (count($relations) > 0) {
-            $ids = [];
-            $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
-            $query->select(['id'])
-                ->where($data['where'] ?? null);
-            match($args['result'] ?? ResultType::DEFAULT) {
-                ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-                ResultType::WITH_TRASHED => $query->withTrashed(),
-                default => null
-            };
-            $statement = $this->statement($query->toSql());
-            $statement->execute($query->getUpdateParameters());
-            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
-                $ids[] = $row->id;
-            }
+            $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'], $resultType);
             foreach ($relations as $key => $relationDatas) {
                 foreach ($relationDatas as $relationData) {
                     $this->insertOrUpdateBelongsManyRelation($tenantId, $model->$key, $relationData, $ids, $key);
@@ -338,11 +334,12 @@ class MysqlDataProvider extends DataProvider
             }
         }
 
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
-        $query->update($updates)
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->update($updates)
             ->where($data['where'] ?? null);
 
-        match($args['result'] ?? ResultType::DEFAULT) {
+        match($data['result'] ?? ResultType::DEFAULT) {
             ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
             ResultType::WITH_TRASHED => $query->withTrashed(),
             default => null
@@ -356,7 +353,41 @@ class MysqlDataProvider extends DataProvider
         $statement = $this->statement($query->toSql());
         $statement->execute($query->getUpdateParameters());
 
+        if ($ids === null) {
+            $where = $data['where'];
+            $ids = function() use ($model, $name, $tenantId, $where, $resultType) {
+                return $this->getIdsForWhere($model, $name, $tenantId, $where, $resultType);
+            };
+        }
+        $closure = function() use ($tenantId, $name, $ids, $resultType) {
+            if (is_callable($ids)) {
+                $ids = $ids();
+            }
+            $this->loadAll($tenantId, $name, $ids, $resultType);
+        };
+        $model->afterBulkUpdate($closure);
+
         return $result;
+    }
+
+    protected function getIdsForWhere(Model $model, string $name, string $tenantId, ?array $where, string $resultType): array
+    {
+        $ids = [];
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->select(['id'])
+            ->where($where ?? null);
+        match($resultType) {
+            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            ResultType::WITH_TRASHED => $query->withTrashed(),
+            default => null
+        };
+        $statement = $this->statement($query->toSql());
+        $statement->execute($query->getUpdateParameters());
+        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+            $ids[] = $row->id;
+        }
+        return $ids;
     }
 
     protected function convertWhereValues(Model $model, ?array &$where): ?array
@@ -861,16 +892,21 @@ class MysqlDataProvider extends DataProvider
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
-        $model = $this->load($tenantId, $name, $id);
+        $node = $this->load($tenantId, $name, $id);
         $this->deleteNode($tenantId, $id);
         $this->deleteEdgesForNodeId($tenantId, $id);
-        return $model;
+        $model = $this->getModel($name);
+        $model->afterDelete($node);
+        return $node;
     }
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
         $this->restoreNode($tenantId, $id);
-       return $this->load($tenantId, $name, $id);
+        $node = $this->load($tenantId, $name, $id);
+        $model = $this->getModel($name);
+        $model->afterUpdate($node);
+        return $node;
     }
 
     protected function deleteNode(?string $tenantId, string $id): bool
