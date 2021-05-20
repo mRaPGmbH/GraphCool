@@ -27,7 +27,7 @@ class QueryType extends ObjectType
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
             $fields[lcfirst($name)] = $this->read($name, $typeLoader);
-            $fields[lcfirst($name) . 's'] = $this->list($name, $typeLoader);
+            $fields[lcfirst($name) . 's'] = $this->list($name, $model, $typeLoader);
             $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
 //            $fields['previewImport' . $type->name . 's'] = $this->previewImport($type, $typeLoader);
         }
@@ -61,20 +61,28 @@ class QueryType extends ObjectType
         ];
     }
 
-    protected function list(string $name, TypeLoader $typeLoader): array
+    protected function list(string $name, Model $model, TypeLoader $typeLoader): array
     {
+        $args = [
+            'first'=> Type::int(),
+            'page' => Type::int(),
+            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+        ];
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            $args['where'.ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
+        }
+        $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause')));
+        $args['search'] = Type::string();
+        $args['result'] = $typeLoader->load('_Result');
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+
         return [
             'type' => $typeLoader->load('_' . $name.'Paginator'),
             'description' => 'Get a paginated list of ' .  $name . 's filtered by given where clauses.',
-            'args' => [
-                'first'=> Type::int(),
-                'page' => Type::int(),
-                'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
-                'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
-                'search' => Type::string(),
-                'result' => $typeLoader->load('_Result'),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
-            ]
+            'args' => $args
         ];
     }
 
@@ -98,6 +106,7 @@ class QueryType extends ObjectType
             if ($relation->type === Relation::BELONGS_TO_MANY) {
                 $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector')));
             }
+            $args['where'.ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
         }
         $args['result'] = $typeLoader->load('_Result');
         $args['_timezone'] = $typeLoader->load('_TimezoneOffset');

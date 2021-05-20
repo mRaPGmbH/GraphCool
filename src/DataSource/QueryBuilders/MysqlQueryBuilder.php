@@ -21,6 +21,7 @@ class MysqlQueryBuilder
     protected Model $model;
     protected Relation $relation;
     protected string $limit = '';
+    protected string $parameterPrefix = 'p';
     protected array $parameters = [];
     protected array $updateParameters = [];
     protected array $where = [];
@@ -31,9 +32,10 @@ class MysqlQueryBuilder
 
     protected function __construct(){}
 
-    public static function forModel(Model $model, string $name): MysqlQueryBuilder
+    public static function forModel(Model $model, string $name, string $parameterPrefix = 'p'): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
+        $builder->parameterPrefix = $parameterPrefix;
         $builder->name = 'node';
         $builder->where[] = $builder->fieldName('model') . ' = '. $builder->parameter($name);
         $builder->model = $model;
@@ -187,6 +189,37 @@ class MysqlQueryBuilder
             return $this;
         }
         $this->where[] = $this->whereRecursive($where);
+        return $this;
+    }
+
+    public function whereHas(Model $model, string $name, string $relationType, ?array $where): MysqlQueryBuilder
+    {
+        if ($where === null || count($where) === 0) {
+            return $this;
+        }
+        $query = self::forModel($model, $name, $name)
+            ->select(['id'])
+            ->where($where);
+
+        $as = '`' . $name.'Edge`';
+        $joinSql = ' LEFT JOIN `edge` AS ' . $as . ' ON (';
+        $whereSql = $as;
+        if ($relationType === Relation::HAS_ONE || $relationType === Relation::HAS_MANY) {
+            $joinSql .= $as.'.`parent_id` = `node`.`id` AND '. $as . '.`child` = ';
+            $whereSql .= '.`child_id` IN (';
+        } elseif ($relationType === Relation::BELONGS_TO || $relationType === Relation::BELONGS_TO_MANY) {
+            $joinSql .= $as.'.`child_id` = `node`.`id` AND '. $as . '.`parent` = ';
+            $whereSql .= '.`parent` IN (';
+        } else {
+            throw new RuntimeException('Unknown relation type: ' .  $relationType);
+        }
+        $joinSql .= $this->parameter($name). ')';
+        $whereSql .= $query->toSql() . ')';
+
+        $this->joins[] = $joinSql;
+        $this->where[] = $whereSql;
+        $this->parameters = array_merge($this->parameters, $query->getParameters());
+
         return $this;
     }
 
@@ -381,7 +414,7 @@ class MysqlQueryBuilder
 
     protected function parameter($value): string
     {
-        $key = ':p' . count($this->parameters);
+        $key = ':' . $this->parameterPrefix . count($this->parameters);
         $this->parameters[$key] = $value;
         return $key;
     }

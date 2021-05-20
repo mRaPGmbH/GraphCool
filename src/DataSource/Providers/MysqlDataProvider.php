@@ -120,6 +120,18 @@ class MysqlDataProvider extends DataProvider
             ->orderBy($args['orderBy'] ?? [])
             ->search($args['search'] ?? null);
 
+        foreach ($model as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            $relatedClassname = $relation->classname;
+            $relatedModel = new $relatedClassname();
+            $relatedWhere = $this->convertWhereValues($relatedModel, $args['where'.ucfirst($key)]);
+
+            $query->whereHas($relatedModel, $relation->name, $relation->type, $relatedWhere);
+        }
+
+
         match($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
