@@ -35,6 +35,7 @@ class QueryType extends ObjectType
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
             $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+                $query->authenticate();
                 return $query->resolve($rootValue, $args, $context, $info);
             };
         }
@@ -133,14 +134,14 @@ class QueryType extends ObjectType
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
-        JwtAuthentication::authenticate();
-
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
         }
         if (isset($this->customResolvers[$info->fieldName])) {
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
         }
+        JwtAuthentication::authenticate();
+
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
                 return DB::findAll(JwtAuthentication::tenantId(), substr($info->returnType->toString(), 1,-9), $args);

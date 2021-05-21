@@ -3,6 +3,7 @@
 
 namespace Mrap\GraphCool\Utils;
 
+use GraphQL\Error\Error;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\LocalFileReference;
@@ -29,10 +30,10 @@ class JwtAuthentication
         );
 
         if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            throw new \RuntimeException('Authorization header is missing in request.');
+            throw new Error('Authorization header is missing in request.');
         }
         if (!str_starts_with($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ')) {
-            throw new \RuntimeException('Authorization header in request does not appear to be a JWT.');
+            throw new Error('Authorization header in request does not appear to be a JWT.');
         }
 
         $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
@@ -41,7 +42,7 @@ class JwtAuthentication
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());
 
         if (! $config->validator()->validate($token, ...$constraints)) {
-            throw new \RuntimeException('JWT token could not be validated.');
+            throw new Error('JWT token could not be validated.');
         }
 
         /*
@@ -54,7 +55,7 @@ class JwtAuthentication
 
         static::$claims = $token->claims()->all();
         if (!isset(static::$claims['tid'])) {
-            throw new \RuntimeException('Tenant ID (tid) is missing from JWT.');
+            throw new Error('Tenant ID (tid) is missing from JWT.');
         }
         static::$claims['tid'] = (string) static::$claims['tid'];
     }

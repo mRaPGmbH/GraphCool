@@ -39,6 +39,7 @@ class MutationType extends ObjectType
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
             $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+                $query->authenticate();
                 return $query->resolve($rootValue, $args, $context, $info);
             };
         }
@@ -185,7 +186,6 @@ class MutationType extends ObjectType
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
-        JwtAuthentication::authenticate();
 
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
@@ -195,6 +195,7 @@ class MutationType extends ObjectType
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
         }
 
+        JwtAuthentication::authenticate();
         if (str_starts_with($info->fieldName, 'create')) {
             return DB::insert(JwtAuthentication::tenantId(), $info->returnType->toString(), $args);
         }
