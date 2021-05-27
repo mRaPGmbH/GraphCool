@@ -198,14 +198,14 @@ class FileImport
         foreach ($row->getCells() as $key => $cell) {
             $header = $cell->getValue();
             foreach ($columns as $column) {
-                if ($column['label'] === $header) {
+                if (isset($column['label']) && $column['label'] === $header) {
                     $mapping[$key] = $column['column'];
                 }
             }
             foreach ($edgeColumns as $relationName => $edges) {
                 foreach ($edges as $edge) {
                     foreach ($edge['columns'] as $column) {
-                        if ($column['label'] === $header) {
+                        if (isset($column['label']) && $column['label'] === $header) {
                             $property = substr($column['column'], 1);
                             $edgeMapping[$key] = [
                                 'nodeProperty' => $relationName,

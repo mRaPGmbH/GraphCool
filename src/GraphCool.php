@@ -105,9 +105,11 @@ class GraphCool
     protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
-        $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)->toArray(
-            DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE
-        );
+        $flags = null;
+        if (Env::get('APP_ENV') === 'local') {
+            $flags = DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
+        }
+        $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)->toArray($flags);
         StopWatch::stop(__METHOD__);
         return $result;
     }

@@ -306,7 +306,7 @@ class MysqlDataProvider extends DataProvider
                         $this->insertOrUpdateBelongsManyRelation($tenantId, $item, $input, [$data['id']], $name);
                     }
                 }
-            } elseif ($item instanceof Field) {
+            } elseif ($item instanceof Field && $item->readonly === false) {
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
@@ -323,13 +323,15 @@ class MysqlDataProvider extends DataProvider
         $resultType = $data['result'] ?? ResultType::DEFAULT;
 
         $updateData = $data['data'] ?? [];
-        $updates = [];
+        $updates = [
+            'deleted_at' => null
+        ];
         $relations = [];
         foreach ($model as $key => $item) {
             if (!isset($updateData[$key])) {
                 continue;
             }
-            if ($item instanceof Field) {
+            if ($item instanceof Field && $item->readonly === false) {
                 $updates[$key] = $updateData[$key];
             } elseif ($item instanceof Relation) {
                 $relations[$key] = $updateData[$key];
@@ -349,13 +351,8 @@ class MysqlDataProvider extends DataProvider
         $query = MysqlQueryBuilder::forModel($model, $name)
             ->tenant($tenantId)
             ->update($updates)
-            ->where($data['where'] ?? null);
-
-        match($data['result'] ?? ResultType::DEFAULT) {
-            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-            ResultType::WITH_TRASHED => $query->withTrashed(),
-            default => null
-        };
+            ->where($data['where'] ?? null)
+            ->withTrashed();
 
         $statement = $this->statement($query->toCountSql());
         $statement->execute($query->getParameters());
