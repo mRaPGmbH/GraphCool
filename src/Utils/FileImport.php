@@ -158,7 +158,11 @@ class FileImport
                 foreach ($row->getCells() as $key => $cell) {
                     if (isset($mapping[$key])) {
                         $property = $mapping[$key];
-                        $item[$property] = $cell->getValue();
+                        $value = $cell->getValue();
+                        if (empty($value)) {
+                            $value = null;
+                        }
+                        $item[$property] = $value;
                         if ($property === 'id' && empty($item[$property])) {
                             unset($item[$property]);
                         }
