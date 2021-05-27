@@ -105,7 +105,7 @@ class GraphCool
     protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
-        $flags = null;
+        $flags = 0;
         if (Env::get('APP_ENV') === 'local') {
             $flags = DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
         }

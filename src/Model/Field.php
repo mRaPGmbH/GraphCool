@@ -29,6 +29,8 @@ class Field
     public string|int|float|bool $default;
     public bool $readonly = false;
     public array $enumValues;
+    public bool $unique = false;
+    public bool $uniqueIgnoreTrashed = false;
 
     protected function __construct(string $type)
     {
@@ -127,6 +129,13 @@ class Field
         $field = new Field(static::ENUM);
         $field->enumValues = $values;
         return $field;
+    }
+
+    public function unique(bool $ignoreTrashed = false): Field
+    {
+        $this->unique = true;
+        $this->uniqueIgnoreTrashed = $ignoreTrashed;
+        return $this;
     }
 
     public function nullable(): Field
