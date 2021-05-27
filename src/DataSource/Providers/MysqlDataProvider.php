@@ -306,7 +306,7 @@ class MysqlDataProvider extends DataProvider
                         $this->insertOrUpdateBelongsManyRelation($tenantId, $item, $input, [$data['id']], $name);
                     }
                 }
-            } elseif ($item instanceof Field && $item->readonly === false) {
+            } elseif ($item instanceof Field) {
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
@@ -331,7 +331,7 @@ class MysqlDataProvider extends DataProvider
             if (!isset($updateData[$key])) {
                 continue;
             }
-            if ($item instanceof Field && $item->readonly === false) {
+            if ($item instanceof Field) {
                 $updates[$key] = $updateData[$key];
             } elseif ($item instanceof Relation) {
                 $relations[$key] = $updateData[$key];

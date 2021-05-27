@@ -85,7 +85,7 @@ class FileImport
     protected function convertItem(array $item): array
     {
         foreach ($item as $key => $value) {
-            if (isset($this->model->$key) && $this->model->$key instanceof Field) {
+            if (isset($this->model->$key) && $this->model->$key instanceof Field && $this->model->$key->readonly === false) {
                 $item[$key] = $this->convertField($this->model->$key, $value);
             }
         }
