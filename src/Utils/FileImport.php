@@ -92,7 +92,7 @@ class FileImport
         return $item;
     }
 
-    protected function convertField(Field $field, $value): float|int|string
+    protected function convertField(Field $field, $value): float|int|string|null
     {
         switch ($field->type) {
             case Field::DATE:

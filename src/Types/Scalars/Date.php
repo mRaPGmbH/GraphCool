@@ -22,12 +22,12 @@ class Date extends ScalarType
         return $dateTime->format('Y-m-d');
     }
 
-    public function parseValue($value): int
+    public function parseValue($value): ?int
     {
         return $this->validate($value);
     }
 
-    public function parseLiteral(Node $valueNode, ?array $variables = null): int
+    public function parseLiteral(Node $valueNode, ?array $variables = null): ?int
     {
         if (!$valueNode instanceof StringValueNode) {
             throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
@@ -35,8 +35,11 @@ class Date extends ScalarType
         return $this->validate($valueNode->value);
     }
 
-    protected function validate(string $value): int
+    protected function validate(?string $value): ?int
     {
+        if ($value === null) {
+            return null;
+        }
         $dateTime = Carbon::parse($value, "+0000");
         return (int)$dateTime->getPreciseTimestamp(3);
     }
