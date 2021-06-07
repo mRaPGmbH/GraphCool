@@ -48,12 +48,15 @@ class GraphCool
             if ($scriptName === strtolower($shortname)) {
                 $script = new $classname();
                 if ($script instanceof Script) {
-                    $script->run($args);
+                    try {
+                        $script->run($args);
+                    } catch (Throwable $e) {
+                        self::sentryCapture($e);
+                    }
                 } else {
-                    throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)');
+                    $e = new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)');
+                    self::sentryCapture($e);
                 }
-            } else {
-                throw new RuntimeException($scriptName . ' is not a known script.');
             }
         }
     }
@@ -142,7 +145,7 @@ class GraphCool
     protected function handleError(Throwable $e): array
     {
         if (!$e instanceof ClientAware || !$e->isClientSafe()) {
-            $this->sentryCapture($e);
+            self::sentryCapture($e);
         }
         return [
             'errors' => [
@@ -151,7 +154,7 @@ class GraphCool
         ];
     }
 
-    protected function sentryCapture(Throwable $e): void
+    protected static function sentryCapture(Throwable $e): void
     {
         $sentryDsn = Env::get('SENTRY_DSN');
         $environment = Env::get('APP_ENV');
