@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool;
 
+use GraphQL\Error\ClientAware;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\Error;
+use GraphQL\Error\FormattedError;
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
@@ -105,27 +107,48 @@ class GraphCool
     protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
-        $flags = 0;
-        if (Env::get('APP_ENV') === 'local') {
-            $flags = DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
-        }
-        $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)->toArray($flags);
+
+        $errorHandler = function(array $errors, callable $formatter) {
+            /** @var Error $error */
+            foreach ($errors as $error) {
+                $previous = $error->getPrevious();
+                if ($previous !== null && !$previous instanceof ClientAware) {
+                    $this->sentryCapture($previous);
+                }
+            }
+            return array_map($formatter, $errors);
+        };
+
+        $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)
+            ->setErrorsHandler($errorHandler)
+            ->toArray($this->getDebugFlags());
+
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
+    protected function getDebugFlags(): int
+    {
+        if (Env::get('APP_ENV') === 'local') {
+            return DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
+        }
+        return 0;
+    }
+
     protected function handleError(Throwable $e): array
     {
-        if ($e instanceof Error) {
-            return [
-                'errors' => [[
-                    'message' => $e->getMessage(),
-                    'extensions' => ['category' => 'graphql'],
-                    'location' => ['line' => 1, 'column' => 1]
-                ]]
-            ];
+        if (!$e instanceof ClientAware) {
+            $this->sentryCapture($e);
         }
+        return [
+            'errors' => [
+                FormattedError::createFromException($e, $this->getDebugFlags())
+            ]
+        ];
+    }
 
+    protected function sentryCapture(Throwable $e): void
+    {
         $sentryDsn = Env::get('SENTRY_DSN');
         $environment = Env::get('APP_ENV');
         if ($sentryDsn !== null && $environment !== 'local' && function_exists("\Sentry\init")) {
@@ -137,24 +160,6 @@ class GraphCool
                          ]);
             \Sentry\captureException($e);
         }
-
-        if ($environment === 'local') {
-            return [
-                'errors' => [
-                    [
-                        'message' => $e->getMessage(),
-                        'debug_info'       => print_r($e, true),
-                    ]
-                ]
-            ];
-        }
-        return [
-            'errors' => [
-                [
-                    'message' => 'Internal error',
-                ]
-            ]
-        ];
     }
 
     protected function sendResponse(array $response): void
