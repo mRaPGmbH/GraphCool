@@ -111,9 +111,13 @@ class GraphCool
         $errorHandler = function(array $errors, callable $formatter) {
             /** @var Error $error */
             foreach ($errors as $error) {
-                $previous = $error->getPrevious();
-                if ($previous !== null && !$previous instanceof ClientAware) {
-                    $this->sentryCapture($previous);
+                if (!$error->isClientSafe()) {
+                    $previous = $error->getPrevious();
+                    if ($previous === null) {
+                        $this->sentryCapture($error);
+                    } else {
+                        $this->sentryCapture($previous);
+                    }
                 }
             }
             return array_map($formatter, $errors);
@@ -137,7 +141,7 @@ class GraphCool
 
     protected function handleError(Throwable $e): array
     {
-        if (!$e instanceof ClientAware) {
+        if (!$e instanceof ClientAware || !$e->isClientSafe()) {
             $this->sentryCapture($e);
         }
         return [
@@ -170,7 +174,7 @@ class GraphCool
             echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $this->handleError($e);
-            echo '{"errors":[[{"message":"Internal error"}]]}';
+            echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
     }
 
