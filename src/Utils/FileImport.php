@@ -18,7 +18,9 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
 use Mrap\GraphCool\Types\Scalars\Time;
+use PHPUnit\TextUI\TestDirectoryNotFoundException;
 use stdClass;
+use Throwable;
 
 class FileImport
 {
@@ -94,20 +96,25 @@ class FileImport
 
     protected function convertField(Field $field, $value): float|int|string|null
     {
-        switch ($field->type) {
-            case Field::DATE:
-                $date = new Date();
-                return $date->parseValue($value);
-            case Field::DATE_TIME:
-                $dateTime = new DateTime();
-                return $dateTime->parseValue($value);
-            case Field::TIME:
-                $time = new Time();
-                return $time->parseValue($value);
-            case Field::DECIMAL:
-                return (float) $value;
-            default:
-                return (string) $value;
+        try {
+            switch ($field->type) {
+                case Field::DATE:
+                    $date = new Date();
+                    return $date->parseValue($value);
+                case Field::DATE_TIME:
+                    $dateTime = new DateTime();
+                    return $dateTime->parseValue($value);
+                case Field::TIME:
+                    $time = new Time();
+                    return $time->parseValue($value);
+                case Field::DECIMAL:
+                    return (float)$value;
+                default:
+                    return (string)$value;
+            }
+        } catch (Throwable $e) {
+            // date parsing failed
+            return null;
         }
     }
 
