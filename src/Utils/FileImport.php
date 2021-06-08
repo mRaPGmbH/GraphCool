@@ -18,7 +18,6 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
 use Mrap\GraphCool\Types\Scalars\Time;
-use PHPUnit\TextUI\TestDirectoryNotFoundException;
 use stdClass;
 use Throwable;
 
