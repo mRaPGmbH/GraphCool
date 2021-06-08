@@ -95,6 +95,9 @@ class FileImport
 
     protected function convertField(Field $field, $value): float|int|string|null
     {
+        if ($field->null === true && $value === null) {
+            return null;
+        }
         try {
             switch ($field->type) {
                 case Field::DATE:
@@ -164,9 +167,11 @@ class FileImport
                 foreach ($row->getCells() as $key => $cell) {
                     if (isset($mapping[$key])) {
                         $property = $mapping[$key];
+                        /** @var Field $field */
+                        $field = $this->model->$property;
                         $value = $cell->getValue();
                         if (empty($value)) {
-                            $value = null;
+                            $value = $field->default ?? null;
                         }
                         $item[$property] = $value;
                         if ($property === 'id' && empty($item[$property])) {
@@ -191,7 +196,7 @@ class FileImport
                         }
                         $value = $cell->getValue();
                         if (empty($value)) {
-                            $value = null;
+                            $value = $field->default ?? null;
                         }
                         $item[$property][$relatedId][$edgeProperty] = $this->convertField($field, $value);
                     }
@@ -212,15 +217,24 @@ class FileImport
         foreach ($row->getCells() as $key => $cell) {
             $header = $cell->getValue();
             foreach ($columns as $column) {
+                $property = $column['column'];
+                $field = $this->model->$property ?? null;
+                if ($field === null || !$field instanceof Field || $field->readonly === true) {
+                    continue;
+                }
                 if (isset($column['label']) && $column['label'] === $header) {
-                    $mapping[$key] = $column['column'];
+                    $mapping[$key] = $property;
                 }
             }
             foreach ($edgeColumns as $relationName => $edges) {
                 foreach ($edges as $edge) {
                     foreach ($edge['columns'] as $column) {
+                        $property = substr($column['column'], 1);
+                        $field = $this->model->$relationName->$property ?? null;
+                        if ($field === null || !$field instanceof Field || $field->readonly === true) {
+                            continue;
+                        }
                         if (isset($column['label']) && $column['label'] === $header) {
-                            $property = substr($column['column'], 1);
                             $edgeMapping[$key] = [
                                 'nodeProperty' => $relationName,
                                 'relatedId' => $edge['id'],
