@@ -183,7 +183,11 @@ class FileImport
                                 ]
                             ];
                         }
-                        $item[$property][$relatedId][$edgeProperty] = $this->convertField($field, $cell->getValue());
+                        $value = $cell->getValue();
+                        if (empty($value)) {
+                            $value = null;
+                        }
+                        $item[$property][$relatedId][$edgeProperty] = $this->convertField($field, $value);
                     }
                 }
                 $result[] = $item;

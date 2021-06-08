@@ -6,6 +6,8 @@ namespace Mrap\GraphCool\Utils;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Writer\WriterAbstract;
+use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use stdClass;
@@ -99,10 +101,10 @@ class FileExport
                             $value = null;
                         } elseif (str_starts_with($column['column'], '_')) {
                             $property = substr($column['column'], 1);
-                            $value = $data['edges'][0][$property] ?? null;
+                            $value = $data->edges[0]->$property ?? null;
                         } else {
                             $property = $column['column'];
-                            $value = $data['edges'][0]['_node']->$property ?? null;
+                            $value = $data->edges[0]->_node->$property ?? null;
                         }
                         $cells[] = WriterEntityFactory::createCell($value);
                     }
