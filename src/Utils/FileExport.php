@@ -10,6 +10,9 @@ use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Types\Scalars\Date;
+use Mrap\GraphCool\Types\Scalars\DateTime;
+use Mrap\GraphCool\Types\Scalars\Time;
 use stdClass;
 
 class FileExport
@@ -77,7 +80,8 @@ class FileExport
         $cells = [];
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
-            $cells[] = WriterEntityFactory::createCell($row->$key ?? null);
+            $value = $this->convertField($model->$key, $row->$key ?? null);
+            $cells[] = WriterEntityFactory::createCell($value);
         }
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -101,10 +105,10 @@ class FileExport
                             $value = null;
                         } elseif (str_starts_with($column['column'], '_')) {
                             $property = substr($column['column'], 1);
-                            $value = $data->edges[0]->$property ?? null;
+                            $value = $data['edges'][0]->$property ?? null;
                         } else {
                             $property = $column['column'];
-                            $value = $data->edges[0]->_node->$property ?? null;
+                            $value = $data['edges'][0]->_node->$property ?? null;
                         }
                         $cells[] = WriterEntityFactory::createCell($value);
                     }
@@ -114,6 +118,27 @@ class FileExport
         return $cells;
     }
 
+    protected function convertField(Field $field, $value): float|int|string|null
+    {
+        switch ($field->type) {
+            case Field::DATE:
+                $date = new Date();
+                return $date->serialize($value);
+            case Field::DATE_TIME:
+            case Field::UPDATED_AT:
+            case Field::CREATED_AT:
+            case Field::DELETED_AT:
+                $dateTime = new DateTime();
+                return $dateTime->serialize($value);
+            case Field::TIME:
+                $time = new Time();
+                return $time->serialize($value);
+            case Field::DECIMAL:
+                return (float) $value;
+            default:
+                return (string) $value;
+        }
+    }
 
     protected function getWriter(string $type): WriterAbstract
     {
