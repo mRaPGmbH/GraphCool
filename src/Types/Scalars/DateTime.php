@@ -36,8 +36,11 @@ class DateTime extends ScalarType
         return $this->validate($valueNode->value);
     }
 
-    protected function validate(string $value): int
+    protected function validate($value): ?int
     {
+        if ($value === null) {
+            return null;
+        }
         $dateTime = Carbon::parse($value);
         return (int)$dateTime->getPreciseTimestamp(3);
     }
