@@ -163,7 +163,7 @@ class GraphCool
                              'dsn' => $sentryDsn,
                              'environment' => Env::get('APP_ENV'),
                              'release' => Env::get('APP_NAME') . '@' . Env::get('APP_VERSION'),
-                             'server_name' => $_SERVER['SERVER_NAME']
+                             'server_name' => $_SERVER['SERVER_NAME'] ?? 'n/a'
                          ]);
             \Sentry\captureException($e);
         }
