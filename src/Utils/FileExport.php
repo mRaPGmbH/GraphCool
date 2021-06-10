@@ -120,6 +120,9 @@ class FileExport
 
     protected function convertField(Field $field, $value): float|int|string|null
     {
+        if ($field->null === true && $value === null) {
+            return null;
+        }
         switch ($field->type) {
             case Field::DATE:
                 $date = new Date();

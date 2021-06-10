@@ -439,7 +439,7 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
     {
-        if ($value === null && $field->null === true) {
+        if (($value === null || $value === '') && $field->null === true) {
             $this->deleteNodeProperty($id, $key);
             return;
         }
