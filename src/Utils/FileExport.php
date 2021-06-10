@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
+use Box\Spout\Writer\Common\Creator\Style\StyleBuilder;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Writer\WriterAbstract;
+use Carbon\Carbon;
 use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
@@ -75,13 +77,42 @@ class FileExport
         return $headers;
     }
 
+    protected function getExcelFormat(string $type)
+    {
+        return match ($type) {
+            'date' => 'dd.mm.yyyy',
+            'dateTime' => 'dd.mm.yyyy hh:ii',
+            'time' => 'hh:ii'
+        };
+    }
+
+    protected function getFormat(string $type)
+    {
+        return match ($type) {
+            Field::DATE => 'd.m.Y',
+            Field::DATE_TIME => 'd.m.Y H:i',
+            Field::TIME => 'H:i'
+        };
+    }
+
+
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
+        $dateStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('date'))->build();
+        $dateTimeStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('dateTime'))->build();
+        $timeStyle =  (new StyleBuilder())->setFormat($this->getExcelFormat('time'))->build();
+
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
             $value = $this->convertField($model->$key, $row->$key ?? null);
-            $cells[] = WriterEntityFactory::createCell($value);
+            //var_dump($value);
+            $cells[] = match ($model->$key->type) {
+                Field::DATE => WriterEntityFactory::createCell($value, $dateStyle),
+                Field::DATE_TIME, Field::UPDATED_AT, Field::CREATED_AT, Field::DELETED_AT => WriterEntityFactory::createCell($value, $dateTimeStyle),
+                Field::TIME => WriterEntityFactory::createCell($value, $timeStyle),
+                default => WriterEntityFactory::createCell($value)
+            };
         }
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -118,24 +149,21 @@ class FileExport
         return $cells;
     }
 
-    protected function convertField(Field $field, $value): float|int|string|null
+    protected function convertField(Field $field, $value): float|int|string|null|\DateTime
     {
         if ($field->null === true && $value === null) {
             return null;
         }
         switch ($field->type) {
             case Field::DATE:
-                $date = new Date();
-                return $date->serialize($value);
+                return Date::getObject($value)->format($this->getFormat(Field::DATE));
             case Field::DATE_TIME:
             case Field::UPDATED_AT:
             case Field::CREATED_AT:
             case Field::DELETED_AT:
-                $dateTime = new DateTime();
-                return $dateTime->serialize($value);
+                return DateTime::getObject($value)->format(Field::DATE_TIME);
             case Field::TIME:
-                $time = new Time();
-                return $time->serialize($value);
+                return Time::getObject($value)->format(Field::TIME);
             case Field::DECIMAL:
                 return (float) $value;
             default:

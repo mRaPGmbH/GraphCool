@@ -16,6 +16,13 @@ class DateTime extends ScalarType
     public $name = '_DateTime';
     public $description = 'A DateTime string with timezone in following ISO 8601 format: "2021-03-11T11:54:04.123+00:00". When used as input several other ISO 8601 variants are accepted as well.';
 
+    public static function getObject($value): \DateTime
+    {
+        $dateTime = Carbon::createFromTimestampMs($value);
+        $dateTime->setTimezone(TimeZone::get());
+        return $dateTime->toDateTime();
+    }
+
     public function serialize($value): string
     {
         $dateTime = Carbon::createFromTimestampMs($value);

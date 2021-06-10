@@ -16,6 +16,13 @@ class Time extends ScalarType
     public $name = '_Time';
     public $description = 'A Time string in ISO 8601 format: "11:54:04+00:00" or "11:54:04Z"';
 
+    public static function getObject($value): Carbon
+    {
+        $dateTime = Carbon::createFromTimestampMs($value);
+        $dateTime->setTimezone(TimeZone::get());
+        return $dateTime->toObject();
+    }
+
     public function serialize($value): string
     {
         $dateTime = Carbon::createFromTimestampMs($value);
