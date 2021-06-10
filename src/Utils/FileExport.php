@@ -7,8 +7,6 @@ use Box\Spout\Writer\Common\Creator\Style\StyleBuilder;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Writer\WriterAbstract;
-use Carbon\Carbon;
-use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
@@ -80,9 +78,9 @@ class FileExport
     protected function getExcelFormat(string $type)
     {
         return match ($type) {
-            'date' => 'dd.mm.yyyy',
-            'dateTime' => 'dd.mm.yyyy hh:ii',
-            'time' => 'hh:ii'
+            'date' => 'TT.MM.JJJJ',
+            'dateTime' => 'TT.MM.JJJJ hh:mm',
+            'time' => 'hh:mm'
         };
     }
 
