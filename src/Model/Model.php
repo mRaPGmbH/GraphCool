@@ -27,6 +27,11 @@ class Model
         return $updates;
     }
 
+    public function afterRelationUpdateButBeforeNodeUpdate(string $tenantId, string $id, array $updates): array
+    {
+        return $updates;
+    }
+
     public function afterInsert(stdClass $data): void {}
     public function afterUpdate(stdClass $data): void {}
     public function afterDelete(stdClass $data): void {}

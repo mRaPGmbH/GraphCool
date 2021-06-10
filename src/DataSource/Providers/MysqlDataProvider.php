@@ -306,10 +306,20 @@ class MysqlDataProvider extends DataProvider
                         $this->insertOrUpdateBelongsManyRelation($tenantId, $item, $input, [$data['id']], $name);
                     }
                 }
-            } elseif ($item instanceof Field) {
+            }
+        }
+
+        $updates = $model->afterRelationUpdateButBeforeNodeUpdate($tenantId, $data['id'], $updates);
+
+        foreach ($model as $key => $item) {
+            if (!array_key_exists($key, $updates)) {
+                continue;
+            }
+            if ($item instanceof Field) {
                 $this->insertOrUpdateModelField($item, $updates[$key], $data['id'], $name, $key);
             }
         }
+
         $loaded = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
         if ($loaded !== null) {
             $model->afterUpdate($loaded);
