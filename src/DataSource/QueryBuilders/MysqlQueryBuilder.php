@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\QueryBuilders;
 
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
@@ -188,7 +189,10 @@ class MysqlQueryBuilder
         if ($where === null || count($where) === 0) {
             return $this;
         }
-        $this->where[] = $this->whereRecursive($where);
+        $whereSql = $this->whereRecursive($where);
+        if ($whereSql !== null) {
+            $this->where[] = $whereSql;
+        }
         return $this;
     }
 
@@ -231,7 +235,10 @@ class MysqlQueryBuilder
         if ($where === null || count($where) === 0) {
             return $this;
         }
-        $this->where[] = $this->whereRecursive($where);
+        $whereSql = $this->whereRecursive($where);
+        if ($whereSql !== null) {
+            $this->where[] = $whereSql;
+        }
         return $this;
     }
 
@@ -312,7 +319,7 @@ class MysqlQueryBuilder
         return $this->sql;
     }
 
-    protected function whereRecursive(array $wheres, string $mode = 'AND'): string
+    protected function whereRecursive(array $wheres, string $mode = 'AND'): ?string
     {
         if (
             isset($wheres['operator'])
@@ -336,26 +343,40 @@ class MysqlQueryBuilder
                 if ($where['operator'] !== 'IS NULL' && $where['operator'] !== 'IS NOT NULL') {
                     if ($where['operator'] === 'IN' || $where['operator'] === 'NOT IN') {
                         if (!is_array($where['value'])) {
-                            throw new RuntimeException($where['operator']. ' requires the value to be an array.');
+                            throw new Error($where['operator']. ' requires the value to be an array.');
                         }
                         $sql .= ' ' . $this->parameterArray($where['value']);
                     } elseif ($where['operator'] === 'BETWEEN' || $where['operator'] === 'NOT BETWEEN') {
-                        if (!is_array($where['value'])) {
-                            throw new RuntimeException($where['operator']. ' requires the value to be an array.');
+                        $values = $where['value'] ?? null;
+                        if (!is_array($values) || count($values) <= 1) {
+                            throw new Error($where['operator']. ' requires the value to be an array of 2 values.');
                         }
-                        $sql .= ' ' . $this->parameter($where['value'][0]) . ' AND ' . $this->parameter($where['value'][1]);
+                        $values = array_values($values);
+                        $sql .= ' ' . $this->parameter($values[0]) . ' AND ' . $this->parameter($values[1]);
                     } else {
-                        $sql .= ' ' . $this->parameter($where['value']);
+                        if (!array_key_exists('value', $where)) {
+                            throw new Error($where['operator']. ' requires a value');
+                        }
+                        $sql .= ' ' . $this->parameter($where['value'] ?? null);
                     }
                 }
                 $sqls[] = $sql;
             }
             if (isset($where['OR'])) {
-                $sqls[] = '(' . $this->whereRecursive($where['OR'], 'OR') .')';
+                $sql = $this->whereRecursive($where['OR'], 'OR');
+                if ($sql !== null) {
+                    $sqls[] = '(' . $sql .')';
+                }
             }
             if (isset($where['AND'])) {
-                $sqls[] = '(' . $this->whereRecursive($where['AND'], 'AND') .')';
+                $sql = $this->whereRecursive($where['AND'], 'AND');
+                if ($sql !== null) {
+                    $sqls[] = '(' . $sql .')';
+                }
             }
+        }
+        if (count($sqls) === 0) {
+            return null;
         }
         return implode(' ' . $mode . ' ', $sqls);
     }

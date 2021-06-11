@@ -8,6 +8,7 @@ use stdClass;
 
 class Model
 {
+    private $settings;
 
     public function __construct()
     {
@@ -15,6 +16,7 @@ class Model
         $this->created_at = Field::createdAt();
         $this->updated_at = Field::updatedAt();
         $this->deleted_at = Field::deletedAt();
+        $this->settings = new Settings();
     }
 
     public function beforeInsert(string $tenantId, array $data): array
@@ -36,5 +38,10 @@ class Model
     public function afterUpdate(stdClass $data): void {}
     public function afterDelete(stdClass $data): void {}
     public function afterBulkUpdate(callable $closure): void {}
+
+    public function settings()
+    {
+        return $this->settings;
+    }
 
 }
