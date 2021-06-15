@@ -27,11 +27,11 @@ class FileExport
         $result = new \stdClass();
         if ($type === 'csv_excel') {
             /** @var Writer $writer */
-            $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.csv';
+            $result->filename = $name . '-Export_' . $name . '.csv';
             $writer->setFieldDelimiter(';');
             $writer->setFieldEnclosure('"');
         } else {
-            $result->filename = $name . '-Export_'.date('Y-m-d_H-i-s').'.'.$type;
+            $result->filename = $name . '-Export_' . $name . '.' . $type;
         }
 
         $file = tempnam(sys_get_temp_dir(), 'export');

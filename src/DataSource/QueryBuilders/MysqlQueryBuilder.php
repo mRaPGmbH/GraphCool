@@ -243,13 +243,12 @@ class MysqlQueryBuilder
 
     public function search(?string $value): MysqlQueryBuilder
     {
-        if ($value !== null) {
-            $join = $this->join(null);
-            $this->where[] = $join . '.`value_string` LIKE ' . $this->parameter('%' . str_replace(' ','%' ,$value) . '%');
-
-            $this->groupBy = match($this->name) {
-                'node' => ' GROUP BY ' . $this->fieldName('id') . ' ',
-                'edge' => ' GROUP BY ' . $this->fieldName('_parent_id') . ', ' . $this->fieldName('_child_id') . ' '
+        if ($value !== null && $value !=='') {
+            $this->where[] = match($this->name) {
+                'node' => '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` LIKE '
+                    . $this->parameter('%' . str_replace(' ','%' ,$value) . '%')
+                    . ' AND `deleted_at` IS NULL)',
+                'edge' => 'TODO'
             };
         }
         return $this;
