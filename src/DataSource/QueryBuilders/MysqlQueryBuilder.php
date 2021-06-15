@@ -8,7 +8,6 @@ use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\JwtAuthentication;
 use RuntimeException;
 
 class MysqlQueryBuilder
@@ -247,12 +246,12 @@ class MysqlQueryBuilder
         if ($value !== null) {
             $join = $this->join(null);
             $this->where[] = $join . '.`value_string` LIKE ' . $this->parameter('%' . str_replace(' ','%' ,$value) . '%');
-        }
 
-        $this->groupBy = match($this->name) {
-                        'node' => ' GROUP BY ' . $this->fieldName('id') . ' ',
-                        'edge' => ' GROUP BY ' . $this->fieldName('_parent_id') . ', ' . $this->fieldName('_child_id') . ' '
-                    };
+            $this->groupBy = match($this->name) {
+                'node' => ' GROUP BY ' . $this->fieldName('id') . ' ',
+                'edge' => ' GROUP BY ' . $this->fieldName('_parent_id') . ', ' . $this->fieldName('_child_id') . ' '
+            };
+        }
         return $this;
     }
 

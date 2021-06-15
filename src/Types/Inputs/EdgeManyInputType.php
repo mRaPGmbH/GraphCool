@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
+use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
@@ -25,6 +26,7 @@ class EdgeManyInputType extends InputObjectType
 
         $fields = [
             'where' => new NonNull($typeLoader->load('_' . $relation->name . 'WhereConditions')),
+            'search' => Type::string(),
             'mode' => $typeLoader->load('_RelationUpdateMode'),
         ];
         foreach ($relation as $fieldKey => $field)

@@ -500,6 +500,7 @@ class MysqlDataProvider extends DataProvider
         $model = new $classname();
         $query = MysqlQueryBuilder::forModel($model, $relation->name)->tenant($tenantId);
         $query->select(['id'])
+            ->search($data['search'] ?? null)
             ->where($data['where'] ?? []);
         $statement = $this->statement($query->toSql());
         $statement->execute($query->getParameters());
