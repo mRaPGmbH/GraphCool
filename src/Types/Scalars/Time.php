@@ -20,7 +20,7 @@ class Time extends ScalarType
     {
         $dateTime = Carbon::createFromTimestampMs($value);
         $dateTime->setTimezone(TimeZone::get());
-        return $dateTime->toObject();
+        return $dateTime;
     }
 
     public function serialize($value): string

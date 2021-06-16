@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
+use Box\Spout\Common\Entity\Cell;
+use Box\Spout\Common\Entity\Style\Style;
 use Box\Spout\Writer\Common\Creator\Style\StyleBuilder;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\CSV\Writer;
@@ -18,10 +20,14 @@ use stdClass;
 class FileExport
 {
 
+    protected string $type;
+
     public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
         $classname = 'App\\Models\\' . $name;
         $model = new $classname();
+
+        $this->type = $type;
 
         $writer = $this->getWriter($type);
         $result = new \stdClass();
@@ -75,42 +81,69 @@ class FileExport
         return $headers;
     }
 
-    protected function getExcelFormat(string $type)
-    {
-        return match ($type) {
-            'date' => 'TT.MM.JJJJ',
-            'dateTime' => 'TT.MM.JJJJ hh:mm',
-            'time' => 'hh:mm'
-        };
-    }
 
-    protected function getFormat(string $type)
+    protected Style $excelDateStyle;
+    protected Style $excelDateTimeStyle;
+    protected Style $excelTimeStyle;
+
+    protected function getCell(Field $field, mixed $value): Cell
     {
-        return match ($type) {
-            Field::DATE => 'd.m.Y',
-            Field::DATE_TIME => 'd.m.Y H:i',
-            Field::TIME => 'H:i'
-        };
+        if ($value === null) {
+            return WriterEntityFactory::createCell('');
+        }
+        switch ($field->type) {
+            case Field::DATE:
+                $carbon = Date::getObject($value);
+                if ($this->type === 'xslx') {
+                    return WriterEntityFactory::createCell($carbon->getTimestamp() / 86400 + 25569, $this->excelDateStyle);
+                }
+                if ($this->type === 'ods' || $this->type === 'csv_excel') {
+                    $value = $carbon->format('d.m.Y');
+                } else {
+                    $value = $carbon->format('Y-m-d');
+                }
+                return WriterEntityFactory::createCell($value);
+            case Field::DATE_TIME:
+            case Field::UPDATED_AT:
+            case Field::CREATED_AT:
+            case Field::DELETED_AT:
+                $carbon = DateTime::getObject($value);
+                if ($this->type === 'xlsx') {
+                    return WriterEntityFactory::createCell($carbon->getTimestamp() / 86400 + 25569, $this->excelDateTimeStyle);
+                }
+                if ($this->type === 'ods' || $this->type === 'csv_excel') {
+                    $value = $carbon->format('d.m.Y H:i');
+                } else {
+                    $value = $carbon->format('Y-m-d\TH:i:sp');
+                }
+                return WriterEntityFactory::createCell($value);
+            case Field::TIME:
+                $carbon = DateTime::getObject($value);
+                if ($this->type === 'xlsx') {
+                    return WriterEntityFactory::createCell($carbon->getTimestamp() / 86400 + 25569, $this->excelTimeStyle);
+                }
+                if ($this->type === 'ods' || $this->type === 'csv_excel') {
+                    $value = $carbon->format('H:i');
+                } else {
+                    $value = $carbon->format('H:i:sp');
+                }
+                return WriterEntityFactory::createCell($value);
+            default:
+                return WriterEntityFactory::createCell($value);
+        }
     }
 
 
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
-        //$dateStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('date'))->build();
-        //$dateTimeStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('dateTime'))->build();
-        //$timeStyle =  (new StyleBuilder())->setFormat($this->getExcelFormat('time'))->build();
+        $this->excelDateStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy')->build();
+        $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
+        $this->excelTimeStyle =  (new StyleBuilder())->setFormat('hh:mm')->build();
 
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
-            $value = $this->convertField($model->$key, $row->$key ?? null);
-            //var_dump($value);
-            $cells[] = match ($model->$key->type) {
-                Field::DATE => WriterEntityFactory::createCell($value/*, $dateStyle*/),
-                Field::DATE_TIME, Field::UPDATED_AT, Field::CREATED_AT, Field::DELETED_AT => WriterEntityFactory::createCell($value/*, $dateTimeStyle*/),
-                Field::TIME => WriterEntityFactory::createCell($value/*, $timeStyle*/),
-                default => WriterEntityFactory::createCell($value)
-            };
+            $cells[] = $this->getCell($model->$key, $row->$key ?? null);
         }
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -145,28 +178,6 @@ class FileExport
             }
         }
         return $cells;
-    }
-
-    protected function convertField(Field $field, $value): float|int|string|null|\DateTime
-    {
-        if ($field->null === true && $value === null) {
-            return null;
-        }
-        switch ($field->type) {
-            case Field::DATE:
-                return Date::getObject($value)->format($this->getFormat(Field::DATE));
-            case Field::DATE_TIME:
-            case Field::UPDATED_AT:
-            case Field::CREATED_AT:
-            case Field::DELETED_AT:
-                return DateTime::getObject($value)->format(Field::DATE_TIME);
-            case Field::TIME:
-                return Time::getObject($value)->format(Field::TIME);
-            case Field::DECIMAL:
-                return (float) $value;
-            default:
-                return substr((string) $value, 0, 32767);
-        }
     }
 
     protected function getWriter(string $type): WriterAbstract

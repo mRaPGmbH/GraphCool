@@ -15,11 +15,11 @@ class Date extends ScalarType
     public $name = '_Date';
     public $description = 'A Date string in ISO 8601 format: "2021-03-11"';
 
-    public static function getObject($value): \DateTime
+    public static function getObject($value): Carbon
     {
         $dateTime = Carbon::createFromTimestampMs($value);
         $dateTime->setTimezone("+0000");
-        return $dateTime->toDateTime();
+        return $dateTime;
     }
 
     public function serialize($value): string
