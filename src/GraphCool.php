@@ -23,6 +23,8 @@ use Throwable;
 
 class GraphCool
 {
+    protected static array $shutdown = [];
+
     public static function run(): void
     {
         StopWatch::start(__METHOD__);
@@ -39,7 +41,13 @@ class GraphCool
         }
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
+        StopWatch::start('__METHOD__');
+
+        foreach (static::$shutdown as $closure) {
+            $closure();
+        }
     }
+
 
     public static function runScript(array $args): void
     {
@@ -64,6 +72,11 @@ class GraphCool
     public static function migrate(): void
     {
         DB::migrate();
+    }
+
+    public static function onShutdown(\Closure $closure): void
+    {
+        static::$shutdown[] = $closure;
     }
 
     protected function parseRequest(): array
@@ -171,7 +184,12 @@ class GraphCool
 
     protected function sendResponse(array $response): void
     {
+        ob_end_clean();
         header('Content-Type: application/json');
+        header("Connection: close");
+        ignore_user_abort(true);
+        ob_start();
+
         $response['_debugTimings'] = StopWatch::get();
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);
@@ -179,6 +197,11 @@ class GraphCool
             $this->handleError($e);
             echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
+
+        $size = ob_get_length();
+        header("Content-Length: $size");
+        ob_end_flush(); // All output buffers must be flushed here
+        flush();        // Force output to client
     }
 
 }

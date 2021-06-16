@@ -37,7 +37,7 @@ class Model
     public function afterInsert(stdClass $data): void {}
     public function afterUpdate(stdClass $data): void {}
     public function afterDelete(stdClass $data): void {}
-    public function afterBulkUpdate(callable $closure): void {}
+    public function afterBulkUpdate(\Closure $closure): void {}
 
     public function settings()
     {
