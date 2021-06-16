@@ -97,18 +97,18 @@ class FileExport
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
-        $dateStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('date'))->build();
-        $dateTimeStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('dateTime'))->build();
-        $timeStyle =  (new StyleBuilder())->setFormat($this->getExcelFormat('time'))->build();
+        //$dateStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('date'))->build();
+        //$dateTimeStyle = (new StyleBuilder())->setFormat($this->getExcelFormat('dateTime'))->build();
+        //$timeStyle =  (new StyleBuilder())->setFormat($this->getExcelFormat('time'))->build();
 
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
             $value = $this->convertField($model->$key, $row->$key ?? null);
             //var_dump($value);
             $cells[] = match ($model->$key->type) {
-                Field::DATE => WriterEntityFactory::createCell($value, $dateStyle),
-                Field::DATE_TIME, Field::UPDATED_AT, Field::CREATED_AT, Field::DELETED_AT => WriterEntityFactory::createCell($value, $dateTimeStyle),
-                Field::TIME => WriterEntityFactory::createCell($value, $timeStyle),
+                Field::DATE => WriterEntityFactory::createCell($value/*, $dateStyle*/),
+                Field::DATE_TIME, Field::UPDATED_AT, Field::CREATED_AT, Field::DELETED_AT => WriterEntityFactory::createCell($value/*, $dateTimeStyle*/),
+                Field::TIME => WriterEntityFactory::createCell($value/*, $timeStyle*/),
                 default => WriterEntityFactory::createCell($value)
             };
         }
@@ -165,7 +165,7 @@ class FileExport
             case Field::DECIMAL:
                 return (float) $value;
             default:
-                return (string) $value;
+                return substr((string) $value, 0, 32767);
         }
     }
 
