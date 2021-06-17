@@ -167,7 +167,7 @@ class GraphCool
         ];
     }
 
-    protected static function sentryCapture(Throwable $e): void
+    public static function sentryCapture(Throwable $e): void
     {
         $sentryDsn = Env::get('SENTRY_DSN');
         $environment = Env::get('APP_ENV');

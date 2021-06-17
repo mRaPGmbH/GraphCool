@@ -156,6 +156,7 @@ class MutationType extends ObjectType
             'file' => $typeLoader->load('_Upload'),
             'data_base64' => Type::string(),
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
+            '_timezone' => $typeLoader->load('_TimezoneOffset'),
         ];
 
         $classname = '\\App\\Models\\' . $name;
