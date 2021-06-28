@@ -24,9 +24,7 @@ class Date extends ScalarType
 
     public function serialize($value): string
     {
-        $dateTime = Carbon::createFromTimestampMs($value);
-        $dateTime->setTimezone("+0000");
-        return $dateTime->format('Y-m-d');
+        return  static::getObject($value)->format('Y-m-d');
     }
 
     public function parseValue($value): ?int

@@ -22,18 +22,11 @@ class Upload extends ScalarType
 
     public function parseValue($value): ?string
     {
-        var_dump([
-            'value' => $value
-        ]);
         return null;
     }
 
     public function parseLiteral(Node $valueNode, ?array $variables = null): ?string
     {
-        var_dump([
-            'valueNode' => $valueNode,
-            'variables' => $variables
-        ]);
         return null;
     }
 }

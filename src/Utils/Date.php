@@ -222,14 +222,8 @@ class Date
                 $pattern = '!^' . str_replace(array_keys($fragments), array_values($fragments), $format) . '$!';
                 $pattern = str_replace(['\\', '.'], ['', '\.'], $pattern);
 
-                try {
-                    if (preg_match($pattern, $value)) {
-                        return Carbon::createFromFormat($format, $value, $timezone);
-                    }
-                } catch (Throwable $e) {
-                    var_dump($pattern);
-                    var_dump($e->getMessage());
-                    echo $e->getFile() . ':' . $e->getLine();
+                if (preg_match($pattern, $value)) {
+                    return Carbon::createFromFormat($format, $value, $timezone);
                 }
             }
         }

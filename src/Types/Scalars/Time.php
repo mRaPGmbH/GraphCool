@@ -30,7 +30,7 @@ class Time extends ScalarType
         return $dateTime->format('H:i:s.vp');
     }
 
-    public function parseValue($value): int
+    public function parseValue($value): ?int
     {
         return $this->validate($value);
     }

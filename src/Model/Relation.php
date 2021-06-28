@@ -15,7 +15,7 @@ class Relation
     public string $name;
     public bool $null = false;
 
-    public function __construct(string $type, string $classname)
+    protected function __construct(string $type, string $classname)
     {
         $this->type = $type;
         $this->classname = $classname;

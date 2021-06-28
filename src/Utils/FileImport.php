@@ -99,25 +99,20 @@ class FileImport
         if (empty($value)) {
             return null;
         }
-        try {
-            switch ($field->type) {
-                case Field::DATE:
-                case Field::DATE_TIME:
-                case Field::TIME:
-                    $carbon = Date::parse($value);
-                    if ($carbon === null) {
-                        return null;
-                    }
-                    return (int)$carbon->getPreciseTimestamp(3);
-                case Field::DECIMAL:
-                case Type::FLOAT:
-                    return (float)$value;
-                default:
-                    return (string)$value;
-            }
-        } catch (Throwable $e) {
-            // date parsing failed
-            return null;
+        switch ($field->type) {
+            case Field::DATE:
+            case Field::DATE_TIME:
+            case Field::TIME:
+                $carbon = Date::parse($value);
+                if ($carbon === null) {
+                    return null;
+                }
+                return (int)$carbon->getPreciseTimestamp(3);
+            case Field::DECIMAL:
+            case Type::FLOAT:
+                return (float)$value;
+            default:
+                return (string)$value;
         }
     }
 

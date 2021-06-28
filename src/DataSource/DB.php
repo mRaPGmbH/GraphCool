@@ -26,6 +26,11 @@ class DB
         return static::$provider;
     }
 
+    public static function setProvider(DataProvider $provider)
+    {
+        static::$provider = $provider;
+    }
+
 
     public static function load(?string $tenantId, string $name, string $id): ?stdClass
     {

@@ -6,7 +6,8 @@ namespace Mrap\GraphCool\Tests\Utils;
 
 use Carbon\Carbon;
 use Mrap\GraphCool\Utils\Date;
-use PHPUnit\Framework\TestCase;
+use Mrap\GraphCool\Utils\TimeZone;
+use Mrap\GraphCool\Tests\TestCase;
 
 class DateTest extends TestCase
 {
@@ -168,6 +169,13 @@ class DateTest extends TestCase
         $carbon = Date::parse(Carbon::parse($expected));
         $actual = $carbon->format('Y-m-d H:i:s');
         self::assertEquals($expected, $actual, 'Failed to correctly parse Carbon object - result: ' . $actual);
+    }
+
+    public function testTimeZone(): void
+    {
+        TimeZone::set(0);
+        $carbon = Date::parse('2020-01-01 00:00:00');
+        self::assertEquals('Z', $carbon->format('p'));
     }
 
 }

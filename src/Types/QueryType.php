@@ -102,7 +102,7 @@ class QueryType extends ObjectType
                 continue;
             }
             if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumn')));
+                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping')));
             }
             if ($relation->type === Relation::BELONGS_TO_MANY) {
                 $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector')));

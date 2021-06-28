@@ -33,11 +33,11 @@ class FileExport
         $result = new \stdClass();
         if ($type === 'csv_excel') {
             /** @var Writer $writer */
-            $result->filename = $name . '-Export_' . $name . '.csv';
+            $result->filename = $name . '-Export_' . date('Y-m-d') . '.csv';
             $writer->setFieldDelimiter(';');
             $writer->setFieldEnclosure('"');
         } else {
-            $result->filename = $name . '-Export_' . $name . '.' . $type;
+            $result->filename = $name . '-Export_' . date('Y-m-d') . '.' . $type;
         }
 
         $file = tempnam(sys_get_temp_dir(), 'export');
@@ -94,7 +94,7 @@ class FileExport
         switch ($field->type) {
             case Field::DATE:
                 $carbon = Date::getObject($value);
-                if ($this->type === 'xslx') {
+                if ($this->type === 'xlsx') {
                     return WriterEntityFactory::createCell($carbon->getTimestamp() / 86400 + 25569, $this->excelDateStyle);
                 }
                 if ($this->type === 'ods' || $this->type === 'csv_excel') {
@@ -150,11 +150,11 @@ class FileExport
                 continue;
             }
             if (($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) && isset($args[$key])) {
+                $closure = $row->$key;
+                $data = $closure([]);
                 foreach ($args[$key] as $column) {
-                    $closure = $row->$key;
-                    $data = $closure();
-
-                    $value = print_r($data, true);
+                    $p = $column['column'];
+                    $value = $data->$p ?? null;
                     $cells[] = WriterEntityFactory::createCell($value);
                 }
             }

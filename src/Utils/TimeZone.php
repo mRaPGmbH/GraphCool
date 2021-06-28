@@ -8,9 +8,9 @@ class TimeZone
 {
     protected static ?string $timeZone = null;
 
-    public static function get(): string
+    public static function get(): ?string
     {
-        return static::$timeZone ?? "+0000";
+        return static::$timeZone;
     }
 
     public static function set(int $offset): void

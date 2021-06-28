@@ -5,9 +5,11 @@ namespace Mrap\GraphCool\Utils;
 
 use GraphQL\Error\Error;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 
 class JwtAuthentication
@@ -36,7 +38,13 @@ class JwtAuthentication
             throw new Error('Authorization header in request does not appear to be a JWT.');
         }
 
-        $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
+        try {
+            $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
+        } catch(InvalidTokenStructure $e) {
+            throw new Error($e->getMessage());
+        } catch(CannotDecodeContent $e) {
+            throw new Error($e->getMessage());
+        }
 
         $constraints = [];
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());

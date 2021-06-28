@@ -27,7 +27,7 @@ class StopWatch
         arsort(self::$times);
         $percentages = [];
         foreach (self::$times as $key => $value) {
-            $percentages[$key] = round($value / self::$times['Mrap\\GraphCool\\GraphCool::run'] * 100, 2) . '%';
+            $percentages[$key] = round($value / (self::$times['Mrap\\GraphCool\\GraphCool::run'] ?? 1) * 100, 2) . '%';
         }
         return [self::$times, $percentages];
     }

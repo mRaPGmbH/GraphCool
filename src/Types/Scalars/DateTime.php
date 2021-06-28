@@ -25,12 +25,10 @@ class DateTime extends ScalarType
 
     public function serialize($value): string
     {
-        $dateTime = Carbon::createFromTimestampMs($value);
-        $dateTime->setTimezone(TimeZone::get());
-        return $dateTime->format('Y-m-d\TH:i:s.vp');
+        return static::getObject($value)->format('Y-m-d\TH:i:s.vp');
     }
 
-    public function parseValue($value): int
+    public function parseValue($value): ?int
     {
         return $this->validate($value);
     }
