@@ -12,15 +12,18 @@ class ClassFinderTest extends TestCase
 
     public function testRootPath(): void
     {
+        ClassFinder::setRootPath(null);
         $path = ClassFinder::rootPath();
-        self::assertEquals(dirname(__DIR__, 2) . '/vendor/bin', $path);
+        self::assertEquals(dirname(__DIR__, 2) . '/vendor/bin', $path, 'Path 1 is wrong');
 
+        ClassFinder::setRootPath(null);
         $backup = $_SERVER['SCRIPT_FILENAME'];
         $_SERVER['SCRIPT_FILENAME'] = '.';
-        self::assertEquals(dirname(__DIR__, 2), ClassFinder::rootPath());
+        self::assertEquals(dirname(__DIR__, 2), ClassFinder::rootPath(), 'Path 2 is wrong');
         $_SERVER['SCRIPT_FILENAME'] = $backup;
 
-        self::assertEquals($this->dataPath(), ClassFinder::rootPath());
+        ClassFinder::setRootPath($this->dataPath());
+        self::assertEquals($this->dataPath(), ClassFinder::rootPath(), 'Path 3 is wrong');
     }
 
     public function testModels()

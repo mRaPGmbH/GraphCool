@@ -35,7 +35,7 @@ class DynamicEnumType extends EnumType
         parent::__construct($config);
     }
 
-    protected function sanitizeValue(string $value)
+    protected function sanitizeValue(string $value): string
     {
         $value = str_replace([' ', '-'], '_', $value);
         $value = (string) preg_replace('/[^a-z_0-9]/i', '', $value);

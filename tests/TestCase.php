@@ -4,15 +4,19 @@
 namespace Mrap\GraphCool\Tests;
 
 
+use Mrap\GraphCool\Utils\ClassFinder;
+
 class TestCase extends \PHPUnit\Framework\TestCase
 {
 
+    protected function setUp(): void
+    {
+        ClassFinder::setRootPath($this->dataPath());
+    }
+
     protected function dataPath(): string
     {
-        if (!defined('APP_ROOT_PATH')) {
-            define('APP_ROOT_PATH', __DIR__ . '/data');
-        }
-        return APP_ROOT_PATH;
+        return __DIR__ . '/data';
     }
 
 }

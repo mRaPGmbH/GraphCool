@@ -18,9 +18,12 @@ class DummyModel extends Model
         $this->time = Field::time()->nullable();
         $this->float = Field::float()->nullable();
 
+        $this->enum = Field::enum(['A','B','C']);
+
         $this->belongs_to = Relation::belongsTo(__CLASS__);
         $this->belongs_to_many = Relation::belongsToMany(__CLASS__);
         $this->belongs_to_many->pivot_property = Field::string()->nullable();
+        $this->belongs_to_many->pivot_enum = Field::enum(['X','Y','Z']);
     }
 
 }
