@@ -465,6 +465,16 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertOrUpdateBelongsRelation(string $tenantId, Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
     {
+        foreach ($relation as $key => $field)
+        {
+            if ($field->null === false && !isset($data[$key]) && ($field->default ?? null) === null) {
+                // we are trying to update or inserting a relation with invalid data (non-nullable field is null)
+                // this can only happen during the file-import: excel contains the column, but it's empty for some rows
+                // in this case the relation should not be created (or deleted in case of update)
+                $this->deleteRelations($childIds, [$parentId]);
+                return;
+            }
+        }
         foreach ($childIds as $childId) {
             $this->insertOrUpdateEdge($tenantId, $parentId, $childId, $relation->name, $childName);
             /** @var Field $field */
@@ -483,6 +493,8 @@ class MysqlDataProvider extends DataProvider
                     $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $value, null, null);
                 } elseif (is_float($value)) {
                     $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, null, $value);
+                } elseif (is_null($value)) {
+                    $this->deleteEdgeProperty($parentId, $childId, $relation->name, $childName, $key);
                 } else {
                     $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, $value, null);
                 }
@@ -862,7 +874,8 @@ class MysqlDataProvider extends DataProvider
         ?int $valueInt,
         ?string $valueString,
         ?float $valueFloat
-    ): bool {
+    ): bool
+    {
         $sql = 'INSERT INTO `edge_property` (`parent_id`, `child_id`, `parent`, `child`, `property`, `value_int`, `value_string`, `value_float`) '
             . 'VALUES (:parent_id, :child_id, :parent, :child, :property, :value_int, :value_string, :value_float) '
             . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
@@ -880,6 +893,28 @@ class MysqlDataProvider extends DataProvider
                 ':value_int2'    => $valueInt,
                 ':value_string2' => $valueString,
                 ':value_float2'   => $valueFloat
+            ]
+        );
+    }
+
+    protected function deleteEdgeProperty(
+        string $parentId,
+        string $childId,
+        string $parent,
+        string $child,
+        string $propertyName,
+    ): bool
+    {
+        $sql = 'DELETE FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id '
+            . 'AND `parent` = :parent AND `child` = :child AND `property` = :property';
+        $statement = $this->statement($sql);
+        return $statement->execute(
+            [
+                ':parent_id'       => $parentId,
+                ':child_id'       => $childId,
+                ':parent'         => $parent,
+                ':child'         => $child,
+                ':property'      => $propertyName,
             ]
         );
     }

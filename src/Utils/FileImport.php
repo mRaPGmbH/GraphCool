@@ -9,18 +9,14 @@ use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
-use Carbon\Carbon;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
-use Mrap\GraphCool\GraphCool;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use RuntimeException;
 use stdClass;
-use Throwable;
 
 class FileImport
 {
@@ -59,6 +55,7 @@ class FileImport
 
         foreach ($this->importFile($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $edgeColumns, $rootValue['index'] ?? 0) as $i => $item) {
             $item = $this->convertItem($item);
+
             if (isset($item['id'])) {
                 $outer = [
                     'id' => $item['id'],
