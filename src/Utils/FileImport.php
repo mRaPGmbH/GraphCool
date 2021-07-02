@@ -109,7 +109,7 @@ class FileImport
             case Type::FLOAT:
                 return (float)$value;
             default:
-                return (string)$value;
+                return trim((string)$value);
         }
     }
 

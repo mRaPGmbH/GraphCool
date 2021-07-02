@@ -29,6 +29,7 @@ class ClassFinderTest extends TestCase
     public function testModels()
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
+        ClassFinder::setRootPath($this->dataPath());
         $models = ClassFinder::models();
         self::assertArrayHasKey('DummyModel', $models);
         self::assertEquals('App\\Models\\DummyModel', $models['DummyModel']);
@@ -37,6 +38,7 @@ class ClassFinderTest extends TestCase
     public function testQueries()
     {
         require_once($this->dataPath().'/app/Queries/DummyQuery.php');
+        ClassFinder::setRootPath($this->dataPath());
         $queries = ClassFinder::queries();
         self::assertArrayHasKey('DummyQuery', $queries);
         self::assertEquals('App\\Queries\\DummyQuery', $queries['DummyQuery']);
@@ -45,6 +47,7 @@ class ClassFinderTest extends TestCase
     public function testMutations()
     {
         require_once($this->dataPath().'/app/Mutations/DummyMutation.php');
+        ClassFinder::setRootPath($this->dataPath());
         $mutations = ClassFinder::mutations();
         self::assertArrayHasKey('DummyMutation', $mutations);
         self::assertEquals('App\\Mutations\\DummyMutation', $mutations['DummyMutation']);
@@ -53,6 +56,7 @@ class ClassFinderTest extends TestCase
     public function testScripts()
     {
         require_once($this->dataPath().'/app/Scripts/DummyScript.php');
+        ClassFinder::setRootPath($this->dataPath());
         $scripts = ClassFinder::scripts();
         self::assertArrayHasKey('DummyScript', $scripts);
         self::assertEquals('App\\Scripts\\DummyScript', $scripts['DummyScript']);

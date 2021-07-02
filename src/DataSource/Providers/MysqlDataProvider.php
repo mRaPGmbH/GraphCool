@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Providers;
 
 use Carbon\Carbon;
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\DataSource\QueryBuilders\MysqlQueryBuilder;
@@ -104,6 +105,9 @@ class MysqlDataProvider extends DataProvider
         StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
+        if ($page < 1)  {
+            throw new Error('Page cannot be less than 1');
+        }
         $offset = ($page - 1) * $limit;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
@@ -697,6 +701,9 @@ class MysqlDataProvider extends DataProvider
         StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
+        if ($page < 1)  {
+            throw new Error('Page cannot be less than 1');
+        }
         $offset = ($page - 1) * $limit;
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
@@ -721,14 +728,8 @@ class MysqlDataProvider extends DataProvider
         foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $edgeIds) {
             $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
             if ($edge === null) {
-                var_dump([
-                    'parent_id' => $edgeIds->parent_id,
-                    'child_id' => $edgeIds->child_id,
-                    'resultType' => $resultType
-                ]);
-
-                die('WTF!!!');
-                continue; // TODO: throw exception? this should not happen...
+                // this should never happen!
+                throw new RuntimeException('Edge was null: ' . print_r(['parent_id' => $edgeIds->parent_id, 'child_id' => $edgeIds->child_id, 'resultType' => $resultType], true));
             }
             $properties = $this->convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
             foreach ($properties as $key => $value) {

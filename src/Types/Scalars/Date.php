@@ -8,6 +8,7 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Throwable;
 
 class Date extends ScalarType
 {
@@ -45,7 +46,11 @@ class Date extends ScalarType
         if ($value === null) {
             return null;
         }
-        $dateTime = Carbon::parse($value, "+0000");
+        try {
+            $dateTime = Carbon::parse($value, "+0000");
+        } catch (Throwable $e) {
+            throw new Error('Could not parse _Date: ' . ((string)$value));
+        }
         return (int)$dateTime->getPreciseTimestamp(3);
     }
 

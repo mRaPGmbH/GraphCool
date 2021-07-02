@@ -5,10 +5,10 @@ namespace Mrap\GraphCool\Utils;
 
 class ClassFinder
 {
-    protected static array $models;
-    protected static array $queries;
-    protected static array $mutations;
-    protected static array $scripts;
+    protected static ?array $models;
+    protected static ?array $queries;
+    protected static ?array $mutations;
+    protected static ?array $scripts;
     protected static ?string $appRootPath = null;
 
     public static function models(): array
@@ -39,6 +39,12 @@ class ClassFinder
 
     public static function setRootPath(?string $appRootPath)
     {
+        if ($appRootPath !== static::$appRootPath) {
+            static::$models = null;
+            static::$queries = null;
+            static::$mutations = null;
+            static::$scripts = null;
+        }
         static::$appRootPath = $appRootPath;
     }
 
@@ -81,6 +87,9 @@ class ClassFinder
                 return str_replace('.php', '', $file);
             }, $files);
             foreach ($classes as $name) {
+                if ($name === '.' || $name === '..') {
+                    continue;
+                }
                 $classname = $namespace . $name;
                 if (class_exists($classname)) {
                     $result[$name] = $classname;

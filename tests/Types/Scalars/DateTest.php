@@ -56,4 +56,11 @@ class DateTest extends TestCase
         $date = new Date();
         $date->parseLiteral($node);
     }
+
+    public function testCarbonException(): void
+    {
+        $this->expectException(Error::class);
+        $date = new Date();
+        $date->parseValue('not a parseable value');
+    }
 }

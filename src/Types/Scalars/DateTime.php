@@ -46,7 +46,11 @@ class DateTime extends ScalarType
         if ($value === null) {
             return null;
         }
-        $dateTime = Carbon::parse($value);
+        try {
+            $dateTime = Carbon::parse($value);
+        } catch (\Throwable $e) {
+            throw new Error('Could not parse _DateTime: ' . ((string)$value));
+        }
         return (int)$dateTime->getPreciseTimestamp(3);
     }
 

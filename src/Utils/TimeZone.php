@@ -18,6 +18,11 @@ class TimeZone
         static::$timeZone = static::serialize($offset);
     }
 
+    public static function unset(): void
+    {
+        static::$timeZone = null;
+    }
+
     public static function serialize(int $offset): string
     {
         if ($offset < 0) {

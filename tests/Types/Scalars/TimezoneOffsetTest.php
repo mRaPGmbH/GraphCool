@@ -54,4 +54,12 @@ class TimezoneOffsetTest extends TestCase
         $timezoneOffset = new TimezoneOffset();
         $timezoneOffset->parseLiteral($node);
     }
+
+    public function testCarbonException(): void
+    {
+        $this->expectException(Error::class);
+        $date = new TimezoneOffset();
+        $date->parseValue('not a parseable value');
+    }
+
 }

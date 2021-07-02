@@ -9,6 +9,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Utils\FileExport;
@@ -119,6 +120,7 @@ class QueryType extends ObjectType
         ];
     }
 
+    /*
     protected function previewImport(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -130,7 +132,7 @@ class QueryType extends ObjectType
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
-    }
+    }*/
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
@@ -147,11 +149,10 @@ class QueryType extends ObjectType
                 return DB::findAll(JwtAuthentication::tenantId(), substr($info->returnType->toString(), 1,-9), $args);
             }
 
-            $type = $args['type'] ?? null;
+            $type = $args['type'] ?? 'xlsx';
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
-                $exporter = new FileExport();
-                return $exporter->export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
+                return File::export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
             }
         }
         return DB::load(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);

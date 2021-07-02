@@ -58,4 +58,12 @@ class TimeTest extends TestCase
         $time = new Time();
         $time->parseLiteral($node);
     }
+
+    public function testCarbonException(): void
+    {
+        $this->expectException(Error::class);
+        $date = new Time();
+        $date->parseValue('not a parseable value');
+    }
+
 }

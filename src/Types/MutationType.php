@@ -9,6 +9,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
@@ -16,7 +17,6 @@ use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
-use stdClass;
 
 class MutationType extends ObjectType
 {
@@ -213,8 +213,7 @@ class MutationType extends ObjectType
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            $importer = new FileImport(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1));
-            return $importer->import($args);
+            return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args);
         }
         throw new \RuntimeException(print_r($info->fieldName, true));
     }

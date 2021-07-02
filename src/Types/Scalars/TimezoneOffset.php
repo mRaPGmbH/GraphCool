@@ -36,7 +36,11 @@ class TimezoneOffset extends ScalarType
 
     protected function validate(string $value): int
     {
-        $dateTime = Carbon::parse($value);
+        try {
+            $dateTime = Carbon::parse($value);
+        } catch (\Throwable $e) {
+            throw new Error('Could not parse _TimezoneOffset: ' . ((string)$value));
+        }
         return $dateTime->getOffset();
     }
 

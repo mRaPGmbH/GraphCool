@@ -6,12 +6,13 @@ use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Model\Mutation;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class DummyMutation extends Mutation
+class PublicMutation extends Mutation
 {
 
     public function __construct(TypeLoader $typeLoader)
     {
-        $this->name = 'DummyMutation';
+        $this->noAuthentication();
+        $this->name = 'PublicMutation';
         $this->config = [];
     }
 
