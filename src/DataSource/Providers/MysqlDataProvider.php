@@ -288,7 +288,9 @@ class MysqlDataProvider extends DataProvider
 
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
-        $this->updateNode($tenantId, $data['id']);
+        if (!$this->updateNode($tenantId, $data['id'])) {
+            throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
+        }
         $model = $this->getModel($name);
 
         $updates = $data['data'] ?? [];
@@ -469,6 +471,7 @@ class MysqlDataProvider extends DataProvider
 
     protected function insertOrUpdateBelongsRelation(string $tenantId, Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
     {
+        /*
         foreach ($relation as $key => $field)
         {
             if ($field->null === false && !isset($data[$key]) && ($field->default ?? null) === null) {
@@ -479,6 +482,7 @@ class MysqlDataProvider extends DataProvider
                 return;
             }
         }
+        */
         foreach ($childIds as $childId) {
             $this->insertOrUpdateEdge($tenantId, $parentId, $childId, $relation->name, $childName);
             /** @var Field $field */
@@ -923,6 +927,7 @@ class MysqlDataProvider extends DataProvider
 
     protected function updateNode(string $tenantId, string $id): bool
     {
+        // TODO: maybe add model-name to this?
         $sql = 'UPDATE `node` SET `updated_at` = now() WHERE id = :id';
         $params = [':id' => $id];
         if ($tenantId !== null) {
