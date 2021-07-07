@@ -150,6 +150,7 @@ class QueryType extends ObjectType
             }
 
             $type = $args['type'] ?? 'xlsx';
+            $args['first'] = 1048575;
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
                 return File::export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
