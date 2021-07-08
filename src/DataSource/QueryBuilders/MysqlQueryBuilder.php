@@ -8,6 +8,8 @@ use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
+use PHPUnit\Util\Exception;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 class MysqlQueryBuilder
@@ -243,13 +245,42 @@ class MysqlQueryBuilder
 
     public function search(?string $value): MysqlQueryBuilder
     {
-        if ($value !== null && $value !=='') {
-            $this->where[] = match($this->name) {
-                'node' => '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` LIKE '
-                    . $this->parameter('%' . str_replace(' ','%' ,$value) . '%')
-                    . ' AND `deleted_at` IS NULL)',
-                'edge' => 'TODO'
-            };
+        if ($value !== null && trim($value) !=='') {
+            switch($this->name) {
+                case 'node':
+                    $uuids = [];
+                    foreach (explode(' ', $value, 10) as $part) {
+                        if (empty($part)) {
+                            continue;
+                        }
+                        if (strlen($part) === 36 && Uuid::isValid($part)) {
+                            $uuids[] = '`node`.`id` = ' . $this->parameter($part);
+                            $uuids[] = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` = '
+                                . $this->parameter($part) .' AND `deleted_at` IS NULL)';
+                            continue;
+                        }
+                        $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
+                        if (is_numeric($part)) {
+                            if (str_contains($part, '.')) {
+                                $sql .= '`value_float` > ' . ((float)$part - 0.0001);
+                                $sql .= ' AND `value_float` < ' . ((float)$part + 0.0001);
+                            } else {
+                                $sql .= '`value_int` = ' . $this->parameter((int)$part);
+                            }
+                        } else {
+                            $sql .= '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+                        }
+                        $sql .= ' AND `deleted_at` IS NULL)';
+                        $this->where[] = $sql;
+                    }
+                    if (count($uuids) > 0) {
+                        $this->where[] = implode(' OR ', $uuids);
+                    }
+                    break;
+                case 'edge':
+                    // TODO!
+                    break;
+            }
         }
         return $this;
     }

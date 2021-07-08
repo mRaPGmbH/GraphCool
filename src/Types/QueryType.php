@@ -150,7 +150,7 @@ class QueryType extends ObjectType
             }
 
             $type = $args['type'] ?? 'xlsx';
-            $args['first'] = 1048575;
+            $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
                 return File::export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
