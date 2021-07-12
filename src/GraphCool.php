@@ -41,7 +41,6 @@ class GraphCool
         }
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
-        StopWatch::start('__METHOD__');
 
         foreach (static::$shutdown as $closure) {
             $closure();
@@ -184,12 +183,7 @@ class GraphCool
 
     protected function sendResponse(array $response): void
     {
-        ob_end_clean();
         header('Content-Type: application/json');
-        header("Connection: close");
-        ignore_user_abort(true);
-        ob_start();
-
         $response['_debugTimings'] = StopWatch::get();
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);
@@ -197,11 +191,7 @@ class GraphCool
             $this->handleError($e);
             echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
-
-        $size = ob_get_length();
-        header("Content-Length: $size");
-        ob_end_flush(); // All output buffers must be flushed here
-        flush();        // Force output to client
+        fastcgi_finish_request();
     }
 
 }

@@ -105,7 +105,7 @@ class QueryTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('export')
-            ->with('Classname', [], [], 'xlsx')
+            ->with('Classname', [], ['first' => 1048575], 'xlsx')
             ->willReturn($object);
 
         File::setExporter($mock);
