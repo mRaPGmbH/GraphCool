@@ -121,15 +121,11 @@ class FileImport
                 throw new Error('File is missing.');
             }
             $file = $tmp['tmp_name'];
-            $mimeType = $tmp['type'];
-            if ($mimeType === 'application/octet-stream') {
-                $mimeType = mime_content_type($file);
-            }
         } else {
             $file = tempnam(sys_get_temp_dir(), 'import');
             file_put_contents($file, base64_decode($input));
-            $mimeType = mime_content_type($file);
         }
+        $mimeType = mime_content_type($file);
 
         $reader = $this->getReader($mimeType);
         if ($reader === null) {
