@@ -719,7 +719,14 @@ class MysqlDataProvider extends DataProvider
 
 
         $query = MysqlQueryBuilder::forRelation($relation, [$id]);
-        $query->select(['_child_id', '_parent_id'])->limit($limit, $offset)->where($whereEdge)->whereRelated($whereNode)->orderBy($orderBy)->search($search);
+        $query
+            ->tenant($tenantId)
+            ->select(['_child_id', '_parent_id'])
+            ->limit($limit, $offset)
+            ->where($whereEdge)
+            ->whereRelated($whereNode)
+            ->orderBy($orderBy)
+            ->search($search);
         match($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
