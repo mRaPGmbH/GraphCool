@@ -31,6 +31,8 @@ class MysqlDataProvider extends DataProvider
 
     public function migrate(): void
     {
+        $this->connectPdo();
+
         $sql = 'SET sql_notes = 0';
         $this->pdo()->exec($sql);
 
@@ -134,7 +136,6 @@ class MysqlDataProvider extends DataProvider
 
             $query->whereHas($relatedModel, $relation->name, $relation->type, $relatedWhere);
         }
-
 
         match($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
@@ -243,11 +244,13 @@ class MysqlDataProvider extends DataProvider
 
     public function insert(string $tenantId, string $name, array $data): stdClass
     {
+        $model = $this->getModel($name);
+        $data = $model->beforeInsert($tenantId, $data);
+        $this->checkUnique($tenantId, $model, $name, $data);
+
         $id = Uuid::uuid4()->toString();
         $this->insertNode($tenantId, $id, $name);
 
-        $model = $this->getModel($name);
-        $data = $model->beforeInsert($tenantId, $data);
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $data) && (
                     $item instanceof Relation ||
@@ -288,13 +291,14 @@ class MysqlDataProvider extends DataProvider
 
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
+        $model = $this->getModel($name);
+        $updates = $data['data'] ?? [];
+        $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
+        $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
+        $this->checkNull($model, $updates);
         if (!$this->updateNode($tenantId, $data['id'])) {
             throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
         }
-        $model = $this->getModel($name);
-
-        $updates = $data['data'] ?? [];
-        $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
 
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $updates)) {
@@ -339,20 +343,26 @@ class MysqlDataProvider extends DataProvider
         $resultType = $data['result'] ?? ResultType::DEFAULT;
 
         $updateData = $data['data'] ?? [];
+        $this->checkNull($model, $updateData);
+
         $updates = [
             'deleted_at' => null
         ];
         $relations = [];
         foreach ($model as $key => $item) {
-            if (!isset($updateData[$key])) {
+            if (!array_key_exists($key, $updateData)) {
                 continue;
             }
             if ($item instanceof Field) {
+                if ($item->unique === true && $updateData[$key] !== null) {
+                    throw new Error('Field ' . $key . ' is defined as unique cannot be set to the same value for many items.');
+                }
                 $updates[$key] = $updateData[$key];
             } elseif ($item instanceof Relation) {
                 $relations[$key] = $updateData[$key];
             }
         }
+        // TODO: $updates = $model->beforeUpdate($updates); <- beforeUpdate has to be free of individual (single-entity) stuff
 
         $ids = null;
         if (count($relations) > 0) {
@@ -379,7 +389,7 @@ class MysqlDataProvider extends DataProvider
         $statement->execute($query->getUpdateParameters());
 
         if ($ids === null) {
-            $where = $data['where'];
+            $where = $data['where'] ?? null;
             $ids = function() use ($model, $name, $tenantId, $where, $resultType) {
                 return $this->getIdsForWhere($model, $name, $tenantId, $where, $resultType);
             };
@@ -627,6 +637,19 @@ class MysqlDataProvider extends DataProvider
             }
         }
         return $this->pdo;
+    }
+
+    protected function connectPdo(int $retries = 5): void
+    {
+        for ($i = 0; $i < $retries; $i++) {
+            try {
+                $this->pdo();
+                return;
+            } catch (RuntimeException $e) {
+                sleep(1);
+            }
+        }
+        $this->pdo();
     }
 
 
@@ -1027,6 +1050,40 @@ class MysqlDataProvider extends DataProvider
             Type::FLOAT => (float)$value,
             Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
         };
+    }
+
+    protected function checkUnique(string $tenantId, Model $model, string $name, array $data, string $id = null): void
+    {
+        foreach ($model as $key => $field) {
+            if (!$field instanceof Field || !isset($data[$key])) {
+                continue;
+            }
+            if ($field->unique === true) {
+                $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+                $query->where(['column' => $key, 'operator' => '=', 'value' => $data[$key]]);
+                if ($field->uniqueIgnoreTrashed === false) {
+                    $query->withTrashed();
+                }
+                if ($id !== null) {
+                    $query->where(['column' => 'id', 'operator' => '!=', 'value' => $id]);
+                }
+                $statement = $this->statement($query->toCountSql());
+                $statement->execute($query->getParameters());
+                $total = (int)$statement->fetchColumn();
+                if ($total >= 1) {
+                    throw new Error('Property "' . $key . '" must be unique, but value "' . (string)$data[$key] . '" already exists.');
+                }
+            }
+        }
+    }
+
+    protected function checkNull(Model $model, array $updates): void
+    {
+        foreach ($model as $key => $item) {
+            if ($item instanceof Field && array_key_exists($key, $updates) && $updates[$key] === null && $item->null === false) {
+                throw new Error('Field ' . $key . ' is not nullable.');
+            }
+        }
     }
 
 }
