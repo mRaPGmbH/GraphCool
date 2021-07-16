@@ -264,7 +264,7 @@ class CountryCodeEnumType extends EnumType
                 'ZW' => ['value' => 'ZW', 'description' => 'Zimbabwe'],
 
                 // temporary, not officially assigned
-                'XK' => ['value' => 'XK', 'description' => 'Kosovo'],
+                //'XK' => ['value' => 'XK', 'description' => 'Kosovo'],
             ]
         ];
         parent::__construct($config);

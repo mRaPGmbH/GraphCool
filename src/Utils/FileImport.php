@@ -33,7 +33,6 @@ class FileImport
         $this->model = new $classname();
     }
 
-
     public function import(array $args): stdClass
     {
         $result = new stdClass();
@@ -54,7 +53,7 @@ class FileImport
         }
 
         foreach ($this->importFile($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $edgeColumns, $rootValue['index'] ?? 0) as $i => $item) {
-            $item = $this->convertItem($item);
+            //$item = $this->convertItem($item);
 
             if (isset($item['id'])) {
                 $outer = [
@@ -188,7 +187,7 @@ class FileImport
                         $item[$property][$relatedId][$edgeProperty] = $this->convertField($field, $value);
                     }
                 }
-                $result[] = $item;
+                $result[] = $this->convertItem($item);
             }
             break; // only the first sheet will be used
         }

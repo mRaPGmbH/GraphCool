@@ -213,7 +213,12 @@ class MutationType extends ObjectType
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args);
+            return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args); // $rootValue['index'] ?? 0
+            $name = substr($info->fieldName, 6, -1);
+            foreach (File::read($name, $args, $rootValue['index'] ?? 0) as $data) {
+                $args['data'] = $data;
+                DB::update(JwtAuthentication::tenantId(), $name, $args);
+            }
         }
         throw new \RuntimeException(print_r($info->fieldName, true));
     }

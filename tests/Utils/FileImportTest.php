@@ -41,7 +41,7 @@ class FileImportTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $result = $import->importFile($this->csv, $this->columns, [], 0);
+        $result = $import->import($this->csv, $this->columns, [], 0);
         self::assertEquals($this->data, $result, 'Imported data did not match csv contents.');
     }
 
@@ -49,7 +49,7 @@ class FileImportTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $result = $import->importFile($this->csvExcel, $this->columns, [], 0);
+        $result = $import->import($this->csvExcel, $this->columns, [], 0);
         self::assertEquals($this->data, $result, 'Imported data did not match csv contents.');
     }
 
@@ -57,7 +57,7 @@ class FileImportTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $result = $import->importFile($this->xlsx, $this->columns, [], 0);
+        $result = $import->import($this->xlsx, $this->columns, [], 0);
         self::assertEquals($this->data, $result, 'Imported data did not match xlsx contents.');
     }
 
@@ -65,7 +65,7 @@ class FileImportTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $result = $import->importFile($this->ods, $this->columns, [], 0);
+        $result = $import->import($this->ods, $this->columns, [], 0);
         self::assertEquals($this->data, $result, 'Imported data did not match ods contents.');
     }
 
@@ -74,7 +74,7 @@ class FileImportTest extends TestCase
         $this->expectException(Error::class);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $import->importFile($this->pdf, $this->columns, [], 0);
+        $import->import($this->pdf, $this->columns, [], 0);
     }
 
     public function testNoDataError(): void
@@ -82,7 +82,7 @@ class FileImportTest extends TestCase
         $this->expectException(Error::class);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $import->importFile(null, $this->columns, [], 0);
+        $import->import(null, $this->columns, [], 0);
     }
 
     public function testInvalidMapError(): void
@@ -91,7 +91,7 @@ class FileImportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
         $_REQUEST['map'] = 'not a valid json';
-        $import->importFile(null, $this->columns, [], 0);
+        $import->import(null, $this->columns, [], 0);
     }
 
     public function testEmptyMapError(): void
@@ -100,7 +100,7 @@ class FileImportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
         $_REQUEST['map'] = '[]';
-        $import->importFile(null, $this->columns, [], 0);
+        $import->import(null, $this->columns, [], 0);
     }
 
     public function testNoFileError(): void
@@ -111,7 +111,7 @@ class FileImportTest extends TestCase
         $_REQUEST['map'] = json_encode([
             0 => ['0.variables.file']
         ]);
-        $import->importFile(null, $this->columns, [], 0);
+        $import->import(null, $this->columns, [], 0);
     }
 
     public function testMultipartFileUpload(): void
@@ -127,7 +127,7 @@ class FileImportTest extends TestCase
             'tmp_name' => $filename,
             'type' => 'application/octet-stream'
         ];
-        $result = $import->importFile(null, $this->columns, [], 0);
+        $result = $import->import(null, $this->columns, [], 0);
         self::assertEquals($this->data, $result, 'Imported data did not match multipart uploaded file contents.');
         self::assertFalse(file_exists($filename), 'Uploaded file has not been automatically deleted after import.');
     }
@@ -136,7 +136,7 @@ class FileImportTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
-        $result = $import->importFile($this->relationsCsv, $this->relationsColumns, $this->relationsEdgeColumns, 0);
+        $result = $import->import($this->relationsCsv, $this->relationsColumns, $this->relationsEdgeColumns, 0);
         self::assertEquals($this->relationsData, $result, 'Imported relation data did not match csv contents.');
     }
 

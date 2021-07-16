@@ -184,14 +184,18 @@ class GraphCool
     protected function sendResponse(array $response): void
     {
         header('Content-Type: application/json');
-        $response['_debugTimings'] = StopWatch::get();
+        if (Env::get('APP_ENV') === 'local') {
+            $response['_debugTimings'] = StopWatch::get();
+        }
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             $this->handleError($e);
             echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
-        fastcgi_finish_request();
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
     }
 
 }

@@ -33,6 +33,7 @@ use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
+use Mrap\GraphCool\Types\Objects\ImportErrorType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
@@ -62,6 +63,7 @@ class TypeLoader
         self::register('_FileExport', FileExportType::class);
         self::register('_ExportFile', SheetFileEnumType::class);
         self::register('_ImportSummary', ImportSummaryType::class);
+        self::register('_ImportError', ImportErrorType::class);
         self::register('_Result', ResultType::class);
         self::register('_DateTime', DateTime::class);
         self::register('_Date', Date::class);
@@ -115,6 +117,9 @@ class TypeLoader
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
+            if ($name === '_ImportSummary') {
+                return new $classname($this);
+            }
             return new $classname();
         }
         if (str_starts_with($name, '_')) {

@@ -8,11 +8,12 @@ use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\TypeLoader;
 
 class ImportSummaryType extends ObjectType
 {
 
-    public function __construct()
+    public function __construct(TypeLoader $typeLoader)
     {
         $config = [
             'name'   => '_ImportSummary',
@@ -26,6 +27,7 @@ class ImportSummaryType extends ObjectType
                 'affected_ids' => new NonNull(new ListOfType(Type::string())),
                 'failed_rows' => new NonNull(Type::int()),
                 'failed_row_numbers' => new NonNull(new ListOfType(Type::int())),
+                'errors' => Type::listOf(Type::nonNull($typeLoader->load('_ImportError')))
             ],
         ];
         parent::__construct($config);
