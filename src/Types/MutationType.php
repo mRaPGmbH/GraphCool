@@ -13,7 +13,6 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
@@ -213,14 +212,34 @@ class MutationType extends ObjectType
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args); // $rootValue['index'] ?? 0
-            $name = substr($info->fieldName, 6, -1);
-            foreach (File::read($name, $args, $rootValue['index'] ?? 0) as $data) {
-                $args['data'] = $data;
-                DB::update(JwtAuthentication::tenantId(), $name, $args);
-            }
+            //return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args); // $rootValue['index'] ?? 0
+            return $this->resolveImport(substr($info->fieldName, 6, -1), $args, $rootValue['index'] ?? 0);
         }
         throw new \RuntimeException(print_r($info->fieldName, true));
+    }
+
+    protected function resolveImport(string $name, array $args, int $index): \stdClass
+    {
+        [$create, $update, $errors] = File::read($name, $args, $index);
+        $inserted_ids = [];
+        foreach ($create as $data) {
+            $inserted_ids[] = DB::insert(JwtAuthentication::tenantId(), $name, $data)->id;
+        }
+        $updated_ids = [];
+        foreach ($update as $data) {
+            $updated_ids[] = DB::update(JwtAuthentication::tenantId(), $name, $data)->id;
+        }
+        return (object) [
+            'inserted_rows' => count($inserted_ids),
+            'inserted_ids' => $inserted_ids,
+            'updated_rows' => count($updated_ids),
+            'updated_ids' => $updated_ids,
+            'affected_rows' => count($inserted_ids) + count($updated_ids),
+            'affected_ids' => array_merge($inserted_ids, $updated_ids),
+            'failed_rows' => 0,
+            'failed_row_numbers' => [],
+            'errors' => $errors
+        ];
     }
 
 
