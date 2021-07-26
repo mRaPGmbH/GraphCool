@@ -296,7 +296,7 @@ class MysqlDataProvider extends DataProvider
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
         $this->checkNull($model, $updates);
-        if (!$this->updateNode($tenantId, $data['id'])) {
+        if ($this->updateNode($tenantId, $data['id']) === 0) {
             throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
         }
 
@@ -740,7 +740,6 @@ class MysqlDataProvider extends DataProvider
 
         $edges = [];
 
-
         $query = MysqlQueryBuilder::forRelation($relation, [$id]);
         $query
             ->tenant($tenantId)
@@ -955,7 +954,7 @@ class MysqlDataProvider extends DataProvider
     }
 
 
-    protected function updateNode(string $tenantId, string $id): bool
+    protected function updateNode(string $tenantId, string $id): int
     {
         // TODO: maybe add model-name to this?
         $sql = 'UPDATE `node` SET `updated_at` = now() WHERE id = :id';
@@ -965,7 +964,8 @@ class MysqlDataProvider extends DataProvider
             $params[':tenant_id'] = $tenantId;
         }
         $statement = $this->statement($sql);
-        return $statement->execute($params);
+        $statement->execute($params);
+        return $statement->rowCount();
     }
 
     protected function deleteNodeProperty(string $nodeId, string $propertyName): bool

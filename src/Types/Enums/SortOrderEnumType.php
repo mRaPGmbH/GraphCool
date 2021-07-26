@@ -15,7 +15,8 @@ class SortOrderEnumType extends EnumType
             'description' => 'The available direction for ordering a list of records',
             'values' => [
                 'ASC' => ['value' => 'ASC', 'description' => 'Sort records in ascending order.'],
-                'DESC' => ['value' => 'DESC', 'description' => 'Sort records in descending order.']
+                'DESC' => ['value' => 'DESC', 'description' => 'Sort records in descending order.'],
+                'RAND' => ['value' => 'RAND', 'description' => 'Sort records in random order.']
             ]
         ];
         parent::__construct($config);

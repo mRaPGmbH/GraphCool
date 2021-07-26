@@ -152,6 +152,10 @@ class MysqlQueryBuilder
         foreach ($orderBys as $orderBy) {
             $field = $orderBy['field'] ?? 'created_at';
             $order = $orderBy['order'] ?? 'ASC';
+            if ($order === 'RAND') {
+                $this->orderBys[] = 'rand()';
+                continue;
+            }
             if (in_array($field, $this->getBaseColumns())) {
                 $this->orderBys[] = $this->fieldName($field) . ' ' . $order;
             } else {
