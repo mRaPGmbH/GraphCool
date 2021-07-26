@@ -292,6 +292,7 @@ class MysqlDataProvider extends DataProvider
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = $this->getModel($name);
+        $this->checkIfNodeExists($tenantId, $model, $name, $data['id']);
         $updates = $data['data'] ?? [];
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
@@ -335,6 +336,20 @@ class MysqlDataProvider extends DataProvider
             $model->afterUpdate($loaded);
         }
         return $loaded;
+    }
+
+    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
+    {
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
+            ->withTrashed();
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        /*
+        if ((int)$statement->fetchColumn() === 0) {
+            throw new Error($name . ' with ID ' . $id . ' not found.');
+        }*/
     }
 
     public function updateMany(string $tenantId, string $name, array $data): stdClass
