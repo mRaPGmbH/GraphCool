@@ -32,7 +32,12 @@ class ColumnTypeTest extends TestCase
             'LAST_NAME' => 'last_name',
             'TIME' => 'time',
             'UPDATED_AT' => 'updated_at',
-            'ENUM' => 'enum'
+            'ENUM' => 'enum',
+            'COUNTRY' => 'country',
+            'TIMEZONE' => 'timezone',
+            'CURRENCY' => 'currency',
+            'LANGUAGE' => 'language',
+            'LOCALE' => 'locale',
         ];
         self::assertEquals($expected, $columns);
     }

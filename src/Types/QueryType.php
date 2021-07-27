@@ -12,7 +12,6 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
@@ -153,7 +152,7 @@ class QueryType extends ObjectType
             $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
-                return File::export($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
+                return File::write($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
             }
         }
         return DB::load(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);

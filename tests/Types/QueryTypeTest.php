@@ -8,7 +8,7 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\DataSource\Providers\MysqlDataProvider;
+use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;

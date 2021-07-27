@@ -26,6 +26,7 @@ use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
 use Mrap\GraphCool\Types\TypeLoader;
 
@@ -248,6 +249,12 @@ class TypeLoaderTest extends TestCase
         $typeLoader->load('_does_not_exist')();
     }
 
+    public function testCreateImportSummary(): void
+    {
+        $typeLoader = new TypeLoader();
+        $result = $typeLoader->load('_ImportSummary')();
+        self::assertInstanceOf(ImportSummaryType::class, $result);
+    }
 
 
 }

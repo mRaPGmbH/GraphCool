@@ -39,12 +39,10 @@ class ClassFinder
 
     public static function setRootPath(?string $appRootPath)
     {
-        if ($appRootPath !== static::$appRootPath) {
-            static::$models = null;
-            static::$queries = null;
-            static::$mutations = null;
-            static::$scripts = null;
-        }
+        static::$models = null;
+        static::$queries = null;
+        static::$mutations = null;
+        static::$scripts = null;
         static::$appRootPath = $appRootPath;
     }
 

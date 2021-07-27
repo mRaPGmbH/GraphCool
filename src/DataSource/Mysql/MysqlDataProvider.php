@@ -1,105 +1,35 @@
 <?php
+
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\DataSource\Providers;
+namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
-use Mrap\GraphCool\DataSource\QueryBuilders\MysqlQueryBuilder;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
-use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
-use PDO;
-use PDOException;
-use PDOStatement;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use stdClass;
 
-class MysqlDataProvider extends DataProvider
+class MysqlDataProvider implements DataProvider
 {
 
-    protected PDO $pdo;
-    protected array $statements = [];
     protected int $search = 0;
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function migrate(): void
     {
-        $this->connectPdo();
-
-        $sql = 'SET sql_notes = 0';
-        $this->pdo()->exec($sql);
-
-        $sql = 'CREATE TABLE IF NOT EXISTS `node` (
-              `id` char(36) NOT NULL COMMENT \'uuid\',
-              `tenant_id` int(11) NOT NULL,
-              `model` varchar(255) NOT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-        $this->pdo()->exec($sql);
-
-        $sql = 'CREATE TABLE IF NOT EXISTS `node_property` (
-              `node_id` char(36) NOT NULL,
-              `model` varchar(255) NOT NULL,
-              `property` varchar(255) NOT NULL,
-              `value_int` bigint(20) DEFAULT NULL,
-              `value_string` longtext,
-              `value_float` double DEFAULT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`node_id`,`property`),
-              CONSTRAINT `node_property_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-        $this->pdo()->exec($sql);
-
-        $sql = 'CREATE TABLE IF NOT EXISTS `edge` (
-              `parent_id` char(36) NOT NULL COMMENT \'node.id\',
-              `child_id` char(36) NOT NULL COMMENT \'node.id\',
-              `tenant_id` int(11) NOT NULL,
-              `parent` varchar(255) NOT NULL,
-              `child` varchar(255) NOT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`parent_id`,`child_id`),
-              KEY `child_id` (`child_id`),
-              CONSTRAINT `edge_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `node` (`id`) ON DELETE CASCADE,
-              CONSTRAINT `edge_ibfk_2` FOREIGN KEY (`child_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-        $this->pdo()->exec($sql);
-
-        $sql = 'CREATE TABLE IF NOT EXISTS `edge_property` (
-              `parent_id` char(36) NOT NULL COMMENT \'node.id\',
-              `child_id` char(36) NOT NULL COMMENT \'node.id\',
-              `parent` varchar(255) NOT NULL COMMENT \'node.name\',
-              `child` varchar(255) NOT NULL COMMENT \'node.name\',
-              `property` varchar(255) NOT NULL,
-              `value_int` bigint(20) DEFAULT NULL,
-              `value_string` longtext,
-              `value_float` double DEFAULT NULL,
-              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-              `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`parent_id`,`child_id`,`child`),
-              KEY `child_id` (`child_id`),
-              KEY `key` (`child`),
-              CONSTRAINT `edge_property_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `node` (`id`) ON DELETE CASCADE,
-              CONSTRAINT `edge_property_ibfk_2` FOREIGN KEY (`child_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-        $this->pdo()->exec($sql);
-
-        $sql = 'SET sql_notes = 1';
-        $this->pdo()->exec($sql);
+        $migration = new MysqlMigration();
+        $migration->migrate();
     }
 
     public function findAll(?string $tenantId, string $name, array $args): stdClass
@@ -143,19 +73,11 @@ class MysqlDataProvider extends DataProvider
             default => null
         };
 
-        //var_dump($query->toSql());
-        //var_dump($query->getParameters());
-
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getParameters());
         $ids = [];
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $ids[] = $row->id;
         }
-
-        $statement = $this->statement($query->toCountSql());
-        $statement->execute($query->getParameters());
-        $total = (int)$statement->fetchColumn();
+        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         $result = new stdClass();
         $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
@@ -177,9 +99,7 @@ class MysqlDataProvider extends DataProvider
 
         $query->selectMax($key, 'max', $valueType)
             ->withTrashed();
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getParameters());
-        $result = $statement->fetch(PDO::FETCH_OBJ);
+        $result = Mysql::fetch($query->toSql(), $query->getParameters());
 
         $property = new stdClass();
         $property->$valueType = $result->max;
@@ -296,7 +216,7 @@ class MysqlDataProvider extends DataProvider
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
         $this->checkNull($model, $updates);
-        if (!$this->updateNode($tenantId, $data['id'])) {
+        if ($this->updateNode($tenantId, $data['id']) === 0) {
             throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
         }
 
@@ -380,13 +300,9 @@ class MysqlDataProvider extends DataProvider
             ->where($data['where'] ?? null)
             ->withTrashed();
 
-        $statement = $this->statement($query->toCountSql());
-        $statement->execute($query->getParameters());
         $result = new stdClass();
-        $result->updated_rows = (int)$statement->fetchColumn();
-
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getUpdateParameters());
+        $result->updated_rows = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+        Mysql::execute($query->toSql(), $query->getUpdateParameters());
 
         if ($ids === null) {
             $where = $data['where'] ?? null;
@@ -417,9 +333,7 @@ class MysqlDataProvider extends DataProvider
             ResultType::WITH_TRASHED => $query->withTrashed(),
             default => null
         };
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getUpdateParameters());
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $ids[] = $row->id;
         }
         return $ids;
@@ -532,16 +446,14 @@ class MysqlDataProvider extends DataProvider
         $query->select(['id'])
             ->search($data['search'] ?? null)
             ->where($data['where'] ?? []);
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getParameters());
         if ($mode === 'REMOVE') {
             $ids = [];
-            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+            foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
                 $ids[] = $row->id;
             }
             $this->deleteRelations($childIds, $ids);
         } else {
-            foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $row) {
+            foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
                 $this->insertOrUpdateBelongsRelation($tenantId, $relation, $data, $row->id, $childIds, $childName);
             }
         }
@@ -561,9 +473,7 @@ class MysqlDataProvider extends DataProvider
         $sql .= '(' . implode(',', array_keys($params)). ') ';
         $sql .= ' AND parent = :parent';
         $params[':parent'] = $parentName;
-
-        $statement = $this->statement($sql);
-        $statement->execute($params);
+        Mysql::execute($sql, $params);
     }
 
     protected function deleteRelations(array $childIds, array $parentIds): void
@@ -584,9 +494,7 @@ class MysqlDataProvider extends DataProvider
         $sql = 'UPDATE `edge` SET `deleted_at` = now() WHERE `child_id` IN ';
         $sql .= '(' . implode(',', array_keys($params)) . ') ';
         $sql .= ' AND `parent_id` IN (' . implode(',', array_keys($params2)) . ')';
-
-        $statement = $this->statement($sql);
-        $statement->execute(array_merge($params, $params2));
+        Mysql::execute($sql, array_merge($params, $params2));
     }
 
     protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass
@@ -610,49 +518,6 @@ class MysqlDataProvider extends DataProvider
         return $paginatorInfo;
     }
 
-    protected function statement(string $sql): PDOStatement
-    {
-        if (!isset($this->statements[$sql])) {
-            $this->statements[$sql] = $this->pdo()->prepare($sql);
-        }
-        return $this->statements[$sql];
-    }
-
-    protected function pdo(): PDO
-    {
-        if (!isset($this->pdo)) {
-            $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
-                . ';dbname=' . Env::get('DB_DATABASE');
-            try {
-                $this->pdo = new PDO(
-                    $connection,
-                    Env::get('DB_USERNAME'),
-                    Env::get('DB_PASSWORD'),
-                    [PDO::ATTR_PERSISTENT => true]
-                );
-                $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            } catch (PDOException $e) {
-                throw new RuntimeException('Could not connect to database: ' . $connection . ' - user: ' . Env::get('DB_USERNAME') . ' ' . getenv('DB_USERNAME') . ' ' . print_r($_ENV, true));
-            }
-        }
-        return $this->pdo;
-    }
-
-    protected function connectPdo(int $retries = 5): void
-    {
-        for ($i = 0; $i < $retries; $i++) {
-            try {
-                $this->pdo();
-                return;
-            } catch (RuntimeException $e) {
-                sleep(1);
-            }
-        }
-        $this->pdo();
-    }
-
-
     protected function fetchNode(?string $tenantId, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
         // TODO: use queryBuilder
@@ -668,9 +533,7 @@ class MysqlDataProvider extends DataProvider
             default => 'AND `deleted_at` IS NULL ',
         };
 
-        $statement = $this->statement($sql);
-        $statement->execute($params);
-        $node = $statement->fetch(PDO::FETCH_OBJ);
+        $node = Mysql::fetch($sql, $params);
         if ($node === false) {
             return null;
         }
@@ -694,20 +557,17 @@ class MysqlDataProvider extends DataProvider
     protected function fetchNodeProperties(string $id): array
     {
         $sql = 'SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL';
-        $statement = $this->statement($sql);
-        $statement->execute([':node_id' => $id]);
-        return $statement->fetchAll(PDO::FETCH_OBJ);
+        return Mysql::fetchAll($sql, [':node_id' => $id]);
     }
 
     protected function fetchEdgeProperties(string $parentId, string $childId): array
     {
         $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
-        $statement = $this->statement($sql);
-        $statement->execute([
+        $params = [
             'parent_id' => $parentId,
             'child_id' => $childId
-        ]);
-        return $statement->fetchAll(PDO::FETCH_OBJ);
+        ];
+        return Mysql::fetchAll($sql, $params);
     }
 
 
@@ -756,10 +616,7 @@ class MysqlDataProvider extends DataProvider
             default => null
         };
 
-        $statement = $this->statement($query->toSql());
-        $statement->execute($query->getParameters());
-
-        foreach ($statement->fetchAll(PDO::FETCH_OBJ) as $edgeIds) {
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $edgeIds) {
             $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
             if ($edge === null) {
                 // this should never happen!
@@ -777,9 +634,7 @@ class MysqlDataProvider extends DataProvider
             $edges[] = $edge;
         }
 
-        $statement = $this->statement($query->toCountSql());
-        $statement->execute($query->getParameters());
-        $total = (int)$statement->fetchColumn();
+        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         StopWatch::stop(__METHOD__);
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
@@ -810,10 +665,8 @@ class MysqlDataProvider extends DataProvider
             default => 'AND `deleted_at` IS NULL ',
         };
 
-        $statement = $this->statement($sql);
-        $statement->execute($parameters);
-        $edge = $statement->fetch(PDO::FETCH_OBJ);
-        if ($edge === false) {
+        $edge = Mysql::fetch($sql, $parameters);
+        if ($edge === null) {
             return null;
         }
         $dates = ['updated_at', 'created_at', 'deleted_at'];
@@ -846,14 +699,12 @@ class MysqlDataProvider extends DataProvider
     protected function insertNode(string $tenantId, string $id, string $name): bool
     {
         $sql = 'INSERT INTO `node` (`id`, `tenant_id`, `model`) VALUES (:id, :tenant_id, :model)';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':id'    => $id,
-                ':tenant_id' => $tenantId,
-                ':model' => $name
-            ]
-        );
+        $params = [
+            ':id'    => $id,
+            ':tenant_id' => $tenantId,
+            ':model' => $name
+        ];
+        return Mysql::execute($sql, $params);
     }
 
     protected function insertOrUpdateEdge(string $tenantId, string $parentId, string $childId, string $parent, string $child): bool
@@ -861,16 +712,14 @@ class MysqlDataProvider extends DataProvider
         $sql = 'INSERT INTO `edge` (`parent_id`, `child_id`, `tenant_id`, `parent`, `child`) VALUES 
             (:parent_id, :child_id, :tenant_id, :parent, :child)
             ON DUPLICATE KEY UPDATE `deleted_at` = null';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':parent_id' => $parentId,
-                ':child_id'  => $childId,
-                ':tenant_id' => $tenantId,
-                ':parent'    => $parent,
-                ':child'     => $child,
-            ]
-        );
+        $params = [
+            ':parent_id' => $parentId,
+            ':child_id'  => $childId,
+            ':tenant_id' => $tenantId,
+            ':parent'    => $parent,
+            ':child'     => $child,
+        ];
+        return Mysql::execute($sql, $params);
     }
 
     protected function insertOrUpdateNodeProperty(
@@ -884,20 +733,18 @@ class MysqlDataProvider extends DataProvider
         $sql = 'INSERT INTO `node_property` (`node_id`, `model`, `property`, `value_int`, `value_string`, `value_float`) '
             . 'VALUES (:node_id, :model, :property, :value_int, :value_string, :value_float) '
             . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':node_id'       => $nodeId,
-                ':model'         => $name,
-                ':property'      => $propertyName,
-                ':value_int'     => $valueInt,
-                ':value_string'  => $valueString,
-                ':value_float'   => $valueFloat,
-                ':value_int2'    => $valueInt,
-                ':value_string2' => $valueString,
-                ':value_float2'   => $valueFloat
-            ]
-        );
+        $params = [
+            ':node_id'       => $nodeId,
+            ':model'         => $name,
+            ':property'      => $propertyName,
+            ':value_int'     => $valueInt,
+            ':value_string'  => $valueString,
+            ':value_float'   => $valueFloat,
+            ':value_int2'    => $valueInt,
+            ':value_string2' => $valueString,
+            ':value_float2'   => $valueFloat
+        ];
+        return Mysql::execute($sql, $params);
     }
 
     protected function insertOrUpdateEdgeProperty(
@@ -914,22 +761,20 @@ class MysqlDataProvider extends DataProvider
         $sql = 'INSERT INTO `edge_property` (`parent_id`, `child_id`, `parent`, `child`, `property`, `value_int`, `value_string`, `value_float`) '
             . 'VALUES (:parent_id, :child_id, :parent, :child, :property, :value_int, :value_string, :value_float) '
             . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':parent_id'       => $parentId,
-                ':child_id'       => $childId,
-                ':parent'         => $parent,
-                ':child'         => $child,
-                ':property'      => $propertyName,
-                ':value_int'     => $valueInt,
-                ':value_string'  => $valueString,
-                ':value_float'   => $valueFloat,
-                ':value_int2'    => $valueInt,
-                ':value_string2' => $valueString,
-                ':value_float2'   => $valueFloat
-            ]
-        );
+        $params =             [
+            ':parent_id'       => $parentId,
+            ':child_id'       => $childId,
+            ':parent'         => $parent,
+            ':child'         => $child,
+            ':property'      => $propertyName,
+            ':value_int'     => $valueInt,
+            ':value_string'  => $valueString,
+            ':value_float'   => $valueFloat,
+            ':value_int2'    => $valueInt,
+            ':value_string2' => $valueString,
+            ':value_float2'   => $valueFloat
+        ];
+        return Mysql::execute($sql, $params);
     }
 
     protected function deleteEdgeProperty(
@@ -942,20 +787,18 @@ class MysqlDataProvider extends DataProvider
     {
         $sql = 'DELETE FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id '
             . 'AND `parent` = :parent AND `child` = :child AND `property` = :property';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':parent_id'       => $parentId,
-                ':child_id'       => $childId,
-                ':parent'         => $parent,
-                ':child'         => $child,
-                ':property'      => $propertyName,
-            ]
-        );
+        $params = [
+            ':parent_id'       => $parentId,
+            ':child_id'       => $childId,
+            ':parent'         => $parent,
+            ':child'         => $child,
+            ':property'      => $propertyName,
+        ];
+        return Mysql::execute($sql, $params);
     }
 
 
-    protected function updateNode(string $tenantId, string $id): bool
+    protected function updateNode(string $tenantId, string $id): int
     {
         // TODO: maybe add model-name to this?
         $sql = 'UPDATE `node` SET `updated_at` = now() WHERE id = :id';
@@ -964,21 +807,18 @@ class MysqlDataProvider extends DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        $statement = $this->statement($sql);
-        return $statement->execute($params);
+        return Mysql::execute($sql, $params);
     }
 
     protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
     {
         $sql = 'UPDATE `node_property` SET `deleted_at` = now() '
             . 'WHERE `deleted_at` IS NULL AND `node_id` = :node_id AND `property` = :property';
-        $statement = $this->statement($sql);
-        return $statement->execute(
-            [
-                ':node_id'  => $nodeId,
-                ':property' => $propertyName,
-            ]
-        );
+        $params = [
+            ':node_id'  => $nodeId,
+            ':property' => $propertyName,
+        ];
+        return Mysql::execute($sql, $params);
     }
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
@@ -987,7 +827,7 @@ class MysqlDataProvider extends DataProvider
         $this->deleteNode($tenantId, $id);
         $this->deleteEdgesForNodeId($tenantId, $id);
         $model = $this->getModel($name);
-        $model->afterDelete($node);
+        $model->afterDelete($node); // TODO: nullpointer exception?
         return $node;
     }
 
@@ -996,7 +836,7 @@ class MysqlDataProvider extends DataProvider
         $this->restoreNode($tenantId, $id);
         $node = $this->load($tenantId, $name, $id);
         $model = $this->getModel($name);
-        $model->afterUpdate($node);
+        $model->afterUpdate($node);  // TODO: nullpointer exception?
         return $node;
     }
 
@@ -1008,8 +848,7 @@ class MysqlDataProvider extends DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        $statement = $this->statement($sql);
-        return $statement->execute($params);
+        return Mysql::execute($sql, $params);
     }
 
     protected function deleteEdgesForNodeId(?string $tenantId, string $id): bool
@@ -1020,8 +859,7 @@ class MysqlDataProvider extends DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        $statement = $this->statement($sql);
-        return $statement->execute($params);
+        return Mysql::execute($sql, $params);
     }
 
     protected function restoreNode(?string $tenantId, string $id): bool
@@ -1032,8 +870,7 @@ class MysqlDataProvider extends DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        $statement = $this->statement($sql);
-        return $statement->execute($params);
+        return Mysql::execute($sql, $params);
     }
 
     protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
@@ -1067,9 +904,7 @@ class MysqlDataProvider extends DataProvider
                 if ($id !== null) {
                     $query->where(['column' => 'id', 'operator' => '!=', 'value' => $id]);
                 }
-                $statement = $this->statement($query->toCountSql());
-                $statement->execute($query->getParameters());
-                $total = (int)$statement->fetchColumn();
+                $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
                 if ($total >= 1) {
                     throw new Error('Property "' . $key . '" must be unique, but value "' . (string)$data[$key] . '" already exists.');
                 }

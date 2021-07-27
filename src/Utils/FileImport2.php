@@ -18,8 +18,9 @@ use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Scalars\DateTime;
+use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
-use stdClass;
 
 class FileImport2
 {
@@ -45,12 +46,12 @@ class FileImport2
         /** @var SheetInterface $sheet */
         $sheet = $sheets->current();
         $rows = $sheet->getRowIterator();
-        if (iterator_count($rows) < 2) {
-            throw new Error('Sheet must contain at least one row with headers, and one row with data.');
-        }
         $rows->rewind();
         [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns);
         $rows->next();
+        if (!$rows->valid()) {
+            throw new Error('Sheet must contain at least one row with headers, and one row with data.');
+        }
         $create = [];
         $update = [];
         $errors = [];
@@ -69,17 +70,18 @@ class FileImport2
                     $create[] = $item;
                 }
             } else {
-                $item = [
-                    'id' => $id,
-                    'data' => $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i)
-                ];
+                $item = $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i);
                 if ($item !== null) {
-                    $update[] = $item;
+                    $update[] = [
+                        'id' => $id,
+                        'data' => $item
+                    ];
                 }
             }
             $rows->next();
             $i++;
         }
+        unlink($this->file);
         return [$create, $update, $errors];
     }
 
@@ -98,7 +100,7 @@ class FileImport2
                         $errors[] = [
                             'row' => $rowNumber,
                             'column' => $this->getColumn($columnNumber),
-                            'value' => (string)($row[$mapping[$key]] ?? ''),
+                            'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
                             'relation' => null,
                             'field' => $key,
                             'ignored' => false,
@@ -110,7 +112,7 @@ class FileImport2
                     $errors[] = [
                         'row' => $rowNumber,
                         'column' => $this->getColumn($columnNumber),
-                        'value' => (string)($row[$mapping[$key]] ?? ''),
+                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
                         'relation' => null,
                         'field' => $key,
                         'ignored' => true,
@@ -121,8 +123,8 @@ class FileImport2
                 if ($value === null && $field->null === false) {
                     $errors[] = [
                         'row' => $rowNumber,
-                        'column' => 'X',
-                        'value' => (string)($row[$mapping[$key]] ?? ''),
+                        'column' => $this->getColumn($columnNumber),
+                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
                         'relation' => null,
                         'field' => $key,
                         'ignored' => false,
@@ -147,8 +149,8 @@ class FileImport2
         $columns = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Z'];
         $count = count($columns);
         $value = $columns[$i % $count];
-        if ($i > $count) {
-            $value = $columns[floor($i / $count)] . $value;
+        if ($i >= $count) {
+            $value = $this->getColumn(((int)floor($i / $count))-1) . $value;
         }
         return $value;
     }
@@ -187,13 +189,14 @@ class FileImport2
         }
         switch ($field->type) {
             case Field::DATE:
+                $type = new \Mrap\GraphCool\Types\Scalars\Date();
+                return $type->parseValue($value);
             case Field::DATE_TIME:
+                $type = new DateTime();
+                return $type->parseValue($value);
             case Field::TIME:
-                $carbon = Date::parse($value);
-                if ($carbon === null) {
-                    return null;
-                }
-                return (int)$carbon->getPreciseTimestamp(3);
+                $type = new Time();
+                return $type->parseValue($value);
             case Field::DECIMAL:
             case Type::FLOAT:
                 return (float)$value;
@@ -245,15 +248,11 @@ class FileImport2
                 throw new Error('File is missing.');
             }
             $file = $tmp['tmp_name'];
-            $mimeType = $tmp['type'];
-            if ($mimeType === 'application/octet-stream') {
-                $mimeType = mime_content_type($file);
-            }
         } else {
             $file = tempnam(sys_get_temp_dir(), 'import');
             file_put_contents($file, base64_decode($input));
-            $mimeType = mime_content_type($file);
         }
+        $mimeType = mime_content_type($file);
         $reader = $this->getReaderObject($mimeType);
         if ($reader === null) {
             throw new Error('Could not import file: Unknown MimeType: '. $mimeType);
@@ -328,7 +327,7 @@ class FileImport2
                 $property = $column['column'];
                 /** @var Field $field */
                 $field = $model->$property ?? null;
-                if ($field->type === Type::ID) {
+                if ($field instanceof Field && $field->type === Type::ID) {
                     $id = $key;
                     continue;
                 }

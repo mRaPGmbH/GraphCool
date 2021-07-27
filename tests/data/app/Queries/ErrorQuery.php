@@ -2,27 +2,25 @@
 
 namespace App\Queries;
 
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Query;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class DummyQuery extends Query
+class ExceptionQuery extends Query
 {
 
     public function __construct(TypeLoader $typeLoader)
     {
-        $this->name = 'DummyQuery';
+        $this->name = 'ExceptionQuery';
         $this->config = [
-            'type' => Type::string(),
-            'args' => [
-                'arg' => $typeLoader->load('Mixed')
-            ]
+            'type' => Type::string()
         ];
     }
 
     public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
-        return $args['arg'] ?? 'dummy-query-resolve';
+        throw new Error('nope');
     }
 }

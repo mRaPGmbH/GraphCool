@@ -2,9 +2,7 @@
 
 namespace App\Scripts;
 
-use Mrap\GraphCool\Model\Script;
-
-class DummyScript extends Script
+class DummyNoScript
 {
 
     public function run(array $args): void

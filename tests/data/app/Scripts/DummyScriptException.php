@@ -4,11 +4,11 @@ namespace App\Scripts;
 
 use Mrap\GraphCool\Model\Script;
 
-class DummyScript extends Script
+class DummyScriptException extends Script
 {
 
     public function run(array $args): void
     {
-        echo 'test';
+        throw new \RuntimeException('nope');
     }
 }

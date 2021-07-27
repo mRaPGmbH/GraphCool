@@ -3,13 +3,20 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
-StopWatch::start('.env');
-$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../..');
-$dotenv->load();
-StopWatch::stop('.env');
+
+use Dotenv\Dotenv;
 
 class Env
 {
+
+    public static function init(): void
+    {
+        StopWatch::start('.env');
+        $dotenv = Dotenv::createImmutable(__DIR__ . '/../../../../..');
+        $dotenv->load();
+        StopWatch::stop('.env');
+    }
+
     public static function get(string $key, $default = null)
     {
         $value = getenv($key);

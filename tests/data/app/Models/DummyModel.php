@@ -20,6 +20,12 @@ class DummyModel extends Model
 
         $this->enum = Field::enum(['A','B','C'])->description('test description');
 
+        $this->country = Field::countryCode()->nullable();
+        $this->timezone = Field::timezoneOffset()->nullable();
+        $this->locale = Field::localeCode()->nullable();
+        $this->currency = Field::currencyCode()->nullable();
+        $this->language = Field::languageCode()->nullable();
+
         $this->ignoreMe = 'not a field';
 
         $this->belongs_to = Relation::belongsTo(__CLASS__)->nullable();

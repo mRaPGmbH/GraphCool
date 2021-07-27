@@ -15,10 +15,10 @@ class LocaleEnumType extends EnumType
             'name' => '_LocaleCode',
             'description' => 'Locales TODO',
             'values' => [
-                'de_AT' => ['value' => 'de', 'description' => 'German (Austria)'],
-                'de_DE' => ['value' => 'de', 'description' => 'German (Germany)'],
-                'en_US' => ['value' => 'en', 'description' => 'English (American)'],
-                'en_GB' => ['value' => 'en', 'description' => 'English (British)'],
+                'de_AT' => ['value' => 'de_AT', 'description' => 'German (Austria)'],
+                'de_DE' => ['value' => 'de_DE', 'description' => 'German (Germany)'],
+                'en_US' => ['value' => 'en_US', 'description' => 'English (American)'],
+                'en_GB' => ['value' => 'en_GB', 'description' => 'English (British)'],
             ]
         ];
         parent::__construct($config);

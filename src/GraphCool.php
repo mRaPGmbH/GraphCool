@@ -27,6 +27,7 @@ class GraphCool
 
     public static function run(): void
     {
+        Env::init();
         StopWatch::start(__METHOD__);
         $instance = new self();
         try {
@@ -48,8 +49,9 @@ class GraphCool
     }
 
 
-    public static function runScript(array $args): void
+    public static function runScript(array $args): bool
     {
+        Env::init();
         $scriptName = strtolower(trim(array_shift($args)));
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
@@ -57,6 +59,7 @@ class GraphCool
                 if ($script instanceof Script) {
                     try {
                         $script->run($args);
+                        return true;
                     } catch (Throwable $e) {
                         self::sentryCapture($e);
                     }
@@ -66,10 +69,12 @@ class GraphCool
                 }
             }
         }
+        return false;
     }
 
     public static function migrate(): void
     {
+        Env::init();
         DB::migrate();
     }
 
@@ -166,6 +171,24 @@ class GraphCool
         ];
     }
 
+    protected function sendResponse(array $response): void
+    {
+        header('Content-Type: application/json');
+        if (Env::get('APP_ENV') === 'local') {
+            $response['_debugTimings'] = StopWatch::get();
+        }
+        try {
+            echo json_encode($response, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->handleError($e);
+            echo '{"errors":[[{"message":"Internal server error"}]]}';
+        }
+        $this->finishRequest();
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
     public static function sentryCapture(Throwable $e): void
     {
         $sentryDsn = Env::get('SENTRY_DSN');
@@ -181,18 +204,11 @@ class GraphCool
         }
     }
 
-    protected function sendResponse(array $response): void
+    /**
+     * @codeCoverageIgnore
+     */
+    protected function finishRequest(): void
     {
-        header('Content-Type: application/json');
-        if (Env::get('APP_ENV') === 'local') {
-            $response['_debugTimings'] = StopWatch::get();
-        }
-        try {
-            echo json_encode($response, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            $this->handleError($e);
-            echo '{"errors":[[{"message":"Internal server error"}]]}';
-        }
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         }

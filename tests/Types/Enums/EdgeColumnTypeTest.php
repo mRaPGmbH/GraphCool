@@ -38,6 +38,11 @@ class EdgeColumnTypeTest extends TestCase
             '_PIVOT_ENUM' => '_pivot_enum',
             '_PIVOT_PROPERTY' => '_pivot_property',
             '_UPDATED_AT' => '_updated_at',
+            'COUNTRY' => 'country',
+            'TIMEZONE' => 'timezone',
+            'CURRENCY' => 'currency',
+            'LANGUAGE' => 'language',
+            'LOCALE' => 'locale',
         ];
         self::assertEquals($expected, $columns);
     }
