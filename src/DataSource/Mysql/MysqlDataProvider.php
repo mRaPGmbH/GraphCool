@@ -212,13 +212,11 @@ class MysqlDataProvider implements DataProvider
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = $this->getModel($name);
+        $this->checkIfNodeExists($tenantId, $model, $name, $data['id']);
         $updates = $data['data'] ?? [];
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
         $this->checkNull($model, $updates);
-        if ($this->updateNode($tenantId, $data['id']) === 0) {
-            throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
-        }
 
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $updates)) {
@@ -255,6 +253,19 @@ class MysqlDataProvider implements DataProvider
             $model->afterUpdate($loaded);
         }
         return $loaded;
+    }
+
+    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
+    {
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
+            ->withTrashed();
+        $statement = $this->statement($query->toCountSql());
+        $statement->execute($query->getParameters());
+        if ((int)$statement->fetchColumn() === 0) {
+            throw new Error($name . ' with ID ' . $id . ' not found.');
+        }
     }
 
     public function updateMany(string $tenantId, string $name, array $data): stdClass
@@ -600,7 +611,6 @@ class MysqlDataProvider implements DataProvider
 
         $edges = [];
 
-
         $query = MysqlQueryBuilder::forRelation($relation, [$id]);
         $query
             ->tenant($tenantId)
@@ -704,7 +714,7 @@ class MysqlDataProvider implements DataProvider
             ':tenant_id' => $tenantId,
             ':model' => $name
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function insertOrUpdateEdge(string $tenantId, string $parentId, string $childId, string $parent, string $child): bool
@@ -719,7 +729,7 @@ class MysqlDataProvider implements DataProvider
             ':parent'    => $parent,
             ':child'     => $child,
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function insertOrUpdateNodeProperty(
@@ -744,7 +754,7 @@ class MysqlDataProvider implements DataProvider
             ':value_string2' => $valueString,
             ':value_float2'   => $valueFloat
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function insertOrUpdateEdgeProperty(
@@ -774,7 +784,7 @@ class MysqlDataProvider implements DataProvider
             ':value_string2' => $valueString,
             ':value_float2'   => $valueFloat
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function deleteEdgeProperty(
@@ -794,7 +804,7 @@ class MysqlDataProvider implements DataProvider
             ':child'         => $child,
             ':property'      => $propertyName,
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
 
@@ -818,7 +828,7 @@ class MysqlDataProvider implements DataProvider
             ':node_id'  => $nodeId,
             ':property' => $propertyName,
         ];
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
@@ -848,7 +858,7 @@ class MysqlDataProvider implements DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function deleteEdgesForNodeId(?string $tenantId, string $id): bool
@@ -859,7 +869,7 @@ class MysqlDataProvider implements DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function restoreNode(?string $tenantId, string $id): bool
@@ -870,7 +880,7 @@ class MysqlDataProvider implements DataProvider
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        return Mysql::execute($sql, $params);
+        return Mysql::execute($sql, $params) > 0;
     }
 
     protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
