@@ -297,9 +297,10 @@ class MysqlDataProvider extends DataProvider
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
         $this->checkNull($model, $updates);
+        /*
         if ($this->updateNode($tenantId, $data['id']) === 0) {
             throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
-        }
+        }*/
 
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $updates)) {
@@ -346,10 +347,9 @@ class MysqlDataProvider extends DataProvider
             ->withTrashed();
         $statement = $this->statement($query->toCountSql());
         $statement->execute($query->getParameters());
-        /*
         if ((int)$statement->fetchColumn() === 0) {
             throw new Error($name . ' with ID ' . $id . ' not found.');
-        }*/
+        }
     }
 
     public function updateMany(string $tenantId, string $name, array $data): stdClass
