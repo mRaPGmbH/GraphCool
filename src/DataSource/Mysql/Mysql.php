@@ -10,6 +10,11 @@ class Mysql
 {
 
     protected static MysqlConnector $connector;
+    protected static MysqlNodeReader $nodeReader;
+    protected static MysqlNodeWriter $nodeWriter;
+    protected static MysqlEdgeReader $edgeReader;
+    protected static MysqlEdgeWriter $edgeWriter;
+
 
     public static function setConnector(MysqlConnector $connector): void
     {
@@ -56,5 +61,70 @@ class Mysql
     {
         static::get()->waitForConnection($retries);
     }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    public static function nodeReader(): MysqlNodeReader
+    {
+        if (!isset(static::$nodeReader)) {
+            static::$nodeReader = new MysqlNodeReader();
+        }
+        return static::$nodeReader;
+    }
+
+    public static function setNodeReader(MysqlNodeReader $nodeReader): void
+    {
+        static::$nodeReader = $nodeReader;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    public static function nodeWriter(): MysqlNodeWriter
+    {
+        if (!isset(static::$nodeWriter)) {
+            static::$nodeWriter = new MysqlNodeWriter();
+        }
+        return static::$nodeWriter;
+    }
+
+    public static function setNodeWriter(MysqlNodeWriter $nodeWriter): void
+    {
+        static::$nodeWriter = $nodeWriter;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    public static function edgeReader(): MysqlEdgeReader
+    {
+        if (!isset(static::$edgeReader)) {
+            static::$edgeReader = new MysqlEdgeReader();
+        }
+        return static::$edgeReader;
+    }
+
+    public static function setEdgeReader(MysqlEdgeReader $edgeReader): void
+    {
+        static::$edgeReader = $edgeReader;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    public static function edgeWriter(): MysqlEdgeWriter
+    {
+        if (!isset(static::$edgeWriter)) {
+            static::$edgeWriter = new MysqlEdgeWriter();
+        }
+        return static::$edgeWriter;
+    }
+
+    public static function setEdgeWriter(MysqlEdgeWriter $edgeWriter): void
+    {
+        static::$edgeWriter = $edgeWriter;
+    }
+
 
 }

@@ -9,6 +9,7 @@ use stdClass;
 class Model
 {
     private $settings;
+    private static $instances = [];
 
     public function __construct()
     {
@@ -42,6 +43,15 @@ class Model
     public function settings()
     {
         return $this->settings;
+    }
+
+    public static function get(string $name): Model
+    {
+        if (!isset(self::$instances[$name])) {
+            $classname = 'App\\Models\\' . $name;
+            self::$instances[$name] = new $classname();
+        }
+        return self::$instances[$name];
     }
 
 }

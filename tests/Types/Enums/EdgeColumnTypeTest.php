@@ -43,6 +43,8 @@ class EdgeColumnTypeTest extends TestCase
             'CURRENCY' => 'currency',
             'LANGUAGE' => 'language',
             'LOCALE' => 'locale',
+            'DECIMAL' => 'decimal',
+            'BOOL' => 'bool',
         ];
         self::assertEquals($expected, $columns);
     }

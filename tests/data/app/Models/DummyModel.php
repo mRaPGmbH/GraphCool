@@ -25,14 +25,20 @@ class DummyModel extends Model
         $this->locale = Field::localeCode()->nullable();
         $this->currency = Field::currencyCode()->nullable();
         $this->language = Field::languageCode()->nullable();
+        $this->decimal = Field::decimal()->nullable();
+        $this->bool = Field::bool()->nullable();
 
         $this->ignoreMe = 'not a field';
 
         $this->belongs_to = Relation::belongsTo(__CLASS__)->nullable();
+        $this->belongs_to->pivot_property = Field::string()->default('default');
+        $this->belongs_to->pivot_property2 = Field::string()->nullable();
+        $this->belongs_to->pivot_property3 = Field::string()->nullable();
         $this->belongs_to2 = Relation::belongsTo(__CLASS__);
         $this->belongs_to_many = Relation::belongsToMany(__CLASS__);
         $this->belongs_to_many->pivot_property = Field::string()->nullable();
         $this->belongs_to_many->pivot_enum = Field::enum(['X','Y','Z']);
+        $this->has_one = Relation::hasOne(__CLASS__)->nullable();
     }
 
 }

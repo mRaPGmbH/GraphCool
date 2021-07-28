@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
-use Carbon\Carbon;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
@@ -12,10 +11,9 @@ use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Utils\StopWatch;
-use Mrap\GraphCool\Utils\TimeZone;
 use Ramsey\Uuid\Uuid;
-use RuntimeException;
 use stdClass;
 
 class MysqlDataProvider implements DataProvider
@@ -43,11 +41,11 @@ class MysqlDataProvider implements DataProvider
         $offset = ($page - 1) * $limit;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         if (isset($args['where'])) {
-            $args['where'] = $this->convertWhereValues($model, $args['where']);
+            $args['where'] = MysqlConverter::convertWhereValues($model, $args['where']);
         }
 
         $query->select(['id'])
@@ -62,7 +60,7 @@ class MysqlDataProvider implements DataProvider
             }
             $relatedClassname = $relation->classname;
             $relatedModel = new $relatedClassname();
-            $relatedWhere = $this->convertWhereValues($relatedModel, $args['where'.ucfirst($key)]);
+            $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where'.ucfirst($key)]);
 
             $query->whereHas($relatedModel, $relation->name, $relation->type, $relatedWhere);
         }
@@ -80,7 +78,7 @@ class MysqlDataProvider implements DataProvider
         $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         $result = new stdClass();
-        $result->paginatorInfo = $this->getPaginatorInfo(count($ids), $page, $limit, $total);
+        $result->paginatorInfo = PaginatorInfoType::create(count($ids), $page, $limit, $total);
         StopWatch::stop(__METHOD__);
         $result->data = $this->loadAll($tenantId, $name, $ids, $resultType);
         return $result;
@@ -88,7 +86,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         $valueType = match ($model->$key->type) {
@@ -100,11 +98,19 @@ class MysqlDataProvider implements DataProvider
         $query->selectMax($key, 'max', $valueType)
             ->withTrashed();
         $result = Mysql::fetch($query->toSql(), $query->getParameters());
+        if ($result === null) {
+            return match ($model->$key->type) {
+                Type::BOOLEAN => false,
+                Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 0,
+                Type::FLOAT, Field::DECIMAL => 0.0,
+                default => ''
+            };
+        }
 
         $property = new stdClass();
         $property->$valueType = $result->max;
 
-        return $this->convertDatabaseTypeToOutput($model->$key, $property);
+        return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
     }
 
     public function loadAll(?string $tenantId, string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
@@ -118,53 +124,12 @@ class MysqlDataProvider implements DataProvider
 
     public function load(?string $tenantId, string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
-        StopWatch::start(__METHOD__);
-        $node = $this->fetchNode($tenantId, $id, $resultType);
-        if ($node === null) {
-            return null;
-        }
-        if ($node->model !== $name) {
-            throw new RuntimeException(
-                'Class mismatch: expected "' . $name . '" but found "'
-                . $node->model . '" instead (id:"' . $id . '")'
-            );
-        }
-        $model = $this->getModel($name);
-        foreach ($this->fetchNodeProperties($id) as $property) {
-            $key = $property->property;
-            if (!property_exists($model, $key)) {
-                continue;
-            }
-            /** @var Field $field */
-            $field = $model->$key;
-            if ($field instanceof Relation) {
-                continue;
-            }
-            $node->$key = $this->convertDatabaseTypeToOutput($field, $property);
-        }
-
-        foreach ($model as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            $node->$key = function (array $args) use ($id, $relation, $tenantId) {
-                $result = $this->findRelatedNodes($tenantId, $id, $relation, $args);
-                if (
-                    $result !== null
-                    && ($relation->type === Relation::HAS_ONE || $relation->type === Relation::BELONGS_TO)
-                ) {
-                    return $result[0] ?? null;
-                }
-                return $result;
-            };
-        }
-        StopWatch::stop(__METHOD__);
-        return $node;
+        return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
     }
 
     public function insert(string $tenantId, string $name, array $data): stdClass
     {
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $data = $model->beforeInsert($tenantId, $data);
         $this->checkUnique($tenantId, $model, $name, $data);
 
@@ -172,6 +137,9 @@ class MysqlDataProvider implements DataProvider
         $this->insertNode($tenantId, $id, $name);
 
         foreach ($model as $key => $item) {
+            if (!$item instanceof Relation && !$item instanceof Field) {
+                continue;
+            }
             if (!array_key_exists($key, $data) && (
                     $item instanceof Relation ||
                     $item->null || in_array(
@@ -211,7 +179,7 @@ class MysqlDataProvider implements DataProvider
 
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $this->checkIfNodeExists($tenantId, $model, $name, $data['id']);
         $updates = $data['data'] ?? [];
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
@@ -270,7 +238,7 @@ class MysqlDataProvider implements DataProvider
 
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $resultType = $data['result'] ?? ResultType::DEFAULT;
 
         $updateData = $data['data'] ?? [];
@@ -350,58 +318,14 @@ class MysqlDataProvider implements DataProvider
         return $ids;
     }
 
-    protected function convertWhereValues(Model $model, ?array &$where): ?array
-    {
-        if ($where === null) {
-            return $where;
-        }
-        if (isset($where['column']) && array_key_exists('value', $where)) {
-            $column = $where['column'];
-            /** @var Field $field */
-            $field = $model->$column;
-            if (is_array($where['value'])) {
-                foreach ($where['value'] as $key => $value) {
-                    // TODO: is there a better way to do this? are there other types that need special treatment?
-                    if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
-                        $value = strtotime($value) * 1000;
-                    }
-                    $where['value'][$key] = $this->convertInputTypeToDatabase($model->$column, $value);
-                }
-            } else {
-                // TODO: is there a better way to do this? are there other types that need special treatment?
-                if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
-                    $where['value'] = strtotime($where['value']) * 1000;
-                }
-                $where['value'] = $this->convertInputTypeToDatabase($model->$column, $where['value']);
-            }
-        }
-        if (isset($where['AND'])) {
-            foreach($where['AND'] as $key => $subWhere) {
-                $where['AND'][$key] = $this->convertWhereValues($model, $subWhere);
-            }
-        }
-        if (isset($where['OR'])) {
-            foreach($where['OR'] as $key => $subWhere) {
-                $where['OR'][$key] = $this->convertWhereValues($model, $subWhere);
-            }
-        }
-        return $where;
-    }
-
     protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
     {
         if (($value === null || $value === '') && $field->null === true) {
             $this->deleteNodeProperty($id, $key);
             return;
         }
-        $dbValue = $this->convertInputTypeToDatabase($field, $value);
-        if (is_int($dbValue)) {
-            $this->insertOrUpdateNodeProperty($id, $name, $key, $dbValue, null, null);
-        } elseif (is_float($dbValue)) {
-            $this->insertOrUpdateNodeProperty($id, $name, $key, null, null, $dbValue);
-        } else {
-            $this->insertOrUpdateNodeProperty($id, $name, $key, null, $dbValue, null);
-        }
+        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value);
+        $this->insertOrUpdateNodeProperty($id, $name, $key, $valueInt, $valueString, $valueFloat);
     }
 
     protected function insertOrUpdateBelongsRelation(string $tenantId, Relation $relation, array $data, string $parentId, array $childIds, string $childName): void
@@ -425,22 +349,15 @@ class MysqlDataProvider implements DataProvider
             {
                 if (!isset($data[$key])) {
                     if (($field->default ?? null) !== null) {
-                        $value = $this->convertInputTypeToDatabase($field, $field->default);
+                        [$intValue, $stringValue, $floatValue] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $field->default);
                     } else {
+                        // TODO: delete edge property?
                         continue;
                     }
                 } else {
-                    $value = $this->convertInputTypeToDatabase($field, $data[$key]);
+                    [$intValue, $stringValue, $floatValue] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $data[$key]);
                 }
-                if (is_int($value)) {
-                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $value, null, null);
-                } elseif (is_float($value)) {
-                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, null, $value);
-                } elseif (is_null($value)) {
-                    $this->deleteEdgeProperty($parentId, $childId, $relation->name, $childName, $key);
-                } else {
-                    $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, null, $value, null);
-                }
+                $this->insertOrUpdateEdgeProperty($parentId, $childId, $relation->name, $childName, $key, $intValue, $stringValue, $floatValue);
             }
         }
     }
@@ -507,204 +424,6 @@ class MysqlDataProvider implements DataProvider
         $sql .= ' AND `parent_id` IN (' . implode(',', array_keys($params2)) . ')';
         Mysql::execute($sql, array_merge($params, $params2));
     }
-
-    protected function getPaginatorInfo(int $count, int $page, int $limit, int $total): stdClass
-    {
-        $paginatorInfo = new stdClass();
-        $paginatorInfo->count = $count;
-        $paginatorInfo->currentPage = $page;
-        if ($total === 0) {
-            $paginatorInfo->firstItem = 0;
-        } else {
-            $paginatorInfo->firstItem = 1;
-        }
-        $paginatorInfo->hasMorePages = $total > $page * $limit;
-        $paginatorInfo->lastItem = $total;
-        $paginatorInfo->lastPage = ceil($total / $limit);
-        if ($paginatorInfo->lastPage < 1) {
-            $paginatorInfo->lastPage = 1;
-        }
-        $paginatorInfo->perPage = $limit;
-        $paginatorInfo->total = $total;
-        return $paginatorInfo;
-    }
-
-    protected function fetchNode(?string $tenantId, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
-        // TODO: use queryBuilder
-        $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
-        $params = [':id' => $id];
-        if ($tenantId !== null) {
-            $sql .= 'AND `node`.`tenant_id` = :tenant_id ';
-            $params[':tenant_id'] = $tenantId;
-        }
-        $sql .= match($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
-            default => 'AND `deleted_at` IS NULL ',
-        };
-
-        $node = Mysql::fetch($sql, $params);
-        if ($node === false) {
-            return null;
-        }
-
-        $dates = ['updated_at', 'created_at', 'deleted_at'];
-        foreach ($dates as $date) {
-            if ($node->$date !== null) {
-                $dateTime = Carbon::parse($node->$date);
-                $node->$date = $dateTime->getPreciseTimestamp(3);
-            }
-        }
-        return $node;
-    }
-
-    protected function getModel(string $name): Model
-    {
-        $classname = 'App\\Models\\' . $name;
-        return new $classname();
-    }
-
-    protected function fetchNodeProperties(string $id): array
-    {
-        $sql = 'SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL';
-        return Mysql::fetchAll($sql, [':node_id' => $id]);
-    }
-
-    protected function fetchEdgeProperties(string $parentId, string $childId): array
-    {
-        $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
-        $params = [
-            'parent_id' => $parentId,
-            'child_id' => $childId
-        ];
-        return Mysql::fetchAll($sql, $params);
-    }
-
-
-    protected function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string
-    {
-        return match ($field->type) {
-            Type::BOOLEAN => (bool)$property->value_int,
-            Type::FLOAT => (double)$property->value_float,
-            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
-            Field::DECIMAL => (float)($property->value_int/(10 ** $field->decimalPlaces)),
-            default => (string)$property->value_string,
-        };
-    }
-
-
-    protected function findRelatedNodes(?string $tenantId, string $id, Relation $relation, array $args): array|stdClass
-    {
-        StopWatch::start(__METHOD__);
-        $limit = $args['first'] ?? 10;
-        $page = $args['page'] ?? 1;
-        if ($page < 1)  {
-            throw new Error('Page cannot be less than 1');
-        }
-        $offset = ($page - 1) * $limit;
-        $whereNode = $args['where'] ?? null;
-        $whereEdge = $args['whereEdge'] ?? null;
-        $search = $args['search'] ?? null;
-        $orderBy = $args['orderBy'] ?? [];
-        $resultType = $args['result'] ?? ResultType::DEFAULT;
-
-        $edges = [];
-
-        $query = MysqlQueryBuilder::forRelation($relation, [$id]);
-        $query
-            ->tenant($tenantId)
-            ->select(['_child_id', '_parent_id'])
-            ->limit($limit, $offset)
-            ->where($whereEdge)
-            ->whereRelated($whereNode)
-            ->orderBy($orderBy)
-            ->search($search);
-        match($resultType) {
-            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
-            'WITH_TRASHED' => $query->withTrashed(),
-            default => null
-        };
-
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $edgeIds) {
-            $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
-            if ($edge === null) {
-                // this should never happen!
-                throw new RuntimeException('Edge was null: ' . print_r(['parent_id' => $edgeIds->parent_id, 'child_id' => $edgeIds->child_id, 'resultType' => $resultType], true));
-            }
-            $properties = $this->convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
-            foreach ($properties as $key => $value) {
-                $edge->$key = $value;
-            }
-            if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-                $edge->_node = $this->load($tenantId, $relation->name, $edge->child_id);
-            } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-                $edge->_node = $this->load($tenantId, $relation->name, $edge->parent_id);
-            }
-            $edges[] = $edge;
-        }
-
-        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
-
-        StopWatch::stop(__METHOD__);
-        if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
-            $count = count($edges);
-            return [
-                'paginatorInfo' => $this->getPaginatorInfo($count, $page, $limit, $total),
-                'edges' => $edges,
-            ];
-        }
-        return $edges;
-    }
-
-    protected function fetchEdge(?string $tenantId, string $parentId, string $childId, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
-        $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';
-        $parameters = [
-            'parent_id' => $parentId,
-            'child_id' => $childId
-        ];
-
-        if ($tenantId !== null) {
-            $sql .= 'AND `tenant_id` = :tenant_id ';
-            $parameters['tenant_id'] = $tenantId;
-        }
-        $sql .= match($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
-            default => 'AND `deleted_at` IS NULL ',
-        };
-
-        $edge = Mysql::fetch($sql, $parameters);
-        if ($edge === null) {
-            return null;
-        }
-        $dates = ['updated_at', 'created_at', 'deleted_at'];
-        foreach ($dates as $date) {
-            if ($edge->$date !== null) {
-                $dateTime = Carbon::parse($edge->$date);
-                $dateTime->setTimezone(TimeZone::get());
-                $edge->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
-            }
-        }
-        return $edge;
-    }
-
-    protected function convertProperties(array $properties, Model|Relation $fieldSource): array
-    {
-        $result = [];
-        foreach ($properties as $property) {
-            $key = $property->property;
-            if (!property_exists($fieldSource, $key)) {
-                continue;
-            }
-            /** @var Field $field */
-            $field = $fieldSource->$key;
-            $result[$key] = $this->convertDatabaseTypeToOutput($field, $property);
-        }
-        return $result;
-    }
-
 
     protected function insertNode(string $tenantId, string $id, string $name): bool
     {
@@ -836,7 +555,7 @@ class MysqlDataProvider implements DataProvider
         $node = $this->load($tenantId, $name, $id);
         $this->deleteNode($tenantId, $id);
         $this->deleteEdgesForNodeId($tenantId, $id);
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $model->afterDelete($node); // TODO: nullpointer exception?
         return $node;
     }
@@ -845,7 +564,7 @@ class MysqlDataProvider implements DataProvider
     {
         $this->restoreNode($tenantId, $id);
         $node = $this->load($tenantId, $name, $id);
-        $model = $this->getModel($name);
+        $model = Model::get($name);
         $model->afterUpdate($node);  // TODO: nullpointer exception?
         return $node;
     }
@@ -881,22 +600,6 @@ class MysqlDataProvider implements DataProvider
             $params[':tenant_id'] = $tenantId;
         }
         return Mysql::execute($sql, $params) > 0;
-    }
-
-    protected function convertInputTypeToDatabase(Field $field, $value): float|int|string|null
-    {
-        if ($field->null === false && $value === null) {
-            $value = $field->default ?? null;
-            if (is_null($value)) {
-                return null;
-            }
-        }
-        return match ($field->type) {
-            default => (string)$value,
-            Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
-            Type::FLOAT => (float)$value,
-            Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
-        };
     }
 
     protected function checkUnique(string $tenantId, Model $model, string $name, array $data, string $id = null): void
