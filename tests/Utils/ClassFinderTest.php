@@ -14,16 +14,16 @@ class ClassFinderTest extends TestCase
     {
         ClassFinder::setRootPath(null);
         $path = ClassFinder::rootPath();
-        self::assertEquals(dirname(__DIR__, 2) . '/vendor/bin', $path, 'Path 1 is wrong');
+        self::assertSame(dirname(__DIR__, 2) . '/vendor/bin', $path, 'Path 1 is wrong');
 
         ClassFinder::setRootPath(null);
         $backup = $_SERVER['SCRIPT_FILENAME'];
         $_SERVER['SCRIPT_FILENAME'] = '.';
-        self::assertEquals(dirname(__DIR__, 2), ClassFinder::rootPath(), 'Path 2 is wrong');
+        self::assertSame(dirname(__DIR__, 2), ClassFinder::rootPath(), 'Path 2 is wrong');
         $_SERVER['SCRIPT_FILENAME'] = $backup;
 
         ClassFinder::setRootPath($this->dataPath());
-        self::assertEquals($this->dataPath(), ClassFinder::rootPath(), 'Path 3 is wrong');
+        self::assertSame($this->dataPath(), ClassFinder::rootPath(), 'Path 3 is wrong');
     }
 
     public function testModels()
@@ -32,7 +32,7 @@ class ClassFinderTest extends TestCase
         ClassFinder::setRootPath($this->dataPath());
         $models = ClassFinder::models();
         self::assertArrayHasKey('DummyModel', $models);
-        self::assertEquals('App\\Models\\DummyModel', $models['DummyModel']);
+        self::assertSame('App\\Models\\DummyModel', $models['DummyModel']);
     }
 
     public function testQueries()
@@ -41,7 +41,7 @@ class ClassFinderTest extends TestCase
         ClassFinder::setRootPath($this->dataPath());
         $queries = ClassFinder::queries();
         self::assertArrayHasKey('DummyQuery', $queries);
-        self::assertEquals('App\\Queries\\DummyQuery', $queries['DummyQuery']);
+        self::assertSame('App\\Queries\\DummyQuery', $queries['DummyQuery']);
     }
 
     public function testMutations()
@@ -50,7 +50,7 @@ class ClassFinderTest extends TestCase
         ClassFinder::setRootPath($this->dataPath());
         $mutations = ClassFinder::mutations();
         self::assertArrayHasKey('DummyMutation', $mutations);
-        self::assertEquals('App\\Mutations\\DummyMutation', $mutations['DummyMutation']);
+        self::assertSame('App\\Mutations\\DummyMutation', $mutations['DummyMutation']);
     }
 
     public function testScripts()
@@ -59,7 +59,7 @@ class ClassFinderTest extends TestCase
         ClassFinder::setRootPath($this->dataPath());
         $scripts = ClassFinder::scripts();
         self::assertArrayHasKey('DummyScript', $scripts);
-        self::assertEquals('App\\Scripts\\DummyScript', $scripts['DummyScript']);
+        self::assertSame('App\\Scripts\\DummyScript', $scripts['DummyScript']);
     }
 
 }

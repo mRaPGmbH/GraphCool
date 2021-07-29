@@ -34,7 +34,7 @@ class ModelTypeTest extends TestCase
         $data = new \stdClass();
         $data->last_name = 'Last Name';
         $result = $closure($data, [], [], $info);
-        self::assertEquals('Last Name', $result);
+        self::assertSame('Last Name', $result);
     }
 
     public function testResolveRelation(): void
@@ -46,7 +46,7 @@ class ModelTypeTest extends TestCase
         $data = new \stdClass();
         $data->belongs_to_many = function(array $args) {return 'some value';};
         $result = $closure($data, [], [], $info);
-        self::assertEquals('some value', $result);
+        self::assertSame('some value', $result);
     }
 
 }

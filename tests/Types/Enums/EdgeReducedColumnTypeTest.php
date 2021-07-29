@@ -29,6 +29,6 @@ class EdgeReducedColumnTypeTest extends TestCase
             '_PIVOT_PROPERTY' => '_pivot_property',
             '_UPDATED_AT' => '_updated_at',
         ];
-        self::assertEquals($expected, $columns);
+        self::assertSame($expected, $columns);
     }
 }

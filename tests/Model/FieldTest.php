@@ -36,10 +36,10 @@ class FieldTest extends TestCase
     {
         foreach ($this->types as $method => $type) {
             $field = Field::$method();
-            self::assertEquals($type, $field->type, 'Field::' . $method . '() produced the wrong type');
+            self::assertSame($type, $field->type, 'Field::' . $method . '() produced the wrong type');
         }
         $field = Field::enum(['test']);
-        self::assertEquals(Field::ENUM, $field->type, 'Field::enum() produced the wrong type');
+        self::assertSame(Field::ENUM, $field->type, 'Field::enum() produced the wrong type');
     }
 
     public function testUnique(): void
@@ -51,14 +51,14 @@ class FieldTest extends TestCase
             $field2 = $field->unique();
             self::assertTrue($field->unique, 'Field::' . $method . '()->unique() didn\'t set unique');
             self::assertFalse($field->uniqueIgnoreTrashed, 'Field::' . $method . '()->unique() didn\'t default to ignoreTrashed = false');
-            self::assertEquals($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
+            self::assertSame($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
         }
         $field = Field::enum(['test']);
         self::assertFalse($field->unique, 'Field::enum() was unique by default');
         $field2 = $field->unique();
         self::assertTrue($field->unique, 'Field::enum()->unique() didn\'t set unique');
         self::assertFalse($field->uniqueIgnoreTrashed, 'Field::enum()->unique() didn\'t default to ignoreTrashed = false');
-        self::assertEquals($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
+        self::assertSame($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
 
         foreach ($this->types as $method => $type) {
             /** @var Field $field */
@@ -66,13 +66,13 @@ class FieldTest extends TestCase
             $field2 = $field->unique(true);
             self::assertTrue($field->unique, 'Field::' . $method . '()->unique(true) didn\'t set unique');
             self::assertTrue($field->uniqueIgnoreTrashed, 'Field::' . $method . '()->unique(true) didn\'t set ignoreTrashed = true');
-            self::assertEquals($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
+            self::assertSame($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
         }
         $field = Field::enum(['test']);
         $field2 = $field->unique(true);
         self::assertTrue($field->unique, 'Field::enum()->unique(true) didn\'t set unique');
         self::assertTrue($field->uniqueIgnoreTrashed, 'Field::enum()->unique(true) didn\'t set ignoreTrashed = true');
-        self::assertEquals($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
+        self::assertSame($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
     }
 
     public function testNullable(): void
@@ -86,14 +86,14 @@ class FieldTest extends TestCase
                 self::assertFalse($field->null, 'Field::' . $method . '() was nullable by default');
                 $field2 = $field->nullable();
                 self::assertTrue($field->null, 'Field::' . $method . '()->nullable() didn\'t set nullable');
-                self::assertEquals($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
+                self::assertSame($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
             }
         }
         $field = Field::enum(['test']);
         self::assertFalse($field->null, 'Field::enum() was nullable by default');
         $field2 = $field->nullable();
         self::assertTrue($field->null, 'Field::enum()->nullable() didn\'t set nullable');
-        self::assertEquals($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
+        self::assertSame($field, $field2, 'Field::enum()->default() does not comply to fluent interface');
     }
 
     public function testDescription(): void
@@ -103,8 +103,8 @@ class FieldTest extends TestCase
             /** @var Field $field */
             $field = Field::$method();
             $field2 = $field->description($description);
-            self::assertEquals($description, $field->description, 'Field::' . $method . '()->description() didn\'t set description');
-            self::assertEquals($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
+            self::assertSame($description, $field->description, 'Field::' . $method . '()->description() didn\'t set description');
+            self::assertSame($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
         }
     }
 
@@ -114,7 +114,7 @@ class FieldTest extends TestCase
 
         $defaults = [
             'string' => 'some text',
-            'id' => Uuid::uuid4(),
+            'id' => (string)Uuid::uuid4(),
             'bool' => random_int(0,1) === 1,
             'int' => random_int(0, 9999),
             'float' => random_int(0, 9999) / 100,
@@ -132,8 +132,8 @@ class FieldTest extends TestCase
             /** @var Field $field */
             $field = Field::$method();
             $field2 = $field->default($default);
-            self::assertEquals($default, $field->default, 'Field::' . $method . '()->default() didn\'t set default');
-            self::assertEquals($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
+            self::assertSame($default, $field->default, 'Field::' . $method . '()->default() didn\'t set default');
+            self::assertSame($field, $field2, 'Field::' . $method . '()->default() does not comply to fluent interface');
         }
     }
 
@@ -148,7 +148,7 @@ class FieldTest extends TestCase
                 self::assertFalse($field->readonly, 'Field::' . $method . '() was readonly by default');
                 $field2 = $field->readonly();
                 self::assertTrue($field->readonly, 'Field::' . $method . '()->readonly() didn\'t set readonly');
-                self::assertEquals($field, $field2, 'Field::' . $method . '()->readonly() does not comply to fluent interface');
+                self::assertSame($field, $field2, 'Field::' . $method . '()->readonly() does not comply to fluent interface');
             }
         }
     }

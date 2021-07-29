@@ -35,7 +35,7 @@ class MutationTypeTest extends TestCase
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'DummyMutation';
         $result = $closure([], ['_timezone' => 0], [], $info);
-        self::assertEquals('dummy-mutation-resolve', $result);
+        self::assertSame('dummy-mutation-resolve', $result);
     }
 
     public function testResolveCreate(): void
@@ -62,7 +62,7 @@ class MutationTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string'], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveUpdateMany(): void
@@ -86,7 +86,7 @@ class MutationTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string'], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveUpdate(): void
@@ -113,7 +113,7 @@ class MutationTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string'], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveDelete(): void
@@ -140,7 +140,7 @@ class MutationTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string'], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveRestore(): void
@@ -167,7 +167,7 @@ class MutationTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string'], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveImport(): void

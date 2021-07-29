@@ -111,7 +111,7 @@ class MysqlConnector
         return $statement->fetchAll(PDO::FETCH_OBJ);
     }
 
-    public function fetchColumn(string $sql, array $params, int $column = 0): string
+    public function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
         $statement = $this->statement($sql);
         $statement->execute($params);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 
 class Mysql
@@ -23,7 +24,10 @@ class Mysql
 
     public static function execute(string $sql, array $params): int
     {
-        return static::get()->execute($sql, $params);
+        StopWatch::start(__METHOD__ . $sql);
+        $return = static::get()->execute($sql, $params);
+        StopWatch::stop(__METHOD__ . $sql);
+        return $return;
     }
 
     public static function executeRaw(string $sql): int|false
@@ -52,7 +56,7 @@ class Mysql
         return static::get()->fetchAll($sql, $params);
     }
 
-    public static function fetchColumn(string $sql, array $params, int $column = 0): string
+    public static function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
         return static::get()->fetchColumn($sql, $params, $column);
     }
@@ -62,9 +66,6 @@ class Mysql
         static::get()->waitForConnection($retries);
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public static function nodeReader(): MysqlNodeReader
     {
         if (!isset(static::$nodeReader)) {
@@ -78,9 +79,6 @@ class Mysql
         static::$nodeReader = $nodeReader;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public static function nodeWriter(): MysqlNodeWriter
     {
         if (!isset(static::$nodeWriter)) {
@@ -94,9 +92,6 @@ class Mysql
         static::$nodeWriter = $nodeWriter;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public static function edgeReader(): MysqlEdgeReader
     {
         if (!isset(static::$edgeReader)) {
@@ -110,9 +105,6 @@ class Mysql
         static::$edgeReader = $edgeReader;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public static function edgeWriter(): MysqlEdgeWriter
     {
         if (!isset(static::$edgeWriter)) {

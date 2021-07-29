@@ -27,7 +27,7 @@ class DynamicEnumTypeTest extends TestCase
             'B' => 'B',
             'C' => 'C',
         ];
-        self::assertEquals($expected, $columns);
+        self::assertSame($expected, $columns);
     }
 
     public function testPivotEnum(): void
@@ -46,6 +46,6 @@ class DynamicEnumTypeTest extends TestCase
             'Y' => 'Y',
             'Z' => 'Z',
         ];
-        self::assertEquals($expected, $columns);
+        self::assertSame($expected, $columns);
     }
 }

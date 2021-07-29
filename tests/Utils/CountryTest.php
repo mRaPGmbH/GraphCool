@@ -25,7 +25,7 @@ class CountryTest extends TestCase
             'Poland' => 'PL'
         ];
         foreach ($array as $value => $expected) {
-            self::assertEquals($expected, Country::parse($value));
+            self::assertSame($expected, Country::parse($value));
         }
     }
 
@@ -965,7 +965,7 @@ class CountryTest extends TestCase
         ];
 
         foreach ($array as $value => $expected) {
-            self::assertEquals($expected, Country::parseLenient($value), $value);
+            self::assertSame($expected, Country::parseLenient($value), $value);
         }
     }
 
@@ -986,10 +986,10 @@ class CountryTest extends TestCase
     {
         $codes = new CountryCodeEnumType();
         foreach ($codes->getValues() as $value) {
-            self::assertEquals($value->value, Country::parse($value->value));
+            self::assertSame($value->value, Country::parse($value->value));
         }
         foreach ($codes->getValues() as $value) {
-            self::assertEquals($value->value, Country::parse(strtolower($value->value)));
+            self::assertSame($value->value, Country::parse(strtolower($value->value)));
         }
     }
 
@@ -1002,7 +1002,7 @@ class CountryTest extends TestCase
     {
         $codes = new CountryCodeEnumType();
         foreach ($codes->getValues() as $value) {
-            self::assertEquals($value->value, Country::parse(Country::convertToAlpha3($value->value)));
+            self::assertSame($value->value, Country::parse(Country::convertToAlpha3($value->value)));
         }
     }
 

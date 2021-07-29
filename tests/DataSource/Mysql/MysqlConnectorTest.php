@@ -32,7 +32,7 @@ class MysqlConnectorTest extends TestCase
         $connector->setPdo($mock2);
 
         $result = $connector->execute('a', ['b']);
-        self::assertEquals(2, $result);
+        self::assertSame(2, $result);
     }
 
     public function testExecuteRaw(): void
@@ -47,7 +47,7 @@ class MysqlConnectorTest extends TestCase
         $connector->setPdo($mock);
 
         $result = $connector->executeRaw('a');
-        self::assertEquals(3, $result);
+        self::assertSame(3, $result);
     }
 
     public function testFetch(): void
@@ -72,7 +72,7 @@ class MysqlConnectorTest extends TestCase
         $connector->setPdo($mock2);
 
         $result = $connector->fetch('a', ['b']);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testFetchNotFound(): void
@@ -120,7 +120,7 @@ class MysqlConnectorTest extends TestCase
         $connector->setPdo($mock2);
 
         $result = $connector->fetchAll('a', ['b']);
-        self::assertEquals([], $result);
+        self::assertSame([], $result);
     }
 
     public function testFetchColumn(): void
@@ -144,7 +144,7 @@ class MysqlConnectorTest extends TestCase
         $connector->setPdo($mock2);
 
         $result = $connector->fetchColumn('a', ['b'], 3);
-        self::assertEquals('c', $result);
+        self::assertSame('c', $result);
     }
 
 }

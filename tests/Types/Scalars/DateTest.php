@@ -17,7 +17,7 @@ class DateTest extends TestCase
         $carbon = new Carbon();
         $value = $carbon->getPreciseTimestamp(3);
         $result = Date::getObject($value);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result->getPreciseTimestamp(3));
+        self::assertSame($carbon->getPreciseTimestamp(3), $result->getPreciseTimestamp(3));
     }
 
     public function testSerialize(): void
@@ -26,7 +26,7 @@ class DateTest extends TestCase
         $value = $carbon->getPreciseTimestamp(3);
         $date = new Date();
         $result = $date->serialize($value);
-        self::assertEquals($carbon->format('Y-m-d'), $result);
+        self::assertSame($carbon->format('Y-m-d'), $result);
     }
 
     public function testParseValue(): void
@@ -37,7 +37,7 @@ class DateTest extends TestCase
         $carbon = new Carbon();
         $value = $carbon->toJSON();
         $result = $date->parseValue($value);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result);
+        self::assertSame((int)$carbon->getPreciseTimestamp(3), $result);
     }
 
     public function testParseLiteral(): void
@@ -46,7 +46,7 @@ class DateTest extends TestCase
         $carbon = new Carbon();
         $node = new StringValueNode(['value' => $carbon->toJSON()]);
         $result = $date->parseLiteral($node);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result);
+        self::assertSame((int)$carbon->getPreciseTimestamp(3), $result);
     }
 
     public function testParseLiteralError(): void

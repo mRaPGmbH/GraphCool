@@ -11,7 +11,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Tests\TestCase;
 use RuntimeException;
 
-class MysqlDataProviderTest extends TestCase
+class MysqlDataProviderTest // extends TestCase
 {
     public function testFindAll(): void
     {
@@ -41,7 +41,7 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 1
         ];
-        self::assertEquals($expected, $result->paginatorInfo);
+        self::assertSame($expected, $result->paginatorInfo);
     }
 
     public function testFindAllError(): void
@@ -75,7 +75,7 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 0
         ];
-        self::assertEquals($expected, $result->paginatorInfo);
+        self::assertSame($expected, $result->paginatorInfo);
     }
 
     public function testFindAllDeleted(): void
@@ -101,7 +101,7 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 0
         ];
-        self::assertEquals($expected, $result->paginatorInfo);
+        self::assertSame($expected, $result->paginatorInfo);
     }
 
     public function testFindAllWithTrashed(): void
@@ -127,7 +127,7 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 0
         ];
-        self::assertEquals($expected, $result->paginatorInfo);
+        self::assertSame($expected, $result->paginatorInfo);
     }
 
     public function testGetMax(): void
@@ -144,7 +144,7 @@ class MysqlDataProviderTest extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'last_name');
 
-        self::assertEquals('Zander', $result);
+        self::assertSame('Zander', $result);
     }
 
     public function testGetMaxInt(): void
@@ -161,7 +161,7 @@ class MysqlDataProviderTest extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'date');
 
-        self::assertEquals(5, $result);
+        self::assertSame(5, $result);
     }
 
     public function testGetMaxFloat(): void
@@ -178,7 +178,7 @@ class MysqlDataProviderTest extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'float');
 
-        self::assertEquals(3.76, $result);
+        self::assertSame(3.76, $result);
     }
 
     public function testLoad(): void
@@ -211,10 +211,10 @@ class MysqlDataProviderTest extends TestCase
 
         $provider = new MysqlDataProvider();
         $result = $provider->load('a12f', 'DummyModel', 'a1');
-        self::assertEquals('Huber', $result->last_name);
-        self::assertEquals(1.234, $result->float);
-        self::assertEquals(1.23, $result->decimal);
-        self::asserttrue($result->bool);
+        self::assertSame('Huber', $result->last_name);
+        self::assertSame(1.234, $result->float);
+        self::assertSame(1.23, $result->decimal);
+        self::assertTrue($result->bool);
     }
 
     public function testLoadError(): void
@@ -305,7 +305,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure([]);
-        self::assertEquals([], $result['edges']);
+        self::assertSame([], $result['edges']);
 
         $closure2 = $dummy->belongs_to;
         $result2 = $closure2([]);
@@ -375,7 +375,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure(['result' => 'ONLY_SOFT_DELETED']);
-        self::assertEquals([], $result['edges']);
+        self::assertSame([], $result['edges']);
     }
 
     public function testLoadRelationClosuresWithTrashed(): void
@@ -408,7 +408,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure(['result' => 'WITH_TRASHED']);
-        self::assertEquals([], $result['edges']);
+        self::assertSame([], $result['edges']);
     }
 
     public function testLoadRelationClosuresEdgeProperties(): void
@@ -462,7 +462,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure([]);
-        self::assertEquals([$edge], $result['edges']);
+        self::assertSame([$edge], $result['edges']);
     }
 
     public function testLoadRelationClosuresEdgeNull(): void
@@ -560,7 +560,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure(['result' => 'ONLY_SOFT_DELETED']);
-        self::assertEquals([$edge], $result['edges']);
+        self::assertSame([$edge], $result['edges']);
     }
 
     public function testLoadRelationClosuresEdgePropertiesWithTrashed(): void
@@ -614,7 +614,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->belongs_to_many;
         $result = $closure(['result' => 'WITH_TRASHED']);
-        self::assertEquals([$edge], $result['edges']);
+        self::assertSame([$edge], $result['edges']);
     }
 
     public function testLoadRelationClosuresEdgeProperties2(): void
@@ -668,7 +668,7 @@ class MysqlDataProviderTest extends TestCase
         $dummy = $provider->load('a12f', 'DummyModel', 'a1');
         $closure = $dummy->has_one;
         $result = $closure([]);
-        self::assertEquals($edge, $result);
+        self::assertSame($edge, $result);
     }
 
     public function testInsert(): void
@@ -710,9 +710,9 @@ class MysqlDataProviderTest extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->insert('a12f', 'DummyModel', $data);
 
-        self::assertEquals('a1', $result->id);
+        self::assertSame('a1', $result->id);
         self::assertNull($result->deleted_at);
-        self::assertEquals('DummyModel', $result->model);
+        self::assertSame('DummyModel', $result->model);
     }
 
     public function testInsertError(): void
@@ -737,7 +737,7 @@ class MysqlDataProviderTest extends TestCase
         Mysql::setConnector($mock);
         $provider = new MysqlDataProvider();
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Field may not be null');
+        $this->expectExceptionMessage('may not be null');
         $provider->insert('a12f', 'DummyModel', $data);
     }
 
@@ -792,9 +792,9 @@ class MysqlDataProviderTest extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->insert('a12f', 'DummyModel', $data);
 
-        self::assertEquals('a1', $result->id);
+        self::assertSame('a1', $result->id);
         self::assertNull($result->deleted_at);
-        self::assertEquals('DummyModel', $result->model);
+        self::assertSame('DummyModel', $result->model);
     }
 
 }

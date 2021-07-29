@@ -18,13 +18,13 @@ class ModelTest extends TestCase
         $model = new Model();
         self::assertInstanceOf(Model::class, $model);
         self::assertInstanceOf(Field::class, $model->id);
-        self::assertEquals(Type::ID, $model->id->type);
+        self::assertSame(Type::ID, $model->id->type);
         self::assertInstanceOf(Field::class, $model->created_at);
-        self::assertEquals(Field::CREATED_AT, $model->created_at->type);
+        self::assertSame(Field::CREATED_AT, $model->created_at->type);
         self::assertInstanceOf(Field::class, $model->updated_at);
-        self::assertEquals(Field::UPDATED_AT, $model->updated_at->type);
+        self::assertSame(Field::UPDATED_AT, $model->updated_at->type);
         self::assertInstanceOf(Field::class, $model->deleted_at);
-        self::assertEquals(Field::DELETED_AT, $model->deleted_at->type);
+        self::assertSame(Field::DELETED_AT, $model->deleted_at->type);
     }
 
     public function testBeforeInsert(): void
@@ -32,7 +32,7 @@ class ModelTest extends TestCase
         $data = ['test'];
         $model = new Model();
         $result = $model->beforeInsert('tenant-id', $data);
-        self::assertEquals($data, $result);
+        self::assertSame($data, $result);
     }
 
     public function testBeforeUpdate(): void
@@ -40,7 +40,7 @@ class ModelTest extends TestCase
         $data = ['test'];
         $model = new Model();
         $result = $model->beforeUpdate('tenant-id', 'node-id', $data);
-        self::assertEquals($data, $result);
+        self::assertSame($data, $result);
     }
 
     public function testAfterRelationUpdateButBeforeNodeUpdate(): void
@@ -48,7 +48,7 @@ class ModelTest extends TestCase
         $data = ['test'];
         $model = new Model();
         $result = $model->afterRelationUpdateButBeforeNodeUpdate('tenant-id', 'node-id', $data);
-        self::assertEquals($data, $result);
+        self::assertSame($data, $result);
     }
 
     public function testSettings()

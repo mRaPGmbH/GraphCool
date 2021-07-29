@@ -27,7 +27,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('Y-m-d');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -57,7 +57,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('Y-m-d H:i');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -87,7 +87,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('Y-m-d H:i:s');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -101,7 +101,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('H:i');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -115,7 +115,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('H:i:s');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -130,7 +130,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('H:i:s');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
 
         $expected = '07:54:12';
@@ -142,7 +142,7 @@ class DateTest extends TestCase
         foreach ($dates as $input) {
             $carbon = Date::parse($input);
             $actual = $carbon->format('H:i:s');
-            self::assertEquals($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
+            self::assertSame($expected, $actual, 'Failed to correctly parse: ' . $input . ' - result: ' . $actual);
         }
     }
 
@@ -163,19 +163,19 @@ class DateTest extends TestCase
         $expected = '2021-06-08 09:54:12';
         $carbon = Date::parse(new \DateTime($expected));
         $actual = $carbon->format('Y-m-d H:i:s');
-        self::assertEquals($expected, $actual, 'Failed to correctly parse DateTime object - result: ' . $actual);
+        self::assertSame($expected, $actual, 'Failed to correctly parse DateTime object - result: ' . $actual);
 
         $expected = '2021-06-08 09:54:12';
         $carbon = Date::parse(Carbon::parse($expected));
         $actual = $carbon->format('Y-m-d H:i:s');
-        self::assertEquals($expected, $actual, 'Failed to correctly parse Carbon object - result: ' . $actual);
+        self::assertSame($expected, $actual, 'Failed to correctly parse Carbon object - result: ' . $actual);
     }
 
     public function testTimeZone(): void
     {
         TimeZone::set(0);
         $carbon = Date::parse('2020-01-01 00:00:00');
-        self::assertEquals('Z', $carbon->format('p'));
+        self::assertSame('Z', $carbon->format('p'));
     }
 
 }

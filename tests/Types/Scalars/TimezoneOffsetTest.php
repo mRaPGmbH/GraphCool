@@ -17,11 +17,11 @@ class TimezoneOffsetTest extends TestCase
         $timezoneOffset = new TimezoneOffset();
         $value = 0;
         $result = $timezoneOffset->serialize($value);
-        self::assertEquals('+00:00', $result);
+        self::assertSame('+00:00', $result);
 
         $value = 7200;
         $result = $timezoneOffset->serialize($value);
-        self::assertEquals('+02:00', $result);
+        self::assertSame('+02:00', $result);
     }
 
     public function testParseValue(): void
@@ -29,10 +29,10 @@ class TimezoneOffsetTest extends TestCase
         $timezoneOffset = new TimezoneOffset();
 
         $result = $timezoneOffset->parseValue('Z');
-        self::assertEquals(0, $result);
+        self::assertSame(0, $result);
 
         $result = $timezoneOffset->parseValue('+02:00');
-        self::assertEquals(7200, $result);
+        self::assertSame(7200, $result);
     }
 
     public function testParseLiteral(): void
@@ -40,11 +40,11 @@ class TimezoneOffsetTest extends TestCase
         $timezoneOffset = new TimezoneOffset();
         $node = new StringValueNode(['value' => 'Z']);
         $result = $timezoneOffset->parseLiteral($node);
-        self::assertEquals(0, $result);
+        self::assertSame(0, $result);
 
         $node = new StringValueNode(['value' => '+02:00']);
         $result = $timezoneOffset->parseLiteral($node);
-        self::assertEquals(7200, $result);
+        self::assertSame(7200, $result);
     }
 
     public function testParseLiteralError(): void

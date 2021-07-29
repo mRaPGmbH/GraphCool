@@ -28,9 +28,12 @@ class MysqlConverter
     {
         if ($field->null === false && $value === null) {
             $value = $field->default ?? null;
-            if (is_null($value)) {
+            if ($value === null) {
                 throw new RuntimeException('Field may not be null. ' . print_r($field, true));
             }
+        }
+        if ($value === null) {
+            return null;
         }
         return match ($field->type) {
             default => (string)$value,
@@ -80,14 +83,14 @@ class MysqlConverter
                     if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
                         $value = strtotime($value) * 1000;
                     }
-                    $where['value'][$key] = MysqlConverter::convertInputTypeToDatabase($model->$column, $value);
+                    $where['value'][$key] = static::convertInputTypeToDatabase($model->$column, $value);
                 }
             } else {
                 // TODO: is there a better way to do this? are there other types that need special treatment?
                 if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
                     $where['value'] = strtotime($where['value']) * 1000;
                 }
-                $where['value'] = MysqlConverter::convertInputTypeToDatabase($model->$column, $where['value']);
+                $where['value'] = static::convertInputTypeToDatabase($model->$column, $where['value']);
             }
         }
         if (isset($where['AND'])) {

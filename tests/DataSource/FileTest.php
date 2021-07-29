@@ -22,7 +22,7 @@ class FileTest extends TestCase
             ->willReturn($expected);
         File::setExporter($mock);
         $result = File::write('a',['b'],['c'],'d');
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testRead(): void
@@ -35,7 +35,7 @@ class FileTest extends TestCase
             ->willReturn($expected);
         File::setImporter($mock);
         $result = File::read('a',['b'],0);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
 }

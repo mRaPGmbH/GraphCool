@@ -35,9 +35,9 @@ class FileExportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $export = new FileExport();
         $result = $export->export('DummyModel', $this->data, ['columns' => $this->columns], 'csv');
-        self::assertEquals($this->csv, $result->data_base64, 'Generated csv does not match provided data.');
+        self::assertSame($this->csv, $result->data_base64, 'Generated csv does not match provided data.');
         self::assertStringEndsWith('.csv', $result->filename, 'Filename does not match.');
-        self::assertEquals('text/csv', $result->mime_type, 'Unexpected mime type.');
+        self::assertSame('text/csv', $result->mime_type, 'Unexpected mime type.');
     }
 
     public function testBasicCsvExcel(): void
@@ -45,9 +45,9 @@ class FileExportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $export = new FileExport();
         $result = $export->export('DummyModel', $this->data, ['columns' => $this->columns], 'csv_excel');
-        self::assertEquals($this->csvExcel, $result->data_base64, 'Generated csv does not match provided data.');
+        self::assertSame($this->csvExcel, $result->data_base64, 'Generated csv does not match provided data.');
         self::assertStringEndsWith('.csv', $result->filename, 'Filename does not match.');
-        self::assertEquals('text/csv', $result->mime_type, 'Unexpected mime type.');
+        self::assertSame('text/csv', $result->mime_type, 'Unexpected mime type.');
     }
 
     public function testBasicXlsx(): void
@@ -55,9 +55,9 @@ class FileExportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $export = new FileExport();
         $result = $export->export('DummyModel', $this->data, ['columns' => $this->columns], 'xlsx');
-        //self::assertEquals($this->xlsx, $result->data_base64, 'Generated xlsx does not match provided data.'); // file is non-deterministic (timestamps?)
+        //self::assertSame($this->xlsx, $result->data_base64, 'Generated xlsx does not match provided data.'); // file is non-deterministic (timestamps?)
         self::assertStringEndsWith('.xlsx', $result->filename, 'Filename does not match.');
-        self::assertEquals('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->mime_type, 'Unexpected mime type.');
+        self::assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->mime_type, 'Unexpected mime type.');
     }
 
     public function testBasicOds(): void
@@ -65,9 +65,9 @@ class FileExportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $export = new FileExport();
         $result = $export->export('DummyModel', $this->data, ['columns' => $this->columns], 'ods');
-        //self::assertEquals($this->ods, $result->data_base64, 'Generated ods does not match provided data.'); // file is non-deterministic (timestamps?)
+        //self::assertSame($this->ods, $result->data_base64, 'Generated ods does not match provided data.'); // file is non-deterministic (timestamps?)
         self::assertStringEndsWith('.ods', $result->filename, 'Filename does not match.');
-        self::assertEquals('application/vnd.oasis.opendocument.spreadsheet', $result->mime_type, 'Unexpected mime type.');
+        self::assertSame('application/vnd.oasis.opendocument.spreadsheet', $result->mime_type, 'Unexpected mime type.');
     }
 
     public function testRelations(): void
@@ -119,7 +119,7 @@ class FileExportTest extends TestCase
 
         $export = new FileExport();
         $result = $export->export('DummyModel', $data, ['columns' => $columns, 'belongs_to' => $belongsTo, 'belongs_to_many' => $belongsToMany], 'csv');
-        self::assertEquals($csv, $result->data_base64, 'Generated csv does not match provided data.');
+        self::assertSame($csv, $result->data_base64, 'Generated csv does not match provided data.');
     }
 
 }

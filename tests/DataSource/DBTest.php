@@ -18,7 +18,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::load('a','b','c');
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testGetMax(): void
@@ -30,7 +30,7 @@ class DBTest extends TestCase
             ->willReturn(2);
         DB::setProvider($mock);
         $result = DB::getMax('a','b','c');
-        self::assertEquals(2, $result);
+        self::assertSame(2, $result);
     }
 
     public function testFindAll(): void
@@ -43,7 +43,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::findAll('a','b',['c']);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testInsert(): void
@@ -56,7 +56,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::insert('a','b',['c']);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testUpdate(): void
@@ -69,7 +69,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::update('a','b',['c']);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testUpdateAll(): void
@@ -82,7 +82,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::updateAll('a','b',['c']);
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testDelete(): void
@@ -95,7 +95,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::delete('a','b','c');
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testRestore(): void
@@ -108,7 +108,7 @@ class DBTest extends TestCase
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::restore('a','b','c');
-        self::assertEquals($expected, $result);
+        self::assertSame($expected, $result);
     }
 
     public function testMigrate(): void

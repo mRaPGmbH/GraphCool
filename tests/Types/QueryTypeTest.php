@@ -50,7 +50,7 @@ class QueryTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], ['id' => 'some-id-string', '_timezone' => 0], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testCustomResolver(): void
@@ -61,7 +61,7 @@ class QueryTypeTest extends TestCase
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'DummyQuery';
         $result = $closure([], [], [], $info);
-        self::assertEquals('dummy-query-resolve', $result);
+        self::assertSame('dummy-query-resolve', $result);
     }
 
     public function testResolvePaginator(): void
@@ -88,7 +88,7 @@ class QueryTypeTest extends TestCase
         DB::setProvider($mock);
         $result = $closure([], [], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
     public function testResolveExport(): void
@@ -111,7 +111,7 @@ class QueryTypeTest extends TestCase
         File::setExporter($mock);
         $result = $closure([], [], [], $info);
 
-        self::assertEquals($object, $result);
+        self::assertSame($object, $result);
     }
 
 }

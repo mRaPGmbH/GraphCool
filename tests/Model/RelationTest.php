@@ -23,15 +23,15 @@ class RelationTest extends TestCase
         $shortClassname = 'RelationTest';
         foreach ($this->types as $method => $type) {
             $relation = Relation::$method($classname);
-            self::assertEquals($type, $relation->type, 'Relation::' . $method . '() produced the wrong type');
-            self::assertEquals($classname, $relation->classname);
-            self::assertEquals($shortClassname, $relation->name);
+            self::assertSame($type, $relation->type, 'Relation::' . $method . '() produced the wrong type');
+            self::assertSame($classname, $relation->classname);
+            self::assertSame($shortClassname, $relation->name);
         }
         foreach ($this->types as $method => $type) {
             $relation = Relation::$method($shortClassname);
-            self::assertEquals($type, $relation->type, 'Relation::' . $method . '() produced the wrong type');
-            self::assertEquals($shortClassname, $relation->classname);
-            self::assertEquals($shortClassname, $relation->name);
+            self::assertSame($type, $relation->type, 'Relation::' . $method . '() produced the wrong type');
+            self::assertSame($shortClassname, $relation->classname);
+            self::assertSame($shortClassname, $relation->name);
         }
     }
 
@@ -43,7 +43,7 @@ class RelationTest extends TestCase
             self::assertFalse($relation->null, 'Relation::' . $method . '() was nullable by default');
             $relation2 = $relation->nullable();
             self::assertTrue($relation->null, 'Relation::' . $method . '()->nullable() didn\'t set nullable');
-            self::assertEquals($relation, $relation2, 'Relation::' . $method . '()->default() does not comply to fluent interface');
+            self::assertSame($relation, $relation2, 'Relation::' . $method . '()->default() does not comply to fluent interface');
         }
     }
 

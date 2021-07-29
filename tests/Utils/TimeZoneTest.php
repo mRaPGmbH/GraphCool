@@ -13,7 +13,7 @@ class TimeZoneTest extends TestCase
     public function testTimeZone(): void
     {
         TimeZone::set(-7200);
-        self::assertEquals('-02:00', TimeZone::get());
+        self::assertSame('-02:00', TimeZone::get());
     }
 
 }

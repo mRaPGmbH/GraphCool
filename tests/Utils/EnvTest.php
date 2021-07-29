@@ -46,8 +46,8 @@ class EnvTest extends TestCase
     {
         putenv('test=\'string\'');
         putenv('test2="string"');
-        self::assertEquals('string', Env::get('test'));
-        self::assertEquals('string', Env::get('test2'));
+        self::assertSame('string', Env::get('test'));
+        self::assertSame('string', Env::get('test2'));
     }
 
 

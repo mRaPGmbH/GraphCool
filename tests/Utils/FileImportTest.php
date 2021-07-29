@@ -59,7 +59,7 @@ class FileImportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
         $result = $import->importFile($this->xlsx, $this->columns, [], 0);
-        self::assertEquals($this->data, $result, 'Imported data did not match xlsx contents.');
+        self::assertSame($this->data, $result, 'Imported data did not match xlsx contents.');
     }
 
     public function testBasicOds(): void
@@ -67,7 +67,7 @@ class FileImportTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $import = new FileImport(1, 'DummyModel');
         $result = $import->importFile($this->ods, $this->columns, [], 0);
-        self::assertEquals($this->data, $result, 'Imported data did not match ods contents.');
+        self::assertSame($this->data, $result, 'Imported data did not match ods contents.');
     }
 
     public function testErrorWrongMimeType(): void

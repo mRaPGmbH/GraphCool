@@ -17,7 +17,7 @@ class TimeTest extends TestCase
         $carbon = new Carbon();
         $value = $carbon->getPreciseTimestamp(3);
         $result = Time::getObject($value);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result->getPreciseTimestamp(3));
+        self::assertSame($carbon->getPreciseTimestamp(3), $result->getPreciseTimestamp(3));
     }
 
     public function testSerialize(): void
@@ -28,7 +28,7 @@ class TimeTest extends TestCase
         $result = new Carbon($time->serialize($value));
 
         // float rounding errors may cause 1ms difference
-        self::assertEquals($carbon->format('H:i:sp'), $result->format('H:i:sp'));
+        self::assertSame($carbon->format('H:i:sp'), $result->format('H:i:sp'));
     }
 
     public function testParseValue(): void
@@ -39,7 +39,7 @@ class TimeTest extends TestCase
         $carbon = new Carbon();
         $value = $carbon->toJSON();
         $result = $time->parseValue($value);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result);
+        self::assertSame((int)$carbon->getPreciseTimestamp(3), $result);
     }
 
     public function testParseLiteral(): void
@@ -48,7 +48,7 @@ class TimeTest extends TestCase
         $carbon = new Carbon();
         $node = new StringValueNode(['value' => $carbon->toJSON()]);
         $result = $time->parseLiteral($node);
-        self::assertEquals($carbon->getPreciseTimestamp(3), $result);
+        self::assertSame((int)$carbon->getPreciseTimestamp(3), $result);
     }
 
     public function testParseLiteralError(): void
