@@ -43,7 +43,8 @@ class MysqlDataProvider extends DataProvider
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`id`)
+              PRIMARY KEY (`id`),
+              KEY `tenant_id_model_deleted_at` (`tenant_id`, `model`, `deleted_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         $this->pdo()->exec($sql);
 
@@ -58,6 +59,7 @@ class MysqlDataProvider extends DataProvider
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
               PRIMARY KEY (`node_id`,`property`),
+              KEY `node_id_property_deleted_at` (`node_id`, `property`, `deleted_at`),
               CONSTRAINT `node_property_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         $this->pdo()->exec($sql);
@@ -72,7 +74,10 @@ class MysqlDataProvider extends DataProvider
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
               PRIMARY KEY (`parent_id`,`child_id`),
-              KEY `child_id` (`child_id`),
+              KEY `child_id_parent` (`child_id`, `parent`),
+              KEY `parent_id_child` (`parent_id`, `child`),
+              KEY `tenant_id` (`tenant_id`),
+              KEY `deleted_at` (`deleted_at`),
               CONSTRAINT `edge_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `node` (`id`) ON DELETE CASCADE,
               CONSTRAINT `edge_ibfk_2` FOREIGN KEY (`child_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
@@ -90,9 +95,9 @@ class MysqlDataProvider extends DataProvider
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
-              PRIMARY KEY (`parent_id`,`child_id`,`child`),
-              KEY `child_id` (`child_id`),
-              KEY `key` (`child`),
+              PRIMARY KEY (`parent_id`,`child_id`,`property`),
+              KEY `child_id_parent_property` (`child_id`, `parent`, `property`),
+              KEY `parent_id_child_property` (`parent_id`, `child`, `property`),
               CONSTRAINT `edge_property_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `node` (`id`) ON DELETE CASCADE,
               CONSTRAINT `edge_property_ibfk_2` FOREIGN KEY (`child_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
