@@ -4,12 +4,14 @@
 namespace Mrap\GraphCool\Utils;
 
 use GraphQL\Error\Error;
+use Lcobucci\Clock\FrozenClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 
 class JwtAuthentication
@@ -48,6 +50,7 @@ class JwtAuthentication
 
         $constraints = [];
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());
+        $constraints[] = new LooseValidAt(new FrozenClock());
 
         if (! $config->validator()->validate($token, ...$constraints)) {
             throw new Error('JWT token could not be validated.');
