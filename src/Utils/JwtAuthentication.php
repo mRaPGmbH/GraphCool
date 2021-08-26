@@ -3,6 +3,7 @@
 
 namespace Mrap\GraphCool\Utils;
 
+use DateTimeImmutable;
 use GraphQL\Error\Error;
 use Lcobucci\Clock\FrozenClock;
 use Lcobucci\JWT\Configuration;
@@ -50,7 +51,7 @@ class JwtAuthentication
 
         $constraints = [];
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());
-        $constraints[] = new LooseValidAt(new FrozenClock());
+        $constraints[] = new LooseValidAt(new FrozenClock(new DateTimeImmutable()));
 
         if (! $config->validator()->validate($token, ...$constraints)) {
             throw new Error('JWT token could not be validated.');
