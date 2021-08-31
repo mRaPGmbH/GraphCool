@@ -102,4 +102,36 @@ class MysqlTest extends TestCase
         self::assertInstanceOf(MysqlEdgeWriter::class, Mysql::edgeWriter());
     }
 
+    public function testSetNodeReader(): void
+    {
+        $expected = $this->createMock(MysqlNodeReader::class);
+        Mysql::setNodeReader($expected);
+        $result = Mysql::nodeReader();
+        self::assertEquals($expected, $result);
+    }
+
+    public function testSetNodeWriter(): void
+    {
+        $expected = $this->createMock(MysqlNodeWriter::class);
+        Mysql::setNodeWriter($expected);
+        $result = Mysql::nodeWriter();
+        self::assertEquals($expected, $result);
+    }
+
+    public function testSetEdgeReader(): void
+    {
+        $expected = $this->createMock(MysqlEdgeReader::class);
+        Mysql::setEdgeReader($expected);
+        $result = Mysql::edgeReader();
+        self::assertEquals($expected, $result);
+    }
+
+    public function testSetEdgeWriter(): void
+    {
+        $expected = $this->createMock(MysqlEdgeWriter::class);
+        Mysql::setEdgeWriter($expected);
+        $result = Mysql::edgeWriter();
+        self::assertEquals($expected, $result);
+    }
+
 }

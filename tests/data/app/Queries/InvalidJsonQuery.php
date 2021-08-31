@@ -2,18 +2,17 @@
 
 namespace App\Queries;
 
-use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Query;
 use Mrap\GraphCool\Types\TypeLoader;
 
-class ErrorQuery extends Query
+class InvalidJsonQuery extends Query
 {
 
     public function __construct(TypeLoader $typeLoader)
     {
-        $this->name = 'ErrorQuery';
+        $this->name = 'InvalidJsonQuery';
         $this->config = [
             'type' => Type::string()
         ];
@@ -21,6 +20,6 @@ class ErrorQuery extends Query
 
     public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
-        throw new Error('nada');
+        return "\xB1\x31";
     }
 }

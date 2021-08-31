@@ -2,6 +2,7 @@
 
 namespace App\Scripts;
 
+// does not extend Script class!
 class DummyNoScript
 {
 

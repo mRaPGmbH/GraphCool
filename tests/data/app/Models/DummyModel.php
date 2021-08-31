@@ -19,6 +19,7 @@ class DummyModel extends Model
         $this->float = Field::float()->nullable();
 
         $this->enum = Field::enum(['A','B','C'])->description('test description');
+        $this->unique = Field::string()->nullable()->unique();
 
         $this->country = Field::countryCode()->nullable();
         $this->timezone = Field::timezoneOffset()->nullable();

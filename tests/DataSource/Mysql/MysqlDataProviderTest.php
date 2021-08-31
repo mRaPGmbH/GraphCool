@@ -8,29 +8,56 @@ use GraphQL\Error\Error;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
+use Mrap\GraphCool\DataSource\Mysql\MysqlNodeReader;
+use Mrap\GraphCool\DataSource\Mysql\MysqlNodeWriter;
 use Mrap\GraphCool\Tests\TestCase;
-use RuntimeException;
+use Mrap\GraphCool\Types\Enums\ResultType;
+use stdClass;
 
-class MysqlDataProviderTest // extends TestCase
+class MysqlDataProviderTest extends TestCase
 {
+
+    public function testFindAllError(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $this->expectException(Error::class);
+        $provider = new MysqlDataProvider();
+        $provider->findAll('a12f', 'DummyModel', ['page' => 0]);
+    }
+
     public function testFindAll(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
+        $mock->expects($this->exactly(3))
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturn([(object)['id'=>'y5']]);
-        $mock->expects($this->once())
+        $mock->expects($this->exactly(3))
             ->method('fetchColumn')
             ->withAnyParameters()
             ->willReturn('1');
-
+        $mock->expects($this->never())
+            ->method('fetch');
         Mysql::setConnector($mock);
 
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->exactly(3))
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
+
         $provider = new MysqlDataProvider();
-        $result = $provider->findAll('a12f', 'DummyModel', []);
         $expected = (object)[
             'count' => 1,
             'currentPage' => 1,
@@ -41,93 +68,12 @@ class MysqlDataProviderTest // extends TestCase
             'perPage' => 10,
             'total' => 1
         ];
-        self::assertSame($expected, $result->paginatorInfo);
-    }
-
-    public function testFindAllError(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $this->expectException(Error::class);
-        $provider = new MysqlDataProvider();
-        $provider->findAll('a12f', 'DummyModel', ['page' => 0]);
-    }
-
-    public function testFindAllWhere(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withAnyParameters()
-            ->willReturn([(object)['id'=>'y5']]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b']]);
-        $expected = (object)[
-            'count' => 1,
-            'currentPage' => 1,
-            'firstItem' => 0,
-            'hasMorePages' => false,
-            'lastItem' => 0,
-            'lastPage' => 1,
-            'perPage' => 10,
-            'total' => 0
-        ];
-        self::assertSame($expected, $result->paginatorInfo);
-    }
-
-    public function testFindAllDeleted(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withAnyParameters()
-            ->willReturn([(object)['id'=>'y5']]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $result = $provider->findAll('a12f', 'DummyModel', ['result' => 'ONLY_SOFT_DELETED']);
-        $expected = (object)[
-            'count' => 1,
-            'currentPage' => 1,
-            'firstItem' => 0,
-            'hasMorePages' => false,
-            'lastItem' => 0,
-            'lastPage' => 1,
-            'perPage' => 10,
-            'total' => 0
-        ];
-        self::assertSame($expected, $result->paginatorInfo);
-    }
-
-    public function testFindAllWithTrashed(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withAnyParameters()
-            ->willReturn([(object)['id'=>'y5']]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $result = $provider->findAll('a12f', 'DummyModel', ['result' => 'WITH_TRASHED']);
-        $expected = (object)[
-            'count' => 1,
-            'currentPage' => 1,
-            'firstItem' => 0,
-            'hasMorePages' => false,
-            'lastItem' => 0,
-            'lastPage' => 1,
-            'perPage' => 10,
-            'total' => 0
-        ];
-        self::assertSame($expected, $result->paginatorInfo);
+        Mysql::setNodeReader($readerMock);
+        foreach ([ResultType::DEFAULT, ResultType::WITH_TRASHED, ResultType::ONLY_SOFT_DELETED] as $resultType) {
+            $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
+            self::assertEquals($expected, $result->paginatorInfo);
+            self::assertEquals([$node], $result->data);
+        }
     }
 
     public function testGetMax(): void
@@ -144,7 +90,7 @@ class MysqlDataProviderTest // extends TestCase
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'last_name');
 
-        self::assertSame('Zander', $result);
+        self::assertEquals('Zander', $result);
     }
 
     public function testGetMaxInt(): void
@@ -155,13 +101,13 @@ class MysqlDataProviderTest // extends TestCase
         $mock->expects($this->once())
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturn((object)['max' => 5]);
+            ->willReturn(null);
         Mysql::setConnector($mock);
 
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'date');
 
-        self::assertSame(5, $result);
+        self::assertEquals(0, $result);
     }
 
     public function testGetMaxFloat(): void
@@ -172,629 +118,277 @@ class MysqlDataProviderTest // extends TestCase
         $mock->expects($this->once())
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturn((object)['max' => 3.76]);
+            ->willReturn(null);
         Mysql::setConnector($mock);
 
         $provider = new MysqlDataProvider();
         $result = $provider->getMax('a12f', 'DummyModel', 'float');
 
-        self::assertSame(3.76, $result);
+        self::assertEquals(0.0, $result);
     }
 
-    public function testLoad(): void
+    public function testGetMaxBoolean(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
         $mock = $this->createMock(MysqlConnector::class);
         $mock->expects($this->once())
             ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->with('SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1'])
-            ->willReturn([
-                (object)['property' => 'last_name', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
-                (object)['property' => 'float', 'value_int' => null, 'value_string' => null, 'value_float' => 1.234],
-                (object)['property' => 'decimal', 'value_int' => 123, 'value_string' => null, 'value_float' => null],
-                (object)['property' => 'bool', 'value_int' => 1, 'value_string' => null, 'value_float' => null],
-            ]);
+            ->withAnyParameters()
+            ->willReturn(null);
         Mysql::setConnector($mock);
 
         $provider = new MysqlDataProvider();
-        $result = $provider->load('a12f', 'DummyModel', 'a1');
-        self::assertSame('Huber', $result->last_name);
-        self::assertSame(1.234, $result->float);
-        self::assertSame(1.23, $result->decimal);
-        self::assertTrue($result->bool);
-    }
+        $result = $provider->getMax('a12f', 'DummyModel', 'bool');
 
-    public function testLoadError(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'NOT-DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-
-        $this->expectException(RuntimeException::class);
-        $provider->load('a12f', 'DummyModel', 'a1');
-    }
-
-    public function testLoadNonExistentFields(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->with('SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1'])
-            ->willReturn([
-                (object)['property' => 'does_not_exist', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
-                (object)['property' => 'belongs_to_many', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
-            ]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $result = $provider->load('a12f', 'DummyModel', 'a1');
-        self::assertObjectNotHasAttribute('does_not_exist', $result);
-        self::assertIsCallable($result->belongs_to_many);
-    }
-
-    public function testLoadRelationClosures(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->exactly(3))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']]
-            )
-            ->willReturn([]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure([]);
-        self::assertSame([], $result['edges']);
-
-        $closure2 = $dummy->belongs_to;
-        $result2 = $closure2([]);
-        self::assertNull($result2);
-    }
-
-    public function testLoadRelationClosuresError(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-            )
-            ->willReturn([]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-
-        $this->expectException(Error::class);
-        $closure(['page' => 0]);
-    }
-
-    public function testLoadRelationClosuresDeleted(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->exactly(2))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `node`.`deleted_at` IS NOT NULL AND `edge`.`deleted_at` IS NOT NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']]
-            )
-            ->willReturn([]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure(['result' => 'ONLY_SOFT_DELETED']);
-        self::assertSame([], $result['edges']);
-    }
-
-    public function testLoadRelationClosuresWithTrashed(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->with('SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f'])
-            ->willReturn($node);
-        $mock->expects($this->exactly(2))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']]
-            )
-            ->willReturn([]);
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure(['result' => 'WITH_TRASHED']);
-        self::assertSame([], $result['edges']);
-    }
-
-    public function testLoadRelationClosuresEdgeProperties(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $edge = (object)[
-            'parent_id' => 'p1',
-            'child_id' => 'c1',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'parent' => 'DummyModel',
-            'child' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(3))
-            ->method('fetch')
-            ->withConsecutive(
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':parent_id' => 'p1', ':child_id' => 'c1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'p1', ':tenant_id' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $node,
-                $edge
-            );
-        $mock->expects($this->exactly(3))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']],
-                ['SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL', [':parent_id' => 'p1', ':child_id' => 'c1']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [(object)['parent_id' => 'p1', 'child_id' => 'c1']],
-                [(object)['property' => 'pivot_property', 'value_int' => null, 'value_string' => 'lala', 'value_float' => null],(object)['property' => 'does_not_exist', 'value_int' => null, 'value_string' => 'lala', 'value_float' => null]],
-            );
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure([]);
-        self::assertSame([$edge], $result['edges']);
-    }
-
-    public function testLoadRelationClosuresEdgeNull(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $edge = null;
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(2))
-            ->method('fetch')
-            ->withConsecutive(
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':parent_id' => 'p1', ':child_id' => 'c1', ':tenant_id' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $node,
-                $edge
-            );
-        $mock->expects($this->exactly(2))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [(object)['parent_id' => 'p1', 'child_id' => 'c1']]
-            );
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-
-        $this->expectException(RuntimeException::class);
-        $closure([]);
-    }
-
-    public function testLoadRelationClosuresEdgePropertiesDeleted(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $edge = (object)[
-            'parent_id' => 'p1',
-            'child_id' => 'c1',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'parent' => 'DummyModel',
-            'child' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(3))
-            ->method('fetch')
-            ->withConsecutive(
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `tenant_id` = :tenant_id AND `deleted_at` IS NOT NULL ', [':parent_id' => 'p1', ':child_id' => 'c1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'p1', ':tenant_id' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $node,
-                $edge
-            );
-        $mock->expects($this->exactly(3))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `node`.`deleted_at` IS NOT NULL AND `edge`.`deleted_at` IS NOT NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']],
-                ['SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL', [':parent_id' => 'p1', ':child_id' => 'c1']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [(object)['parent_id' => 'p1', 'child_id' => 'c1']],
-                [(object)['property' => 'pivot_property', 'value_int' => null, 'value_string' => 'lala', 'value_float' => null]],
-            );
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure(['result' => 'ONLY_SOFT_DELETED']);
-        self::assertSame([$edge], $result['edges']);
-    }
-
-    public function testLoadRelationClosuresEdgePropertiesWithTrashed(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $edge = (object)[
-            'parent_id' => 'p1',
-            'child_id' => 'c1',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'parent' => 'DummyModel',
-            'child' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(3))
-            ->method('fetch')
-            ->withConsecutive(
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `tenant_id` = :tenant_id ', [':parent_id' => 'p1', ':child_id' => 'c1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'p1', ':tenant_id' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $node,
-                $edge
-            );
-        $mock->expects($this->exactly(3))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` WHERE `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']],
-                ['SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL', [':parent_id' => 'p1', ':child_id' => 'c1']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [(object)['parent_id' => 'p1', 'child_id' => 'c1']],
-                [(object)['property' => 'pivot_property', 'value_int' => null, 'value_string' => 'lala', 'value_float' => null]],
-            );
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->belongs_to_many;
-        $result = $closure(['result' => 'WITH_TRASHED']);
-        self::assertSame([$edge], $result['edges']);
-    }
-
-    public function testLoadRelationClosuresEdgeProperties2(): void
-    {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
-        $edge = (object)[
-            'parent_id' => 'p1',
-            'child_id' => 'c1',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'parent' => 'DummyModel',
-            'child' => 'DummyModel'
-        ];
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(3))
-            ->method('fetch')
-            ->withConsecutive(
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'a1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':parent_id' => 'p1', ':child_id' => 'c1', ':tenant_id' => 'a12f']],
-                ['SELECT * FROM `node` WHERE `id` = :id AND `node`.`tenant_id` = :tenant_id AND `deleted_at` IS NULL ', [':id' => 'c1', ':tenant_id' => 'a12f']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $node,
-                $edge
-            );
-        $mock->expects($this->exactly(3))
-            ->method('fetchAll')
-            ->withConsecutive(
-                ['SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL', [':node_id' => 'a1']],
-                ['SELECT `edge`.`child_id`, `edge`.`parent_id` FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`child_id` WHERE `edge`.`child` = :p1 AND `edge`.`parent_id` IN (:p0) AND `edge`.`tenant_id` = :p3 AND `node`.`tenant_id` = :p2 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL  LIMIT 0, 10', [':p0' => 'a1',':p1' => 'DummyModel',':p2' => 'a12f',':p3' => 'a12f']],
-                ['SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL', [':parent_id' => 'p1', ':child_id' => 'c1']]
-            )
-            ->willReturnOnConsecutiveCalls(
-                [],
-                [(object)['parent_id' => 'p1', 'child_id' => 'c1']],
-                [],
-            );
-        Mysql::setConnector($mock);
-
-        $provider = new MysqlDataProvider();
-        $dummy = $provider->load('a12f', 'DummyModel', 'a1');
-        $closure = $dummy->has_one;
-        $result = $closure([]);
-        self::assertSame($edge, $result);
+        self::assertEquals(false, $result);
     }
 
     public function testInsert(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $data = [
-            'enum' => 'A'
 
-        ];
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('insert')
+            ->withAnyParameters();
+
         $node = (object)[
-            'id' => 'a1',
+            'id' => 'y5',
             'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
         ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
+
+        Mysql::setNodeReader($readerMock);
+        Mysql::setNodeWriter($writerMock);
+
+        $provider = new MysqlDataProvider();
+        $result = $provider->insert('a12f', 'DummyModel', []);
+
+        self::assertEquals($node, $result);
+    }
+
+    public function testUpdate(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('update')
+            ->withAnyParameters();
+
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
 
         $mock = $this->createMock(MysqlConnector::class);
         $mock->expects($this->once())
-            ->method('fetch')
+            ->method('fetchColumn')
             ->withAnyParameters()
-            ->willReturn($node);
+            ->willReturn(1);
+
+        Mysql::setConnector($mock);
+        Mysql::setNodeReader($readerMock);
+        Mysql::setNodeWriter($writerMock);
+
+        $provider = new MysqlDataProvider();
+        $result = $provider->update('a12f', 'DummyModel', ['id' => 'y5']);
+
+        self::assertEquals($node, $result);
+    }
+
+    public function testUpdateExistsError(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->never())
+            ->method('update');
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->never())
+            ->method('load');
+
+        $mock = $this->createMock(MysqlConnector::class);
         $mock->expects($this->once())
-            ->method('fetchAll')
+            ->method('fetchColumn')
             ->withAnyParameters()
-            ->willReturn([
-                (object)['property' => 'last_name', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
-                (object)['property' => 'float', 'value_int' => null, 'value_string' => null, 'value_float' => 1.234],
-                (object)['property' => 'decimal', 'value_int' => 123, 'value_string' => null, 'value_float' => null],
-                (object)['property' => 'bool', 'value_int' => 1, 'value_string' => null, 'value_float' => null],
-            ]);
+            ->willReturn(0);
+
+        Mysql::setConnector($mock);
+        Mysql::setNodeReader($readerMock);
+        Mysql::setNodeWriter($writerMock);
+
+        $provider = new MysqlDataProvider();
+        $this->expectException(Error::class);
+        $provider->update('a12f', 'DummyModel', ['id' => 'y5']);
+    }
+
+    public function testUpdateUniqueError(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->never())
+            ->method('update');
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->never())
+            ->method('load');
+
+        $mock = $this->createMock(MysqlConnector::class);
         $mock->expects($this->exactly(2))
-            ->method('execute')
+            ->method('fetchColumn')
             ->withAnyParameters()
             ->willReturn(1);
 
         Mysql::setConnector($mock);
-        $provider = new MysqlDataProvider();
-        $result = $provider->insert('a12f', 'DummyModel', $data);
+        Mysql::setNodeReader($readerMock);
+        Mysql::setNodeWriter($writerMock);
 
-        self::assertSame('a1', $result->id);
-        self::assertNull($result->deleted_at);
-        self::assertSame('DummyModel', $result->model);
+        $provider = new MysqlDataProvider();
+        $this->expectException(Error::class);
+        $provider->update('a12f', 'DummyModel', ['id' => 'y5', 'data' => ['unique' => 'something that already exists']]);
     }
 
-    public function testInsertError(): void
+    public function testUpdateNullError(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $data = [];
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->never())
+            ->method('update');
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->never())
+            ->method('load');
 
         $mock = $this->createMock(MysqlConnector::class);
         $mock->expects($this->once())
-            ->method('execute')
+            ->method('fetchColumn')
             ->withAnyParameters()
             ->willReturn(1);
 
         Mysql::setConnector($mock);
+        Mysql::setNodeReader($readerMock);
+        Mysql::setNodeWriter($writerMock);
+
         $provider = new MysqlDataProvider();
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('may not be null');
-        $provider->insert('a12f', 'DummyModel', $data);
+        $this->expectException(Error::class);
+        $provider->update('a12f', 'DummyModel', ['id' => 'y5', 'data' => ['enum' => null]]);
     }
 
-    public function xtestInsertRelation(): void
+    public function testUpdateMany(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $data = [
-            'enum' => 'A',
-            'belongs_to' => [
-                'id' => 'p1',
-                'pivot_property' => null,
-                'pivot_property2' => null,
-                'pivot_property3' => 'asdf'
-            ],
-            'belongs_to_many' => [[
-                'where' => [
-                    'column' => 'id',
-                    'operator' => '=',
-                    'value' => 'p2'
-                ],
-            ]]
-        ];
-        $node = (object)[
-            'id' => 'a1',
-            'tenant_id' => 'a12f',
-            'created_at' => '2021-07-27 13:43:56',
-            'updated_at' => '2021-07-27 13:43:57',
-            'deleted_at' => null,
-            'model' => 'DummyModel'
-        ];
+
+        $expected = new stdClass();
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('updateMany')
+            ->withAnyParameters()
+            ->willReturn($expected);
 
         $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->withAnyParameters()
-            ->willReturn($node);
         $mock->expects($this->once())
             ->method('fetchAll')
             ->withAnyParameters()
-            ->willReturn([
-                (object)['property' => 'last_name', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
-                (object)['property' => 'float', 'value_int' => null, 'value_string' => null, 'value_float' => 1.234],
-                (object)['property' => 'decimal', 'value_int' => 123, 'value_string' => null, 'value_float' => null],
-                (object)['property' => 'bool', 'value_int' => 1, 'value_string' => null, 'value_float' => null],
-            ]);
-        $mock->expects($this->exactly(6))
-            ->method('execute')
-            ->withAnyParameters()
-            ->willReturn(1);
+            ->willReturn([(object)['id' => 'y5']]);
 
         Mysql::setConnector($mock);
-        $provider = new MysqlDataProvider();
-        $result = $provider->insert('a12f', 'DummyModel', $data);
+        Mysql::setNodeWriter($writerMock);
 
-        self::assertSame('a1', $result->id);
-        self::assertNull($result->deleted_at);
-        self::assertSame('DummyModel', $result->model);
+        $provider = new MysqlDataProvider();
+        $result = $provider->updateMany('a12f', 'DummyModel', ['id' => 'y5']);
+
+        self::assertEquals($expected, $result);
+    }
+
+    public function testDelete(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('delete')
+            ->withAnyParameters();
+
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
+
+        Mysql::setNodeWriter($writerMock);
+        Mysql::setNodeReader($readerMock);
+
+        $provider = new MysqlDataProvider();
+        $result = $provider->delete('a12f', 'DummyModel', 'y5');
+
+        self::assertEquals($node, $result);
+    }
+
+    public function testRestore(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('restore')
+            ->withAnyParameters();
+
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
+
+        Mysql::setNodeWriter($writerMock);
+        Mysql::setNodeReader($readerMock);
+
+        $provider = new MysqlDataProvider();
+        $result = $provider->restore('a12f', 'DummyModel', 'y5');
+
+        self::assertEquals($node, $result);
     }
 
 }

@@ -10,12 +10,20 @@ use stdClass;
 class Mysql
 {
 
-    protected static MysqlConnector $connector;
-    protected static MysqlNodeReader $nodeReader;
-    protected static MysqlNodeWriter $nodeWriter;
-    protected static MysqlEdgeReader $edgeReader;
-    protected static MysqlEdgeWriter $edgeWriter;
+    protected static ?MysqlConnector $connector;
+    protected static ?MysqlNodeReader $nodeReader;
+    protected static ?MysqlNodeWriter $nodeWriter;
+    protected static ?MysqlEdgeReader $edgeReader;
+    protected static ?MysqlEdgeWriter $edgeWriter;
 
+    public static function reset(): void
+    {
+        static::$connector = null;
+        static::$nodeReader = null;
+        static::$nodeWriter = null;
+        static::$edgeReader = null;
+        static::$edgeWriter = null;
+    }
 
     public static function setConnector(MysqlConnector $connector): void
     {

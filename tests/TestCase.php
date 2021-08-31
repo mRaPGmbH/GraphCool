@@ -4,6 +4,7 @@
 namespace Mrap\GraphCool\Tests;
 
 
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\TimeZone;
 
@@ -14,6 +15,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
     {
         ClassFinder::setRootPath($this->dataPath());
         TimeZone::unset();
+        Mysql::reset();
     }
 
     protected function dataPath(): string

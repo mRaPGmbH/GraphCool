@@ -58,7 +58,7 @@ class MysqlNodeWriter
         }
     }
 
-    public function updateMany(string $tenantId, string $name, array $ids, array $updateData, ?array $where, string $resultType): stdClass
+    public function updateMany(string $tenantId, string $name, array $ids, array $updateData): stdClass
     {
         $model = Model::get($name);
         $updates = [

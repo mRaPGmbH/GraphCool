@@ -12,6 +12,9 @@ class MysqlEdgeWriter
 {
     public function writeEdges(string $tenantId, string $name, string $id, array $data): void
     {
+        if (empty($id)) {
+            return;
+        }
         $model = Model::get($name);
         foreach ($model as $key => $item) {
             if (!$item instanceof Relation) {
@@ -20,7 +23,7 @@ class MysqlEdgeWriter
             if (!array_key_exists($key, $data)) {
                 continue;
             }
-            if (!$item->type === Relation::BELONGS_TO && !$item->type === Relation::BELONGS_TO_MANY) {
+            if ($item->type !== Relation::BELONGS_TO && $item->type !== Relation::BELONGS_TO_MANY) {
                 continue;
             }
             $inputs = $data[$key];
@@ -39,6 +42,9 @@ class MysqlEdgeWriter
 
     public function updateEdges(string $tenantId, string $name, array $ids, array $updates): void
     {
+        if (count($ids) === 0) {
+            return;
+        }
         $model = Model::get($name);
         foreach ($model as $key => $item) {
             if (!array_key_exists($key, $updates)) {
@@ -62,9 +68,6 @@ class MysqlEdgeWriter
 
     protected function deleteAllRelations(array $childIds, string $parentName): void
     {
-        if (count($childIds) === 0) {
-            return;
-        }
         $params = [];
         $i = 1;
         foreach ($childIds as $childId) {

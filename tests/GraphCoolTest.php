@@ -34,14 +34,25 @@ class GraphCoolTest extends TestCase
         GraphCool::run();
     }
 
+    public function testRunQueryJsonException(): void
+    {
+        $this->provideJwt();
+        require_once($this->dataPath().'/app/Queries/InvalidJsonQuery.php');
+        ClassFinder::setRootPath($this->dataPath());
+
+        $this->expectOutputRegex('/Internal server error/i');
+        $_POST['operations'] = '{"query":"query{InvalidJsonQuery}"}';
+        GraphCool::run();
+    }
+
     public function testRunQueryError(): void
     {
         $this->provideJwt();
-        require_once($this->dataPath().'/app/Queries/ExceptionQuery.php');
+        require_once($this->dataPath().'/app/Queries/ErrorQuery.php');
         ClassFinder::setRootPath($this->dataPath());
 
-        $this->expectOutputRegex('/nope/i');
-        $_POST['operations'] = '{"query":"query{ExceptionQuery}"}';
+        $this->expectOutputRegex('/nada/i');
+        $_POST['operations'] = '{"query":"query{ErrorQuery}"}';
         GraphCool::run();
     }
 
@@ -127,5 +138,6 @@ class GraphCoolTest extends TestCase
         $result = GraphCool::runScript(['DummyNoScript']);
         self::assertFalse($result);
     }
+
 
 }

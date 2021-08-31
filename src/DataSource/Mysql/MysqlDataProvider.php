@@ -32,7 +32,6 @@ class MysqlDataProvider implements DataProvider
 
     public function findAll(?string $tenantId, string $name, array $args): stdClass
     {
-        StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
         if ($page < 1)  {
@@ -79,7 +78,6 @@ class MysqlDataProvider implements DataProvider
 
         $result = new stdClass();
         $result->paginatorInfo = PaginatorInfoType::create(count($ids), $page, $limit, $total);
-        StopWatch::stop(__METHOD__);
         $result->data = $this->loadAll($tenantId, $name, $ids, $resultType);
         return $result;
     }
@@ -179,14 +177,21 @@ class MysqlDataProvider implements DataProvider
         $resultType = $data['result'] ?? ResultType::DEFAULT;
         $this->checkNull($model, $updateData);
         $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'] ?? null, $resultType);
-        $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData, $data['where'] ?? null, $resultType);
+        $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
 
-        $closure = function() use ($tenantId, $name, $ids, $resultType) {
-            return $this->loadAll($tenantId, $name, $ids, $resultType);
-        };
-        $model->afterBulkUpdate($closure);
+        $model->afterBulkUpdate($this->getClosure($tenantId, $name, $ids, $resultType));
 
         return $result;
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
+    {
+        return function() use ($tenantId, $name, $ids, $resultType) {
+            return $this->loadAll($tenantId, $name, $ids, $resultType);
+        };
     }
 
     protected function getIdsForWhere(Model $model, string $name, string $tenantId, ?array $where, string $resultType): array

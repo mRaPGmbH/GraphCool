@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool;
 
-use GraphQL\Error\ClientAware;
+use Closure;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\Error;
-use GraphQL\Error\FormattedError;
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
@@ -17,6 +16,7 @@ use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
+use Mrap\GraphCool\Utils\ErrorHandler;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use Throwable;
@@ -36,9 +36,8 @@ class GraphCool
             foreach ($request as $index => $query) {
                 $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
             }
-
         } catch (\Throwable $e) {
-            $result = $instance->handleError($e);
+            $result = ErrorHandler::handleError($e);
         }
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
@@ -61,11 +60,11 @@ class GraphCool
                         $script->run($args);
                         return true;
                     } catch (Throwable $e) {
-                        self::sentryCapture($e);
+                        ErrorHandler::sentryCapture($e);
                     }
                 } else {
                     $e = new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)');
-                    self::sentryCapture($e);
+                    ErrorHandler::sentryCapture($e);
                 }
             }
         }
@@ -78,7 +77,7 @@ class GraphCool
         DB::migrate();
     }
 
-    public static function onShutdown(\Closure $closure): void
+    public static function onShutdown(Closure $closure): void
     {
         static::$shutdown[] = $closure;
     }
@@ -115,60 +114,41 @@ class GraphCool
             [
                 'query'      => new QueryType($typeLoader),
                 'mutation'   => new MutationType($typeLoader),
-                'typeLoader' => function ($name) use ($typeLoader) {
-                    return $typeLoader->load($name);
-                }
+                'typeLoader' => $this->getTypeLoaderClosure($typeLoader),
             ]
         );
         StopWatch::stop(__METHOD__);
         return $schema;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
+    protected function getTypeLoaderClosure(TypeLoader $typeLoader): Closure
+    {
+        return function ($name) use ($typeLoader) {
+            return $typeLoader->load($name);
+        };
+    }
+
     protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
 
-        $errorHandler = function(array $errors, callable $formatter) {
-            /** @var Error $error */
-            foreach ($errors as $error) {
-                if (!$error->isClientSafe()) {
-                    $previous = $error->getPrevious();
-                    if ($previous === null) {
-                        $this->sentryCapture($error);
-                    } else {
-                        $this->sentryCapture($previous);
-                    }
-                }
-            }
-            return array_map($formatter, $errors);
-        };
-
         $result = GraphQL::executeQuery($schema, $query, ['index' => $index], null, $variables)
-            ->setErrorsHandler($errorHandler)
-            ->toArray($this->getDebugFlags());
+            ->setErrorsHandler(ErrorHandler::getClosure())
+            ->toArray(static::getDebugFlags());
 
         StopWatch::stop(__METHOD__);
         return $result;
     }
 
-    protected function getDebugFlags(): int
+    public static function getDebugFlags(): int
     {
         if (Env::get('APP_ENV') === 'local') {
             return DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
         }
         return 0;
-    }
-
-    protected function handleError(Throwable $e): array
-    {
-        if (!$e instanceof ClientAware || !$e->isClientSafe()) {
-            self::sentryCapture($e);
-        }
-        return [
-            'errors' => [
-                FormattedError::createFromException($e, $this->getDebugFlags())
-            ]
-        ];
     }
 
     protected function sendResponse(array $response): void
@@ -180,28 +160,10 @@ class GraphCool
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            $this->handleError($e);
+            ErrorHandler::handleError($e);
             echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
         $this->finishRequest();
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    public static function sentryCapture(Throwable $e): void
-    {
-        $sentryDsn = Env::get('SENTRY_DSN');
-        $environment = Env::get('APP_ENV');
-        if ($sentryDsn !== null && $environment !== 'local' && function_exists("\Sentry\init")) {
-            \Sentry\init([
-                             'dsn' => $sentryDsn,
-                             'environment' => Env::get('APP_ENV'),
-                             'release' => Env::get('APP_NAME') . '@' . Env::get('APP_VERSION'),
-                             'server_name' => $_SERVER['SERVER_NAME'] ?? 'n/a'
-                         ]);
-            \Sentry\captureException($e);
-        }
     }
 
     /**
