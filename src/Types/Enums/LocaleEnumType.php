@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Enums;
-
 
 use GraphQL\Type\Definition\EnumType;
 

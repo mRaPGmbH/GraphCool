@@ -37,37 +37,6 @@ class MysqlConnector
         $this->connect(); // final try - don't catch exception
     }
 
-    public function execute(string $sql, array $params): int
-    {
-        $statement = $this->statement($sql);
-        $statement->execute($params);
-        return $statement->rowCount();
-    }
-
-    public function executeRaw(string $sql): int|false
-    {
-        return $this->pdo()->exec($sql);
-    }
-
-    protected function statement(string $sql): PDOStatement
-    {
-        if (!isset($this->statements[$sql])) {
-            $this->statements[$sql] = $this->pdo()->prepare($sql);
-        }
-        return $this->statements[$sql];
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    protected function pdo(): PDO
-    {
-        if (!isset($this->pdo)) {
-            $this->connect();
-        }
-        return $this->pdo;
-    }
-
     /**
      * @codeCoverageIgnore
      */
@@ -91,6 +60,37 @@ class MysqlConnector
                 ) . ' ' . print_r($_ENV, true)
             );
         }
+    }
+
+    public function execute(string $sql, array $params): int
+    {
+        $statement = $this->statement($sql);
+        $statement->execute($params);
+        return $statement->rowCount();
+    }
+
+    protected function statement(string $sql): PDOStatement
+    {
+        if (!isset($this->statements[$sql])) {
+            $this->statements[$sql] = $this->pdo()->prepare($sql);
+        }
+        return $this->statements[$sql];
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    protected function pdo(): PDO
+    {
+        if (!isset($this->pdo)) {
+            $this->connect();
+        }
+        return $this->pdo;
+    }
+
+    public function executeRaw(string $sql): int|false
+    {
+        return $this->pdo()->exec($sql);
     }
 
     public function fetch(string $sql, array $params): ?stdClass

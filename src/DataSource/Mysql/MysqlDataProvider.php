@@ -34,7 +34,7 @@ class MysqlDataProvider implements DataProvider
     {
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
-        if ($page < 1)  {
+        if ($page < 1) {
             throw new Error('Page cannot be less than 1');
         }
         $offset = ($page - 1) * $limit;
@@ -59,12 +59,12 @@ class MysqlDataProvider implements DataProvider
             }
             $relatedClassname = $relation->classname;
             $relatedModel = new $relatedClassname();
-            $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where'.ucfirst($key)]);
+            $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where' . ucfirst($key)]);
 
             $query->whereHas($relatedModel, $relation->name, $relation->type, $relatedWhere);
         }
 
-        match($resultType) {
+        match ($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
             default => null
@@ -111,8 +111,12 @@ class MysqlDataProvider implements DataProvider
         return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
     }
 
-    public function loadAll(?string $tenantId, string $name, array $ids, ?string $resultType = ResultType::DEFAULT): array
-    {
+    public function loadAll(
+        ?string $tenantId,
+        string $name,
+        array $ids,
+        ?string $resultType = ResultType::DEFAULT
+    ): array {
         $result = [];
         foreach ($ids as $id) {
             $result[] = $this->load($tenantId, $name, $id, $resultType);
@@ -120,8 +124,12 @@ class MysqlDataProvider implements DataProvider
         return $result;
     }
 
-    public function load(?string $tenantId, string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
+    public function load(
+        ?string $tenantId,
+        string $name,
+        string $id,
+        ?string $resultType = ResultType::DEFAULT
+    ): ?stdClass {
         return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
     }
 
@@ -159,17 +167,6 @@ class MysqlDataProvider implements DataProvider
         return $loaded;
     }
 
-    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
-    {
-        $query = MysqlQueryBuilder::forModel($model, $name)
-            ->tenant($tenantId)
-            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
-            ->withTrashed();
-        if ((int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters()) === 0) {
-            throw new Error($name . ' with ID ' . $id . ' not found.');
-        }
-    }
-
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
         $model = Model::get($name);
@@ -183,35 +180,6 @@ class MysqlDataProvider implements DataProvider
 
         return $result;
     }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
-    {
-        return function() use ($tenantId, $name, $ids, $resultType) {
-            return $this->loadAll($tenantId, $name, $ids, $resultType);
-        };
-    }
-
-    protected function getIdsForWhere(Model $model, string $name, string $tenantId, ?array $where, string $resultType): array
-    {
-        $ids = [];
-        $query = MysqlQueryBuilder::forModel($model, $name)
-            ->tenant($tenantId)
-            ->select(['id'])
-            ->where($where ?? null);
-        match($resultType) {
-            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-            ResultType::WITH_TRASHED => $query->withTrashed(),
-            default => null
-        };
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
-            $ids[] = $row->id;
-        }
-        return $ids;
-    }
-
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
@@ -231,6 +199,50 @@ class MysqlDataProvider implements DataProvider
         return $node;
     }
 
+    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
+    {
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
+            ->withTrashed();
+        if ((int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters()) === 0) {
+            throw new Error($name . ' with ID ' . $id . ' not found.');
+        }
+    }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
+    {
+        return function () use ($tenantId, $name, $ids, $resultType) {
+            return $this->loadAll($tenantId, $name, $ids, $resultType);
+        };
+    }
+
+    protected function getIdsForWhere(
+        Model $model,
+        string $name,
+        string $tenantId,
+        ?array $where,
+        string $resultType
+    ): array {
+        $ids = [];
+        $query = MysqlQueryBuilder::forModel($model, $name)
+            ->tenant($tenantId)
+            ->select(['id'])
+            ->where($where ?? null);
+        match ($resultType) {
+            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            ResultType::WITH_TRASHED => $query->withTrashed(),
+            default => null
+        };
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
+            $ids[] = $row->id;
+        }
+        return $ids;
+    }
+
     protected function checkUnique(string $tenantId, Model $model, string $name, array $data, string $id = null): void
     {
         foreach ($model as $key => $field) {
@@ -248,7 +260,9 @@ class MysqlDataProvider implements DataProvider
                 }
                 $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
                 if ($total >= 1) {
-                    throw new Error('Property "' . $key . '" must be unique, but value "' . (string)$data[$key] . '" already exists.');
+                    throw new Error(
+                        'Property "' . $key . '" must be unique, but value "' . (string)$data[$key] . '" already exists.'
+                    );
                 }
             }
         }
@@ -257,7 +271,10 @@ class MysqlDataProvider implements DataProvider
     protected function checkNull(Model $model, array $updates): void
     {
         foreach ($model as $key => $item) {
-            if ($item instanceof Field && array_key_exists($key, $updates) && $updates[$key] === null && $item->null === false) {
+            if ($item instanceof Field && array_key_exists(
+                    $key,
+                    $updates
+                ) && $updates[$key] === null && $item->null === false) {
                 throw new Error('Field ' . $key . ' is not nullable.');
             }
         }

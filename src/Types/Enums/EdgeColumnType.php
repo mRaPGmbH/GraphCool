@@ -1,13 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Enums;
 
-
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeColumnType extends EnumType
@@ -29,7 +28,7 @@ class EdgeColumnType extends EnumType
                 continue;
             }
             $upperName = strtoupper($key);
-            $values['_'.$upperName] = [
+            $values['_' . $upperName] = [
                 'value' => '_' . $key,
                 'description' => $field->description ?? null
             ];

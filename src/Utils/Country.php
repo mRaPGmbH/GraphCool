@@ -1,11 +1,28 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
-
 class Country
 {
+    protected static array $namesByCountry;
+    protected static array $mistypedNamesByCountry;
+
+    public static function parseLenient(string $value): ?string
+    {
+        $result = static::parse($value);
+        if ($result !== null) {
+            return $result;
+        }
+        foreach (self::mistypedNamesByCountry() as $code => $names) {
+            if (in_array(mb_strtolower($value), $names, true)) {
+                return $code;
+            }
+        }
+        return null;
+    }
+
     public static function parse(string $value): ?string
     {
         if (strlen($value) <= 1) {
@@ -39,43 +56,6 @@ class Country
             }
         }
         return null;
-    }
-
-    public static function parseLenient(string $value): ?string
-    {
-        $result = static::parse($value);
-        if ($result !== null) {
-            return $result;
-        }
-        foreach (self::mistypedNamesByCountry() as $code => $names) {
-            if (in_array(mb_strtolower($value), $names, true)) {
-                return $code;
-            }
-        }
-        return null;
-    }
-
-    public static function convertToAlpha3(string $alpha2): ?string
-    {
-        return static::alpha2to3()[$alpha2] ?? null;
-    }
-
-    protected static array $namesByCountry;
-    protected static function namesByCountry(): array
-    {
-        if (!isset(static::$namesByCountry)) {
-            static::$namesByCountry = unserialize(file_get_contents(__DIR__ . '/country-data.cache'), ['allowed_classes' => []]);
-        }
-        return static::$namesByCountry;
-    }
-
-    protected static array $mistypedNamesByCountry;
-    protected static function mistypedNamesByCountry(): array
-    {
-        if (!isset(static::$mistypedNamesByCountry)) {
-            static::$mistypedNamesByCountry = unserialize(file_get_contents(__DIR__ . '/country-data-mistyped.cache'), ['allowed_classes' => []]);
-        }
-        return static::$mistypedNamesByCountry;
     }
 
     protected static function alpha2to3(): array
@@ -331,6 +311,33 @@ class Country
             'ZW' => 'ZWE',
             'AX' => 'ALA'
         ];
+    }
+
+    protected static function namesByCountry(): array
+    {
+        if (!isset(static::$namesByCountry)) {
+            static::$namesByCountry = unserialize(
+                file_get_contents(__DIR__ . '/country-data.cache'),
+                ['allowed_classes' => []]
+            );
+        }
+        return static::$namesByCountry;
+    }
+
+    protected static function mistypedNamesByCountry(): array
+    {
+        if (!isset(static::$mistypedNamesByCountry)) {
+            static::$mistypedNamesByCountry = unserialize(
+                file_get_contents(__DIR__ . '/country-data-mistyped.cache'),
+                ['allowed_classes' => []]
+            );
+        }
+        return static::$mistypedNamesByCountry;
+    }
+
+    public static function convertToAlpha3(string $alpha2): ?string
+    {
+        return static::alpha2to3()[$alpha2] ?? null;
     }
 
 }

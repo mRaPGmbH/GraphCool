@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mrap\GraphCool\Utils;
 
 use Closure;
@@ -12,7 +14,6 @@ use Throwable;
 class ErrorHandler
 {
 
-
     public static function handleError(Throwable $e): array
     {
         if (!$e instanceof ClientAware || !$e->isClientSafe()) {
@@ -24,25 +25,6 @@ class ErrorHandler
             ]
         ];
     }
-
-    public static function getClosure(): Closure
-    {
-        return function(array $errors, callable $formatter) {
-            /** @var Error $error */
-            foreach ($errors as $error) {
-                if (!method_exists($error, 'isClientSafe') || !$error->isClientSafe()) {
-                    $previous = $error->getPrevious();
-                    if ($previous === null) {
-                        ErrorHandler::sentryCapture($error);
-                    } else {
-                        ErrorHandler::sentryCapture($previous);
-                    }
-                }
-            }
-            return array_map($formatter, $errors);
-        };
-    }
-
 
     /**
      * @codeCoverageIgnore
@@ -60,6 +42,24 @@ class ErrorHandler
             ]);
             \Sentry\captureException($e);
         }
+    }
+
+    public static function getClosure(): Closure
+    {
+        return function (array $errors, callable $formatter) {
+            /** @var Error $error */
+            foreach ($errors as $error) {
+                if (!method_exists($error, 'isClientSafe') || !$error->isClientSafe()) {
+                    $previous = $error->getPrevious();
+                    if ($previous === null) {
+                        ErrorHandler::sentryCapture($error);
+                    } else {
+                        ErrorHandler::sentryCapture($previous);
+                    }
+                }
+            }
+            return array_map($formatter, $errors);
+        };
     }
 
 }

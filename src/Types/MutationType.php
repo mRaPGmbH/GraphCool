@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
@@ -13,14 +14,16 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
+use RuntimeException;
+use stdClass;
 
 class MutationType extends ObjectType
 {
 
-    protected array $customResolvers =  [];
+    protected array $customResolvers = [];
 
     public function __construct(TypeLoader $typeLoader)
     {
@@ -37,7 +40,7 @@ class MutationType extends ObjectType
         foreach (ClassFinder::mutations() as $name => $classname) {
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
-            $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+            $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
                 $query->authenticate();
                 return $query->resolve($rootValue, $args, $context, $info);
             };
@@ -45,9 +48,9 @@ class MutationType extends ObjectType
 
         ksort($fields);
         $config = [
-            'name'   => 'Mutation',
+            'name' => 'Mutation',
             'fields' => $fields,
-            'resolveField' => function(array $rootValue, array $args, $context, ResolveInfo $info) {
+            'resolveField' => function (array $rootValue, array $args, $context, ResolveInfo $info) {
                 return $this->resolve($rootValue, $args, $context, $info);
             }
         ];
@@ -72,7 +75,9 @@ class MutationType extends ObjectType
                     }
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'ManyRelation')));
+                    $args[$key] = new ListOfType(
+                        new NonNull($typeLoader->load('_' . $name . '__' . $key . 'ManyRelation'))
+                    );
                 }
             }
 
@@ -91,7 +96,7 @@ class MutationType extends ObjectType
 
         $ret = [
             'type' => $typeLoader->load($name),
-            'description' => 'Create a single new ' .  $name . ' entry',
+            'description' => 'Create a single new ' . $name . ' entry',
         ];
         if (count($args) > 0) {
             ksort($args);
@@ -104,7 +109,7 @@ class MutationType extends ObjectType
     {
         return [
             'type' => $typeLoader->load($name),
-            'description' => 'Modify an existing ' .  $name . ' entry',
+            'description' => 'Modify an existing ' . $name . ' entry',
             'args' => [
                 'id' => new nonNull(Type::id()),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
@@ -129,7 +134,7 @@ class MutationType extends ObjectType
     {
         return [
             'type' => $typeLoader->load($name),
-            'description' => 'Delete a ' .  $name . ' entry by ID',
+            'description' => 'Delete a ' . $name . ' entry by ID',
             'args' => [
                 'id' => new NonNull(Type::id()),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
@@ -141,7 +146,7 @@ class MutationType extends ObjectType
     {
         return [
             'type' => $typeLoader->load($name),
-            'description' => 'Restore a previously soft-deleted ' .  $name . ' record by ID',
+            'description' => 'Restore a previously soft-deleted ' . $name . ' record by ID',
             'args' => [
                 'id' => new NonNull(Type::id()),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
@@ -170,23 +175,23 @@ class MutationType extends ObjectType
             }*/
 
             if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeReducedSelector')));
+                $args[$key] = new ListOfType(
+                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeReducedSelector'))
+                );
             }
         }
-
 
 
         $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
         return [
             'type' => $typeLoader->load('_ImportSummary'),
-            'description' => 'Import a list of ' .  $name . 's from a spreadsheet. If ID\'s are present, ' .  $name . 's will be updated - otherwise new ' .  $name . 's will be created. To completely replace the existing data set, delete everything before importing.' ,
+            'description' => 'Import a list of ' . $name . 's from a spreadsheet. If ID\'s are present, ' . $name . 's will be updated - otherwise new ' . $name . 's will be created. To completely replace the existing data set, delete everything before importing.',
             'args' => $args
         ];
     }
 
     protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
-
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
         }
@@ -215,10 +220,10 @@ class MutationType extends ObjectType
             //return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args); // $rootValue['index'] ?? 0
             return $this->resolveImport(substr($info->fieldName, 6, -1), $args, $rootValue['index'] ?? 0);
         }
-        throw new \RuntimeException(print_r($info->fieldName, true));
+        throw new RuntimeException(print_r($info->fieldName, true));
     }
 
-    protected function resolveImport(string $name, array $args, int $index): \stdClass
+    protected function resolveImport(string $name, array $args, int $index): stdClass
     {
         [$create, $update, $errors] = File::read($name, $args, $index);
         $inserted_ids = [];
@@ -229,7 +234,7 @@ class MutationType extends ObjectType
         foreach ($update as $data) {
             $updated_ids[] = DB::update(JwtAuthentication::tenantId(), $name, $data)->id;
         }
-        return (object) [
+        return (object)[
             'inserted_rows' => count($inserted_ids),
             'inserted_ids' => $inserted_ids,
             'updated_rows' => count($updated_ids),

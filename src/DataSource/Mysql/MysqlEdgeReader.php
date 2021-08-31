@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
-
 
 use Carbon\Carbon;
 use Closure;
@@ -49,7 +49,7 @@ class MysqlEdgeReader
         StopWatch::start(__METHOD__);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
-        if ($page < 1)  {
+        if ($page < 1) {
             throw new Error('Page cannot be less than 1');
         }
         $offset = ($page - 1) * $limit;
@@ -70,7 +70,7 @@ class MysqlEdgeReader
             ->whereRelated($whereNode)
             ->orderBy($orderBy)
             ->search($search);
-        match($resultType) {
+        match ($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
             default => null
@@ -80,9 +80,21 @@ class MysqlEdgeReader
             $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
             if ($edge === null) {
                 // this should never happen!
-                throw new RuntimeException('Edge was null: ' . print_r(['parent_id' => $edgeIds->parent_id, 'child_id' => $edgeIds->child_id, 'resultType' => $resultType], true));
+                throw new RuntimeException(
+                    'Edge was null: ' . print_r(
+                        [
+                            'parent_id' => $edgeIds->parent_id,
+                            'child_id' => $edgeIds->child_id,
+                            'resultType' => $resultType
+                        ],
+                        true
+                    )
+                );
             }
-            $properties = MysqlConverter::convertProperties($this->fetchEdgeProperties($edge->parent_id, $edge->child_id), $relation);
+            $properties = MysqlConverter::convertProperties(
+                $this->fetchEdgeProperties($edge->parent_id, $edge->child_id),
+                $relation
+            );
             foreach ($properties as $key => $value) {
                 $edge->$key = $value;
             }
@@ -107,19 +119,12 @@ class MysqlEdgeReader
         return $edges;
     }
 
-    protected function fetchEdgeProperties(string $parentId, string $childId): array
-    {
-        $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
-        $params = [
-            ':parent_id' => $parentId,
-            ':child_id' => $childId
-        ];
-        return Mysql::fetchAll($sql, $params);
-    }
-
-
-    protected function fetchEdge(?string $tenantId, string $parentId, string $childId, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
+    protected function fetchEdge(
+        ?string $tenantId,
+        string $parentId,
+        string $childId,
+        ?string $resultType = ResultType::DEFAULT
+    ): ?stdClass {
         $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';
         $parameters = [
             ':parent_id' => $parentId,
@@ -130,7 +135,7 @@ class MysqlEdgeReader
             $sql .= 'AND `tenant_id` = :tenant_id ';
             $parameters[':tenant_id'] = $tenantId;
         }
-        $sql .= match($resultType) {
+        $sql .= match ($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
             'WITH_TRASHED' => '',
             default => 'AND `deleted_at` IS NULL ',
@@ -149,6 +154,16 @@ class MysqlEdgeReader
             }
         }
         return $edge;
+    }
+
+    protected function fetchEdgeProperties(string $parentId, string $childId): array
+    {
+        $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
+        $params = [
+            ':parent_id' => $parentId,
+            ':child_id' => $childId
+        ];
+        return Mysql::fetchAll($sql, $params);
     }
 
 

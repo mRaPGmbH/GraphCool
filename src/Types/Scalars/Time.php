@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Scalars;
@@ -9,6 +10,7 @@ use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Utils\TimeZone;
+use Throwable;
 
 class Time extends ScalarType
 {
@@ -35,14 +37,6 @@ class Time extends ScalarType
         return $this->validate($value);
     }
 
-    public function parseLiteral(Node $valueNode, ?array $variables = null): int
-    {
-        if (!$valueNode instanceof StringValueNode) {
-            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
-        }
-        return $this->validate($valueNode->value);
-    }
-
     protected function validate($value): ?int
     {
         if ($value === null) {
@@ -50,10 +44,18 @@ class Time extends ScalarType
         }
         try {
             $dateTime = Carbon::parse($value);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new Error('Could not parse _Time: ' . ((string)$value));
         }
         return (int)$dateTime->getPreciseTimestamp(3);
+    }
+
+    public function parseLiteral(Node $valueNode, ?array $variables = null): int
+    {
+        if (!$valueNode instanceof StringValueNode) {
+            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
+        }
+        return $this->validate($valueNode->value);
     }
 
 }

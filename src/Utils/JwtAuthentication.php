@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
@@ -9,8 +10,8 @@ use Lcobucci\Clock\FrozenClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Signer;
-use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
@@ -43,9 +44,9 @@ class JwtAuthentication
 
         try {
             $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
-        } catch(InvalidTokenStructure $e) {
+        } catch (InvalidTokenStructure $e) {
             throw new Error($e->getMessage());
-        } catch(CannotDecodeContent $e) {
+        } catch (CannotDecodeContent $e) {
             throw new Error($e->getMessage());
         }
 
@@ -53,7 +54,7 @@ class JwtAuthentication
         $constraints[] = new SignedWith($config->signer(), $config->verificationKey());
         $constraints[] = new LooseValidAt(new FrozenClock(new DateTimeImmutable()));
 
-        if (! $config->validator()->validate($token, ...$constraints)) {
+        if (!$config->validator()->validate($token, ...$constraints)) {
             throw new Error('JWT token could not be validated.');
         }
 
@@ -69,7 +70,7 @@ class JwtAuthentication
         if (!isset(static::$claims['tid'])) {
             throw new Error('Tenant ID (tid) is missing from JWT.');
         }
-        static::$claims['tid'] = (string) static::$claims['tid'];
+        static::$claims['tid'] = (string)static::$claims['tid'];
     }
 
     public static function tenantId(): ?string

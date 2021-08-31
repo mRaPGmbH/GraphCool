@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
-
 
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
@@ -52,7 +52,14 @@ class FileImport
             }
         }
 
-        foreach ($this->importFile($args['data_base64'] ?? $args['file'] ?? null, $args['columns'], $edgeColumns, $rootValue['index'] ?? 0) as $i => $item) {
+        foreach (
+            $this->importFile(
+                $args['data_base64'] ?? $args['file'] ?? null,
+                $args['columns'],
+                $edgeColumns,
+                $rootValue['index'] ?? 0
+            ) as $i => $item
+        ) {
             //$item = $this->convertItem($item);
 
             if (isset($item['id'])) {
@@ -80,38 +87,6 @@ class FileImport
         return $result;
     }
 
-    protected function convertItem(array $item): array
-    {
-        foreach ($item as $key => $value) {
-            if (isset($this->model->$key) && $this->model->$key instanceof Field && $this->model->$key->readonly === false) {
-                $item[$key] = $this->convertField($this->model->$key, $value);
-            }
-        }
-        return $item;
-    }
-
-    protected function convertField(Field $field, $value): float|int|string|null
-    {
-        if (empty($value)) {
-            return null;
-        }
-        switch ($field->type) {
-            case Field::DATE:
-            case Field::DATE_TIME:
-            case Field::TIME:
-                $carbon = Date::parse($value);
-                if ($carbon === null) {
-                    return null;
-                }
-                return (int)$carbon->getPreciseTimestamp(3);
-            case Field::DECIMAL:
-            case Type::FLOAT:
-                return (float)$value;
-            default:
-                return trim((string)$value);
-        }
-    }
-
     public function importFile(?string $input, array $columns, array $edgeColumns, int $index): array
     {
         if ($input === null) {
@@ -128,7 +103,7 @@ class FileImport
 
         $reader = $this->getReader($mimeType);
         if ($reader === null) {
-            throw new Error('Could not import file: Unknown MimeType: '. $mimeType);
+            throw new Error('Could not import file: Unknown MimeType: ' . $mimeType);
         }
         if ($reader instanceof CSVReader) {
             $reader = $this->detectSeparator($reader, $file);
@@ -196,6 +171,58 @@ class FileImport
         return $result;
     }
 
+    protected function getFile(int $index): ?array
+    {
+        if (!isset($_REQUEST['map'])) {
+            throw new Error('Neither data_base64 nor file received.');
+        }
+
+        try {
+            $map = json_decode($_REQUEST['map'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new Error('Could not parse file map - not a valid JSON.');
+        }
+        $fileNumber = $this->findInMap($map, $index);
+        return $_FILES[$fileNumber] ?? null;
+    }
+
+    protected function findInMap(array $map, int $index): ?int
+    {
+        $key = 'variables.file';
+        foreach ($map as $fileNumber => $variableNames) {
+            foreach ($variableNames as $variableName) {
+                if ($variableName === $key || $variableName === $index . '.' . $key) {
+                    return $fileNumber;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected function getReader(string $mimeType): ?ReaderInterface
+    {
+        return match ($mimeType) {
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(
+            ),
+            'application/vnd.oasis.opendocument.spreadsheet' => ReaderEntityFactory::createODSReader(),
+            'text/csv', 'text/plain', 'application/csv' => ReaderEntityFactory::createCSVReader(),
+            default => null
+        };
+    }
+
+    protected function detectSeparator(CSVReader $reader, string $file): CSVReader
+    {
+        $handle = fopen($file, 'rb');
+        $sample = fread($handle, 100);
+        fclose($handle);
+
+        if (strlen(str_replace(';', '', $sample)) < strlen(str_replace(',', '', $sample))) {
+            $reader->setFieldDelimiter(';');
+        }
+
+        return $reader;
+    }
+
     protected function getHeaderMapping(Row $row, array $columns, array $edgeColumns): array
     {
         $mapping = [];
@@ -235,55 +262,36 @@ class FileImport
         return [$mapping, $edgeMapping];
     }
 
-    protected function getFile(int $index): ?array
+    protected function convertField(Field $field, $value): float|int|string|null
     {
-        if (!isset($_REQUEST['map'])) {
-            throw new Error('Neither data_base64 nor file received.');
+        if (empty($value)) {
+            return null;
         }
-
-        try {
-            $map = json_decode($_REQUEST['map'], true, 512, JSON_THROW_ON_ERROR);
-        } catch(JsonException $e) {
-            throw new Error('Could not parse file map - not a valid JSON.');
+        switch ($field->type) {
+            case Field::DATE:
+            case Field::DATE_TIME:
+            case Field::TIME:
+                $carbon = Date::parse($value);
+                if ($carbon === null) {
+                    return null;
+                }
+                return (int)$carbon->getPreciseTimestamp(3);
+            case Field::DECIMAL:
+            case Type::FLOAT:
+                return (float)$value;
+            default:
+                return trim((string)$value);
         }
-        $fileNumber = $this->findInMap($map, $index);
-        return $_FILES[$fileNumber] ?? null;
     }
 
-    protected function findInMap(array $map, int $index): ?int
+    protected function convertItem(array $item): array
     {
-        $key = 'variables.file';
-        foreach ($map as $fileNumber => $variableNames) {
-            foreach ($variableNames as $variableName) {
-                if ($variableName === $key || $variableName === $index.'.'.$key) {
-                    return $fileNumber;
-                }
+        foreach ($item as $key => $value) {
+            if (isset($this->model->$key) && $this->model->$key instanceof Field && $this->model->$key->readonly === false) {
+                $item[$key] = $this->convertField($this->model->$key, $value);
             }
         }
-        return null;
-    }
-
-    protected function getReader(string $mimeType): ?ReaderInterface
-    {
-        return match ($mimeType) {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(),
-            'application/vnd.oasis.opendocument.spreadsheet' => ReaderEntityFactory::createODSReader(),
-            'text/csv', 'text/plain', 'application/csv' => ReaderEntityFactory::createCSVReader(),
-            default => null
-        };
-    }
-
-    protected function detectSeparator(CSVReader $reader, string $file): CSVReader
-    {
-        $handle = fopen($file, 'rb');
-        $sample = fread($handle, 100);
-        fclose($handle);
-
-        if (strlen(str_replace(';', '', $sample)) < strlen(str_replace(',', '', $sample))) {
-            $reader->setFieldDelimiter(';');
-        }
-
-        return $reader;
+        return $item;
     }
 
 }

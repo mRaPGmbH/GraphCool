@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Inputs;
-
 
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\InputObjectType;
@@ -50,7 +50,9 @@ class FileInputType extends InputObjectType
         ksort($values);
         $config = [
             'name' => '_' . $type->name . 'sColumn',
-            'description' => 'Allowed column names for the `where` argument on the query `' . strtolower($type->name). 's`.',
+            'description' => 'Allowed column names for the `where` argument on the query `' . strtolower(
+                    $type->name
+                ) . 's`.',
             'values' => $values
         ];
         return new EnumType($config);

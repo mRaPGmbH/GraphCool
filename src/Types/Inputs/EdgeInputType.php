@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Inputs;
-
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
@@ -24,8 +24,7 @@ class EdgeInputType extends InputObjectType
         $fields = [
             'id' => new NonNull(Type::id())
         ];
-        foreach ($relation as $fieldKey => $field)
-        {
+        foreach ($relation as $fieldKey => $field) {
             if ($field instanceof Field && $field->readonly === false) {
                 $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
                 if ($field->null === false) {

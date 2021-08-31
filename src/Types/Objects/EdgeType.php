@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
-
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
@@ -21,8 +21,7 @@ class EdgeType extends ObjectType
         $relation = $model->$key;
         $type = $typeLoader->load($relation->name);
         $fields = [];
-        foreach ($relation as $fieldKey => $field)
-        {
+        foreach ($relation as $fieldKey => $field) {
             if ($field instanceof Field) {
                 $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
                 if ($field->null === false) {

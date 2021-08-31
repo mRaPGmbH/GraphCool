@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
@@ -29,7 +30,7 @@ class ModelType extends ObjectType
         $config = [
             'name' => $name,
             'fields' => [],
-            'resolveField' => function($rootValue, $args, $context, $info) {
+            'resolveField' => function ($rootValue, $args, $context, $info) {
                 return $this->resolve($rootValue, $args, $context, $info);
             }
         ];
@@ -37,8 +38,7 @@ class ModelType extends ObjectType
          * @var string $key
          * @var Field $field
          */
-        foreach ($this->model as $key => $field)
-        {
+        foreach ($this->model as $key => $field) {
             $args = null;
             if ($field instanceof Relation) {
                 if ($field->type === Relation::BELONGS_TO || $field->type === Relation::HAS_ONE) {
@@ -46,10 +46,12 @@ class ModelType extends ObjectType
                 } elseif ($field->type === Relation::HAS_MANY || $field->type === Relation::BELONGS_TO_MANY) {
                     $type = $typeLoader->load('_' . $name . '__' . $key . 'Edges', null, $this);
                     $args = [
-                        'first'=> Type::int(),
+                        'first' => Type::int(),
                         'page' => Type::int(),
                         'where' => $typeLoader->load('_' . $name . '__' . $key . 'EdgeWhereConditions'),
-                        'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause', null, $this))),
+                        'orderBy' => new ListOfType(
+                            new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause', null, $this))
+                        ),
                         'search' => Type::string(),
                         'result' => $typeLoader->load('_Result'),
                     ];

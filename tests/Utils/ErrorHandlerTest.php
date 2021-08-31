@@ -2,7 +2,6 @@
 
 namespace Mrap\GraphCool\Tests\Utils;
 
-use GraphQL\Error\FormattedError;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Utils\ErrorHandler;
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
@@ -19,6 +20,27 @@ class ClassFinder
             StopWatch::stop(__METHOD__);
         }
         return static::$models;
+    }
+
+    protected static function findClasses(string $path, string $namespace): array
+    {
+        $result = [];
+        if (is_dir($path)) {
+            $files = scandir($path);
+            $classes = array_map(function ($file) {
+                return str_replace('.php', '', $file);
+            }, $files);
+            foreach ($classes as $name) {
+                if ($name === '.' || $name === '..') {
+                    continue;
+                }
+                $classname = $namespace . $name;
+                if (class_exists($classname)) {
+                    $result[$name] = $classname;
+                }
+            }
+        }
+        return $result;
     }
 
     public static function rootPath(): string
@@ -74,27 +96,6 @@ class ClassFinder
             StopWatch::stop(__METHOD__);
         }
         return static::$scripts;
-    }
-
-    protected static function findClasses(string $path, string $namespace): array
-    {
-        $result = [];
-        if (is_dir($path)) {
-            $files = scandir($path);
-            $classes = array_map(function($file){
-                return str_replace('.php', '', $file);
-            }, $files);
-            foreach ($classes as $name) {
-                if ($name === '.' || $name === '..') {
-                    continue;
-                }
-                $classname = $namespace . $name;
-                if (class_exists($classname)) {
-                    $result[$name] = $classname;
-                }
-            }
-        }
-        return $result;
     }
 
 }

@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
-
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
@@ -14,7 +14,7 @@ class ImportErrorType extends ObjectType
     public function __construct()
     {
         $config = [
-            'name'   => '_ImportError',
+            'name' => '_ImportError',
             'description' => 'Description of a problem encountered in import data.',
             'fields' => [
                 'row' => new NonNull(Type::int()),

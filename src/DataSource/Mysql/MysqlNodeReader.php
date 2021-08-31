@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
-
 
 use Carbon\Carbon;
 use Mrap\GraphCool\Model\Field;
@@ -14,8 +14,12 @@ use stdClass;
 
 class MysqlNodeReader
 {
-    public function load(?string $tenantId, string $name, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
-    {
+    public function load(
+        ?string $tenantId,
+        string $name,
+        string $id,
+        ?string $resultType = ResultType::DEFAULT
+    ): ?stdClass {
         $node = $this->fetchNode($tenantId, $id, $resultType);
         if ($node === null) {
             return null;
@@ -51,7 +55,7 @@ class MysqlNodeReader
             $sql .= 'AND `node`.`tenant_id` = :tenant_id ';
             $params[':tenant_id'] = $tenantId;
         }
-        $sql .= match($resultType) {
+        $sql .= match ($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
             'WITH_TRASHED' => '',
             default => 'AND `deleted_at` IS NULL ',

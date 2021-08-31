@@ -1,11 +1,10 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
-
 use Carbon\Carbon;
-use Mrap\GraphCool\GraphCool;
 use RuntimeException;
 use Throwable;
 

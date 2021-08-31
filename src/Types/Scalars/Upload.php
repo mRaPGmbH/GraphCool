@@ -1,12 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Scalars;
 
-use Carbon\Carbon;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
-use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
 
 class Upload extends ScalarType

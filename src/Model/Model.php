@@ -1,15 +1,16 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
 
-
+use Closure;
 use stdClass;
 
 class Model
 {
-    private $settings;
     private static $instances = [];
+    private $settings;
 
     public function __construct()
     {
@@ -18,6 +19,15 @@ class Model
         $this->updated_at = Field::updatedAt();
         $this->deleted_at = Field::deletedAt();
         $this->settings = new Settings();
+    }
+
+    public static function get(string $name): Model
+    {
+        if (!isset(self::$instances[$name])) {
+            $classname = 'App\\Models\\' . $name;
+            self::$instances[$name] = new $classname();
+        }
+        return self::$instances[$name];
     }
 
     public function beforeInsert(string $tenantId, array $data): array
@@ -35,23 +45,25 @@ class Model
         return $updates;
     }
 
-    public function afterInsert(stdClass $data): void {}
-    public function afterUpdate(stdClass $data): void {}
-    public function afterDelete(stdClass $data): void {}
-    public function afterBulkUpdate(\Closure $closure): void {}
+    public function afterInsert(stdClass $data): void
+    {
+    }
+
+    public function afterUpdate(stdClass $data): void
+    {
+    }
+
+    public function afterDelete(stdClass $data): void
+    {
+    }
+
+    public function afterBulkUpdate(Closure $closure): void
+    {
+    }
 
     public function settings()
     {
         return $this->settings;
-    }
-
-    public static function get(string $name): Model
-    {
-        if (!isset(self::$instances[$name])) {
-            $classname = 'App\\Models\\' . $name;
-            self::$instances[$name] = new $classname();
-        }
-        return self::$instances[$name];
     }
 
 }

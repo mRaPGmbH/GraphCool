@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Enums;
@@ -28,9 +29,9 @@ class DynamicEnumType extends EnumType
             $values[$this->sanitizeValue($value)] = ['value' => $value];
         }
         $config = [
-            'name'        => $name,
-            'description' => 'Allowed values for ' . substr($name, 0 , -4),
-            'values'      => $values,
+            'name' => $name,
+            'description' => 'Allowed values for ' . substr($name, 0, -4),
+            'values' => $values,
         ];
         parent::__construct($config);
     }
@@ -38,7 +39,7 @@ class DynamicEnumType extends EnumType
     protected function sanitizeValue(string $value): string
     {
         $value = str_replace([' ', '-'], '_', $value);
-        $value = (string) preg_replace('/[^a-z_0-9]/i', '', $value);
+        $value = (string)preg_replace('/[^a-z_0-9]/i', '', $value);
         return strtoupper($value);
     }
 

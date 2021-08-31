@@ -1,16 +1,14 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
-
-use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Model\Field;
 use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use RuntimeException;
 use stdClass;
 
 class MysqlNodeWriter
@@ -34,11 +32,68 @@ class MysqlNodeWriter
                 $value = null;
             }
             if ($value === null && $item->null === false) {
-                throw new \RuntimeException('Field ' . $name . '.' . $key . ' may not be null.');
+                throw new RuntimeException('Field ' . $name . '.' . $key . ' may not be null.');
             }
             $this->insertOrUpdateModelField($item, $value, $id, $name, $key);
         }
         Mysql::edgeWriter()->writeEdges($tenantId, $name, $id, $data);
+    }
+
+    protected function insertNode(string $tenantId, string $id, string $name): bool
+    {
+        $sql = 'INSERT INTO `node` (`id`, `tenant_id`, `model`) VALUES (:id, :tenant_id, :model)';
+        $params = [
+            ':id' => $id,
+            ':tenant_id' => $tenantId,
+            ':model' => $name
+        ];
+        return Mysql::execute($sql, $params) > 0;
+    }
+
+    protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
+    {
+        if ($value === null && $field->null === true) {
+            $this->deleteNodeProperty($id, $key);
+            return;
+        }
+        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value);
+        $this->insertOrUpdateNodeProperty($id, $name, $key, $valueInt, $valueString, $valueFloat);
+    }
+
+    protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
+    {
+        $sql = 'UPDATE `node_property` SET `deleted_at` = now() '
+            . 'WHERE `deleted_at` IS NULL AND `node_id` = :node_id AND `property` = :property';
+        $params = [
+            ':node_id' => $nodeId,
+            ':property' => $propertyName,
+        ];
+        return Mysql::execute($sql, $params) > 0;
+    }
+
+    protected function insertOrUpdateNodeProperty(
+        string $nodeId,
+        string $name,
+        string $propertyName,
+        ?int $valueInt,
+        ?string $valueString,
+        ?float $valueFloat
+    ): bool {
+        $sql = 'INSERT INTO `node_property` (`node_id`, `model`, `property`, `value_int`, `value_string`, `value_float`) '
+            . 'VALUES (:node_id, :model, :property, :value_int, :value_string, :value_float) '
+            . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
+        $params = [
+            ':node_id' => $nodeId,
+            ':model' => $name,
+            ':property' => $propertyName,
+            ':value_int' => $valueInt,
+            ':value_string' => $valueString,
+            ':value_float' => $valueFloat,
+            ':value_int2' => $valueInt,
+            ':value_string2' => $valueString,
+            ':value_float2' => $valueFloat
+        ];
+        return Mysql::execute($sql, $params) > 0;
     }
 
     public function update(string $tenantId, string $name, string $id, array $updates): void
@@ -72,7 +127,9 @@ class MysqlNodeWriter
                 continue;
             }
             if ($item->unique === true && $updateData[$key] !== null) {
-                throw new Error('Field ' . $key . ' is defined as unique cannot be set to the same value for many items. Use `update` instead of `updateMany`');
+                throw new Error(
+                    'Field ' . $key . ' is defined as unique cannot be set to the same value for many items. Use `update` instead of `updateMany`'
+                );
             }
             $updates[$key] = $updateData[$key];
         }
@@ -93,72 +150,10 @@ class MysqlNodeWriter
         return $result;
     }
 
-    protected function insertNode(string $tenantId, string $id, string $name): bool
-    {
-        $sql = 'INSERT INTO `node` (`id`, `tenant_id`, `model`) VALUES (:id, :tenant_id, :model)';
-        $params = [
-            ':id'    => $id,
-            ':tenant_id' => $tenantId,
-            ':model' => $name
-        ];
-        return Mysql::execute($sql, $params) > 0;
-    }
-
-    protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
-    {
-        if ($value === null && $field->null === true) {
-            $this->deleteNodeProperty($id, $key);
-            return;
-        }
-        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value);
-        $this->insertOrUpdateNodeProperty($id, $name, $key, $valueInt, $valueString, $valueFloat);
-    }
-
-    protected function deleteNodeProperty(string $nodeId, string $propertyName): bool
-    {
-        $sql = 'UPDATE `node_property` SET `deleted_at` = now() '
-            . 'WHERE `deleted_at` IS NULL AND `node_id` = :node_id AND `property` = :property';
-        $params = [
-            ':node_id'  => $nodeId,
-            ':property' => $propertyName,
-        ];
-        return Mysql::execute($sql, $params) > 0;
-    }
-
-    protected function insertOrUpdateNodeProperty(
-        string $nodeId,
-        string $name,
-        string $propertyName,
-        ?int $valueInt,
-        ?string $valueString,
-        ?float $valueFloat
-    ): bool {
-        $sql = 'INSERT INTO `node_property` (`node_id`, `model`, `property`, `value_int`, `value_string`, `value_float`) '
-            . 'VALUES (:node_id, :model, :property, :value_int, :value_string, :value_float) '
-            . 'ON DUPLICATE KEY UPDATE `value_int` = :value_int2, `value_string` = :value_string2, `value_float` = :value_float2, `deleted_at` = NULL';
-        $params = [
-            ':node_id'       => $nodeId,
-            ':model'         => $name,
-            ':property'      => $propertyName,
-            ':value_int'     => $valueInt,
-            ':value_string'  => $valueString,
-            ':value_float'   => $valueFloat,
-            ':value_int2'    => $valueInt,
-            ':value_string2' => $valueString,
-            ':value_float2'   => $valueFloat
-        ];
-        return Mysql::execute($sql, $params) > 0;
-    }
-
     public function delete(string $tenantId, string $id): void
     {
         $this->deleteNode($tenantId, $id);
         $this->deleteEdgesForNodeId($tenantId, $id);
-    }
-
-    public function restore(string $tenantId, string $id): void
-    {
-        $this->restoreNode($tenantId, $id);
     }
 
     protected function deleteNode(?string $tenantId, string $id): bool
@@ -181,6 +176,11 @@ class MysqlNodeWriter
             $params[':tenant_id'] = $tenantId;
         }
         return Mysql::execute($sql, $params) > 0;
+    }
+
+    public function restore(string $tenantId, string $id): void
+    {
+        $this->restoreNode($tenantId, $id);
     }
 
     protected function restoreNode(?string $tenantId, string $id): bool

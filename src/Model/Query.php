@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
@@ -14,18 +15,19 @@ abstract class Query
     private bool $authenticate = true;
 
     abstract public function __construct(TypeLoader $typeLoader);
-    abstract public function resolve(array $rootValue, array $args, $context, ResolveInfo $info);
 
-    protected function noAuthentication(): void
-    {
-        $this->authenticate = false;
-    }
+    abstract public function resolve(array $rootValue, array $args, $context, ResolveInfo $info);
 
     public function authenticate(): void
     {
         if ($this->authenticate) {
             JwtAuthentication::authenticate();
         }
+    }
+
+    protected function noAuthentication(): void
+    {
+        $this->authenticate = false;
     }
 
 }

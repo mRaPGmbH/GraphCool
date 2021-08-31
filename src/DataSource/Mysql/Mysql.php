@@ -38,11 +38,6 @@ class Mysql
         return $return;
     }
 
-    public static function executeRaw(string $sql): int|false
-    {
-        return static::get()->executeRaw($sql);
-    }
-
     /**
      * @codeCoverageIgnore
      */
@@ -52,6 +47,11 @@ class Mysql
             static::$connector = new MysqlConnector();
         }
         return static::$connector;
+    }
+
+    public static function executeRaw(string $sql): int|false
+    {
+        return static::get()->executeRaw($sql);
     }
 
     public static function fetch(string $sql, array $params): ?stdClass

@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
-
 
 class Settings
 {
@@ -71,8 +71,6 @@ class Settings
         $this->restore = new QuerySettings(QuerySettings::MUTATION, $access);
         return $this;
     }
-
-
 
 
 }

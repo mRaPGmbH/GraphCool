@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
-
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
@@ -14,7 +14,7 @@ class PaginatorInfoType extends ObjectType
     public function __construct()
     {
         $config = [
-            'name'   => '_PaginatorInfo',
+            'name' => '_PaginatorInfo',
             'description' => 'Pagination information about the corresponding list of items.',
             'fields' => [
                 'count' => new NonNull(Type::int()),

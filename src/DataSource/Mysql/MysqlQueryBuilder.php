@@ -31,9 +31,6 @@ class MysqlQueryBuilder
     protected string $groupBy = '';
     protected string $sql;
 
-
-    protected function __construct(){}
-
     public static function forRelation(Relation $relation, array $parentIds): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();

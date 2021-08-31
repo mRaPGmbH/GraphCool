@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Inputs;
-
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ListOfType;
@@ -32,7 +32,9 @@ class ModelInputType extends InputObjectType
                     $fields[$key] = $typeLoader->load('_' . $shortname . '__' . $key . 'Relation');
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $fields[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $shortname . '__' . $key . 'ManyRelation')));
+                    $fields[$key] = new ListOfType(
+                        new NonNull($typeLoader->load('_' . $shortname . '__' . $key . 'ManyRelation'))
+                    );
                 }
             }
 

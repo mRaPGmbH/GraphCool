@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Scalars;
@@ -9,6 +10,7 @@ use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Utils\TimeZone;
+use Throwable;
 
 class TimezoneOffset extends ScalarType
 {
@@ -18,12 +20,22 @@ class TimezoneOffset extends ScalarType
 
     public function serialize($value): string
     {
-        return TimeZone::serialize((int) $value);
+        return TimeZone::serialize((int)$value);
     }
 
     public function parseValue($value): int
     {
         return $this->validate($value);
+    }
+
+    protected function validate(string $value): int
+    {
+        try {
+            $dateTime = Carbon::parse($value);
+        } catch (Throwable $e) {
+            throw new Error('Could not parse _TimezoneOffset: ' . ((string)$value));
+        }
+        return $dateTime->getOffset();
     }
 
     public function parseLiteral(Node $valueNode, ?array $variables = null): int
@@ -32,16 +44,6 @@ class TimezoneOffset extends ScalarType
             throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
         }
         return $this->validate($valueNode->value);
-    }
-
-    protected function validate(string $value): int
-    {
-        try {
-            $dateTime = Carbon::parse($value);
-        } catch (\Throwable $e) {
-            throw new Error('Could not parse _TimezoneOffset: ' . ((string)$value));
-        }
-        return $dateTime->getOffset();
     }
 
 }

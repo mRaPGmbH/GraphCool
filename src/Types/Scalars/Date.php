@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Scalars;
@@ -16,6 +17,11 @@ class Date extends ScalarType
     public $name = '_Date';
     public $description = 'A Date string in ISO 8601 format: "2021-03-11"';
 
+    public function serialize($value): string
+    {
+        return static::getObject($value)->format('Y-m-d');
+    }
+
     public static function getObject($value): Carbon
     {
         $dateTime = Carbon::createFromTimestampMs($value);
@@ -23,22 +29,9 @@ class Date extends ScalarType
         return $dateTime;
     }
 
-    public function serialize($value): string
-    {
-        return  static::getObject($value)->format('Y-m-d');
-    }
-
     public function parseValue($value): ?int
     {
         return $this->validate($value);
-    }
-
-    public function parseLiteral(Node $valueNode, ?array $variables = null): ?int
-    {
-        if (!$valueNode instanceof StringValueNode) {
-            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
-        }
-        return $this->validate($valueNode->value);
     }
 
     protected function validate($value): ?int
@@ -52,6 +45,14 @@ class Date extends ScalarType
             throw new Error('Could not parse _Date: ' . ((string)$value));
         }
         return (int)$dateTime->getPreciseTimestamp(3);
+    }
+
+    public function parseLiteral(Node $valueNode, ?array $variables = null): ?int
+    {
+        if (!$valueNode instanceof StringValueNode) {
+            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
+        }
+        return $this->validate($valueNode->value);
     }
 
 }

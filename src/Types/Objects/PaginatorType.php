@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
-
 
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
@@ -13,7 +13,7 @@ class PaginatorType extends ObjectType
 {
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $typeName = substr($name, 1,-9);
+        $typeName = substr($name, 1, -9);
         $config = [
             'name' => $name,
             'description' => 'A paginated list of ' . $typeName . ' items.',

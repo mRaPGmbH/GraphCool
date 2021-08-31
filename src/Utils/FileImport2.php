@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
-
 
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
@@ -56,7 +56,7 @@ class FileImport2
         $update = [];
         $errors = [];
         $i = 2;
-        while($rows->valid()) {
+        while ($rows->valid()) {
             $row = $rows->current();
             $cells = $row->getCells();
             if ($idKey === null) {
@@ -83,147 +83,6 @@ class FileImport2
         }
         unlink($this->file);
         return [$create, $update, $errors];
-    }
-
-    protected function getItem(Model $model, Row $row, array $mapping, array $edgeMapping, array &$errors, int $rowNumber): ?array
-    {
-        $data = [];
-        $cells = $row->getCells();
-        $error = false;
-        foreach ($model as $key => $field) {
-            if ($field instanceof Field && isset($mapping[$key])) {
-                $columnNumber = $mapping[$key];
-                try {
-                    $value = $this->convertField($field, $cells[$columnNumber]->getValue() ?? null);
-                } catch (Error $e) {
-                    if ($field->null === false) {
-                        $errors[] = [
-                            'row' => $rowNumber,
-                            'column' => $this->getColumn($columnNumber),
-                            'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
-                            'relation' => null,
-                            'field' => $key,
-                            'ignored' => false,
-                            'message' => $e->getMessage()
-                        ];
-                        $error = true;
-                        continue;
-                    }
-                    $errors[] = [
-                        'row' => $rowNumber,
-                        'column' => $this->getColumn($columnNumber),
-                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
-                        'relation' => null,
-                        'field' => $key,
-                        'ignored' => true,
-                        'message' => $e->getMessage()
-                    ];
-                    continue;
-                }
-                if ($value === null && $field->null === false) {
-                    $errors[] = [
-                        'row' => $rowNumber,
-                        'column' => $this->getColumn($columnNumber),
-                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
-                        'relation' => null,
-                        'field' => $key,
-                        'ignored' => false,
-                        'message' => 'Mandatory field may not be empty'
-                    ];
-                    $error = true;
-                    continue;
-                }
-                $data[$key] = $value;
-            } elseif ($field instanceof Relation && isset($edgeMapping[$key])) {
-                $data[$key] = $this->importRelation($field, $key, $cells, $edgeMapping[$key], $errors, $rowNumber);
-            }
-        }
-        if ($error === true) {
-            return null;
-        }
-        return $data;
-    }
-
-    protected function getColumn(int $i): string
-    {
-        $columns = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Z'];
-        $count = count($columns);
-        $value = $columns[$i % $count];
-        if ($i >= $count) {
-            $value = $this->getColumn(((int)floor($i / $count))-1) . $value;
-        }
-        return $value;
-    }
-
-    protected function importRelation(Relation $relation, string $property, array $cells, array $mapping, array &$errors, int $rowNumber): array
-    {
-        $return = [];
-        foreach ($mapping as $map) {
-            $index = $map['index'];
-            $relatedId = $map['relatedId'];
-            $edgeProperty = $map['edgeProperty'];
-            $field = $relation->$edgeProperty;
-            $cell = $cells[$index];
-            if (!isset($return[$relatedId])) {
-                $return[$relatedId] = [
-                    'where' => [
-                        'column' => 'id',
-                        'operator' => '=',
-                        'value' => $relatedId
-                    ]
-                ];
-            }
-            $value = $cell->getValue();
-            if (empty($value)) {
-                $value = $field->default ?? null;
-            }
-            $return[$relatedId][$edgeProperty] = $this->convertField($field, $value);
-        }
-        return $return;
-    }
-
-    protected function convertField(Field $field, $value): float|int|string|null
-    {
-        if (empty($value)) {
-            return null;
-        }
-        switch ($field->type) {
-            case Field::DATE:
-                $type = new \Mrap\GraphCool\Types\Scalars\Date();
-                return $type->parseValue($value);
-            case Field::DATE_TIME:
-                $type = new DateTime();
-                return $type->parseValue($value);
-            case Field::TIME:
-                $type = new Time();
-                return $type->parseValue($value);
-            case Field::DECIMAL:
-            case Type::FLOAT:
-                return (float)$value;
-            case Field::COUNTRY_CODE:
-                return Country::parse($value);
-            case Field::TIMEZONE_OFFSET:
-                $type = new TimezoneOffset();
-                return $type->parseValue($value);
-            case Field::LOCALE_CODE:
-                $type = new LocaleEnumType();
-                return $type->parseValue($value);
-            case Field::CURRENCY_CODE:
-                $type = new CurrencyEnumType();
-                return $type->parseValue($value);
-            case Field::LANGUAGE_CODE:
-                $type = new LanguageEnumType();
-                return $type->parseValue($value);
-            case Field::ENUM:
-                foreach ($field->enumValues as $enumValue) {
-                    if (mb_strtolower($enumValue) === mb_strtolower($value)) {
-                        return $enumValue;
-                    }
-                }
-                throw new Error('Invalid value: ' . $value);
-            default:
-                return trim((string)$value);
-        }
     }
 
     protected function getEdgeColumns(Model $model, array $args): array
@@ -255,7 +114,7 @@ class FileImport2
         $mimeType = mime_content_type($file);
         $reader = $this->getReaderObject($mimeType);
         if ($reader === null) {
-            throw new Error('Could not import file: Unknown MimeType: '. $mimeType);
+            throw new Error('Could not import file: Unknown MimeType: ' . $mimeType);
         }
         if ($reader instanceof CSVReader) {
             $reader = $this->detectSeparator($reader, $file);
@@ -272,7 +131,7 @@ class FileImport2
         }
         try {
             $map = json_decode($_REQUEST['map'], true, 512, JSON_THROW_ON_ERROR);
-        } catch(JsonException $e) {
+        } catch (JsonException $e) {
             throw new Error('Could not parse file map - not a valid JSON.');
         }
         $fileNumber = $this->findInMap($map, $index);
@@ -284,7 +143,7 @@ class FileImport2
         $key = 'variables.file';
         foreach ($map as $fileNumber => $variableNames) {
             foreach ($variableNames as $variableName) {
-                if ($variableName === $key || $variableName === $index.'.'.$key) {
+                if ($variableName === $key || $variableName === $index . '.' . $key) {
                     return $fileNumber;
                 }
             }
@@ -295,7 +154,8 @@ class FileImport2
     protected function getReaderObject(string $mimeType): ?ReaderInterface
     {
         return match ($mimeType) {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(),
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(
+            ),
             'application/vnd.oasis.opendocument.spreadsheet' => ReaderEntityFactory::createODSReader(),
             'text/csv', 'text/plain', 'application/csv' => ReaderEntityFactory::createCSVReader(),
             default => null
@@ -353,7 +213,6 @@ class FileImport2
                                 'relatedId' => $edge['id'],
                                 'edgeProperty' => $property,
                             ];
-
                             /*
                             $edgeMapping[$key] = [
                                 'nodeProperty' => $relationName,
@@ -366,6 +225,185 @@ class FileImport2
             }
         }
         return [$id, $mapping, $edgeMapping];
+    }
+
+    protected function getItem(
+        Model $model,
+        Row $row,
+        array $mapping,
+        array $edgeMapping,
+        array &$errors,
+        int $rowNumber
+    ): ?array {
+        $data = [];
+        $cells = $row->getCells();
+        $error = false;
+        foreach ($model as $key => $field) {
+            if ($field instanceof Field && isset($mapping[$key])) {
+                $columnNumber = $mapping[$key];
+                try {
+                    $value = $this->convertField($field, $cells[$columnNumber]->getValue() ?? null);
+                } catch (Error $e) {
+                    if ($field->null === false) {
+                        $errors[] = [
+                            'row' => $rowNumber,
+                            'column' => $this->getColumn($columnNumber),
+                            'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
+                            'relation' => null,
+                            'field' => $key,
+                            'ignored' => false,
+                            'message' => $e->getMessage()
+                        ];
+                        $error = true;
+                        continue;
+                    }
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'column' => $this->getColumn($columnNumber),
+                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
+                        'relation' => null,
+                        'field' => $key,
+                        'ignored' => true,
+                        'message' => $e->getMessage()
+                    ];
+                    continue;
+                }
+                if ($value === null && $field->null === false) {
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'column' => $this->getColumn($columnNumber),
+                        'value' => (string)($cells[$columnNumber]->getValue() ?? ''),
+                        'relation' => null,
+                        'field' => $key,
+                        'ignored' => false,
+                        'message' => 'Mandatory field may not be empty'
+                    ];
+                    $error = true;
+                    continue;
+                }
+                $data[$key] = $value;
+            } elseif ($field instanceof Relation && isset($edgeMapping[$key])) {
+                $data[$key] = $this->importRelation($field, $key, $cells, $edgeMapping[$key], $errors, $rowNumber);
+            }
+        }
+        if ($error === true) {
+            return null;
+        }
+        return $data;
+    }
+
+    protected function convertField(Field $field, $value): float|int|string|null
+    {
+        if (empty($value)) {
+            return null;
+        }
+        switch ($field->type) {
+            case Field::DATE:
+                $type = new \Mrap\GraphCool\Types\Scalars\Date();
+                return $type->parseValue($value);
+            case Field::DATE_TIME:
+                $type = new DateTime();
+                return $type->parseValue($value);
+            case Field::TIME:
+                $type = new Time();
+                return $type->parseValue($value);
+            case Field::DECIMAL:
+            case Type::FLOAT:
+                return (float)$value;
+            case Field::COUNTRY_CODE:
+                return Country::parse($value);
+            case Field::TIMEZONE_OFFSET:
+                $type = new TimezoneOffset();
+                return $type->parseValue($value);
+            case Field::LOCALE_CODE:
+                $type = new LocaleEnumType();
+                return $type->parseValue($value);
+            case Field::CURRENCY_CODE:
+                $type = new CurrencyEnumType();
+                return $type->parseValue($value);
+            case Field::LANGUAGE_CODE:
+                $type = new LanguageEnumType();
+                return $type->parseValue($value);
+            case Field::ENUM:
+                foreach ($field->enumValues as $enumValue) {
+                    if (mb_strtolower($enumValue) === mb_strtolower($value)) {
+                        return $enumValue;
+                    }
+                }
+                throw new Error('Invalid value: ' . $value);
+            default:
+                return trim((string)$value);
+        }
+    }
+
+    protected function getColumn(int $i): string
+    {
+        $columns = [
+            'A',
+            'B',
+            'C',
+            'D',
+            'E',
+            'F',
+            'G',
+            'H',
+            'I',
+            'J',
+            'K',
+            'L',
+            'M',
+            'N',
+            'O',
+            'P',
+            'Q',
+            'R',
+            'S',
+            'T',
+            'U',
+            'V',
+            'W',
+            'X',
+            'Z'
+        ];
+        $count = count($columns);
+        $value = $columns[$i % $count];
+        if ($i >= $count) {
+            $value = $this->getColumn(((int)floor($i / $count)) - 1) . $value;
+        }
+        return $value;
+    }
+
+    protected function importRelation(
+        Relation $relation,
+        string $property,
+        array $cells,
+        array $mapping,
+        array &$errors,
+        int $rowNumber
+    ): array {
+        $return = [];
+        foreach ($mapping as $map) {
+            $index = $map['index'];
+            $relatedId = $map['relatedId'];
+            $edgeProperty = $map['edgeProperty'];
+            $field = $relation->$edgeProperty;
+            $cell = $cells[$index];
+            if (!isset($return[$relatedId])) {
+                $return[$relatedId] = [
+                    'where' => [
+                        'column' => 'id',
+                        'operator' => '=',
+                        'value' => $relatedId
+                    ]
+                ];
+            }
+            $value = $cell->getValue();
+            if (empty($value)) {
+                $value = $field->default ?? null;
+            }
+            $return[$relatedId][$edgeProperty] = $this->convertField($field, $value);
+        }
+        return $return;
     }
 
 

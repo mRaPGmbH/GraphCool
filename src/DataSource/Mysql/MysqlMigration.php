@@ -1,11 +1,10 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 /**
- * Class MysqlMigration
- * @package Mrap\GraphCool\DataSource\Mysql
  * @codeCoverageIgnore
  */
 class MysqlMigration

@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
-
 
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Model\Field;
@@ -13,14 +13,13 @@ use stdClass;
 
 class MysqlConverter
 {
-    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string
+    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value): array
     {
-        return match ($field->type) {
-            Type::BOOLEAN => (bool)$property->value_int,
-            Type::FLOAT => (double)$property->value_float,
-            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
-            Field::DECIMAL => (float)($property->value_int/(10 ** $field->decimalPlaces)),
-            default => (string)$property->value_string,
+        $return = static::convertInputTypeToDatabase($field, $value);
+        return match (gettype($return)) {
+            'integer' => [$return, null, null],
+            'double' => [null, null, $return], // float
+            'string' => [null, $return, null],
         };
     }
 
@@ -43,16 +42,6 @@ class MysqlConverter
         };
     }
 
-    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value): array
-    {
-        $return = static::convertInputTypeToDatabase($field, $value);
-        return match(gettype($return)) {
-            'integer' => [$return, null, null],
-            'double' => [null, null, $return], // float
-            'string' => [null, $return, null],
-        };
-    }
-
     public static function convertProperties(array $properties, Model|Relation $fieldSource): array
     {
         $result = [];
@@ -66,6 +55,17 @@ class MysqlConverter
             $result[$key] = static::convertDatabaseTypeToOutput($field, $property);
         }
         return $result;
+    }
+
+    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string
+    {
+        return match ($field->type) {
+            Type::BOOLEAN => (bool)$property->value_int,
+            Type::FLOAT => (double)$property->value_float,
+            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
+            Field::DECIMAL => (float)($property->value_int / (10 ** $field->decimalPlaces)),
+            default => (string)$property->value_string,
+        };
     }
 
     public static function convertWhereValues(Model $model, ?array &$where): ?array
@@ -94,12 +94,12 @@ class MysqlConverter
             }
         }
         if (isset($where['AND'])) {
-            foreach($where['AND'] as $key => $subWhere) {
+            foreach ($where['AND'] as $key => $subWhere) {
                 $where['AND'][$key] = static::convertWhereValues($model, $subWhere);
             }
         }
         if (isset($where['OR'])) {
-            foreach($where['OR'] as $key => $subWhere) {
+            foreach ($where['OR'] as $key => $subWhere) {
                 $where['OR'][$key] = static::convertWhereValues($model, $subWhere);
             }
         }

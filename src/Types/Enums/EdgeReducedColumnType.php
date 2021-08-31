@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Enums;
-
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Model\Field;
@@ -28,7 +28,7 @@ class EdgeReducedColumnType extends EnumType
                 continue;
             }
             $upperName = strtoupper($key);
-            $values['_'.$upperName] = [
+            $values['_' . $upperName] = [
                 'value' => '_' . $key,
                 'description' => $field->description ?? null
             ];

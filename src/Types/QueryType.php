@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
@@ -12,14 +13,14 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Model\Model;
 use Mrap\GraphCool\Model\Relation;
-use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 
 class QueryType extends ObjectType
 {
 
-    protected array $customResolvers =  [];
+    protected array $customResolvers = [];
 
     public function __construct(TypeLoader $typeLoader)
     {
@@ -34,16 +35,16 @@ class QueryType extends ObjectType
         foreach (ClassFinder::queries() as $name => $classname) {
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
-            $this->customResolvers[$query->name] = static function($rootValue, $args, $context, $info) use ($query) {
+            $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
                 $query->authenticate();
                 return $query->resolve($rootValue, $args, $context, $info);
             };
         }
         ksort($fields);
         $config = [
-            'name'   => 'Query',
+            'name' => 'Query',
             'fields' => $fields,
-            'resolveField' => function($rootValue, $args, $context, $info) {
+            'resolveField' => function ($rootValue, $args, $context, $info) {
                 return $this->resolve($rootValue, $args, $context, $info);
             }
         ];
@@ -54,7 +55,7 @@ class QueryType extends ObjectType
     {
         return [
             'type' => $typeLoader->load($name),
-            'description' => 'Get a single ' .  $name . ' by it\'s ID',
+            'description' => 'Get a single ' . $name . ' by it\'s ID',
             'args' => [
                 'id' => new NonNull(Type::id()),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
@@ -65,7 +66,7 @@ class QueryType extends ObjectType
     protected function list(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
-            'first'=> Type::int(),
+            'first' => Type::int(),
             'page' => Type::int(),
             'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
         ];
@@ -73,7 +74,7 @@ class QueryType extends ObjectType
             if (!$relation instanceof Relation) {
                 continue;
             }
-            $args['where'.ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
+            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
         }
         $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause')));
         $args['search'] = Type::string();
@@ -81,8 +82,8 @@ class QueryType extends ObjectType
         $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
 
         return [
-            'type' => $typeLoader->load('_' . $name.'Paginator'),
-            'description' => 'Get a paginated list of ' .  $name . 's filtered by given where clauses.',
+            'type' => $typeLoader->load('_' . $name . 'Paginator'),
+            'description' => 'Get a paginated list of ' . $name . 's filtered by given where clauses.',
             'args' => $args
         ];
     }
@@ -102,19 +103,23 @@ class QueryType extends ObjectType
                 continue;
             }
             if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping')));
+                $args[$key] = new ListOfType(
+                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping'))
+                );
             }
             if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector')));
+                $args[$key] = new ListOfType(
+                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector'))
+                );
             }
-            $args['where'.ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
+            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
         }
         $args['result'] = $typeLoader->load('_Result');
         $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
 
         return [
             'type' => $typeLoader->load('_FileExport'),
-            'description' => 'Export ' .  $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
+            'description' => 'Export ' . $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
             'args' => $args,
         ];
     }
@@ -145,14 +150,19 @@ class QueryType extends ObjectType
 
         if (is_object($info->returnType)) {
             if (strpos($info->returnType->name, 'Paginator') > 0) {
-                return DB::findAll(JwtAuthentication::tenantId(), substr($info->returnType->toString(), 1,-9), $args);
+                return DB::findAll(JwtAuthentication::tenantId(), substr($info->returnType->toString(), 1, -9), $args);
             }
 
             $type = $args['type'] ?? 'xlsx';
             $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
-                return File::write($name, DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [], $args, $type);
+                return File::write(
+                    $name,
+                    DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [],
+                    $args,
+                    $type
+                );
             }
         }
         return DB::load(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);

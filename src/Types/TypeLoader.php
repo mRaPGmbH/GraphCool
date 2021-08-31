@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
@@ -6,9 +7,10 @@ namespace Mrap\GraphCool\Types;
 use GraphQL\Type\Definition\Type;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
-use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
@@ -17,7 +19,8 @@ use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
-use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Enums\SQLOperatorType;
+use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
 use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
@@ -25,10 +28,8 @@ use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
-use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
-use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
@@ -45,11 +46,12 @@ use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use Mrap\GraphCool\Utils\StopWatch;
+use RuntimeException;
 
 class TypeLoader
 {
-    protected array $types = [];
     protected static array $registry = [];
+    protected array $types = [];
 
     public function __construct()
     {
@@ -75,16 +77,9 @@ class TypeLoader
         self::register('_Upload', Upload::class);
     }
 
-    public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
+    public static function register($name, $classname): void
     {
-        return function() use ($name) {
-            StopWatch::start('load');
-            if (!isset($this->types[$name])) {
-                $this->types[$name] = $this->create($name);
-            }
-            StopWatch::stop('load');
-            return $this->types[$name];
-        };
+        static::$registry[$name] = $classname;
     }
 
     public function loadForField(Field $field, string $name = null): Type
@@ -107,11 +102,17 @@ class TypeLoader
         };
     }
 
-    public static function register($name, $classname): void
+    public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
     {
-        static::$registry[$name] = $classname;
+        return function () use ($name) {
+            StopWatch::start('load');
+            if (!isset($this->types[$name])) {
+                $this->types[$name] = $this->create($name);
+            }
+            StopWatch::stop('load');
+            return $this->types[$name];
+        };
     }
-
 
     protected function create(string $name): Type
     {
@@ -185,7 +186,7 @@ class TypeLoader
             return new ModelInputType($name, $this);
         }
 
-        throw new \Exception('unhandled createSpecial: '.$name);
+        throw new RuntimeException('unhandled createSpecial: ' . $name);
     }
 
 

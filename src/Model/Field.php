@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Model;
@@ -20,7 +21,6 @@ class Field
     public const DATE = 'DATE';
     public const TIME = 'TIME';
     public const TIMEZONE_OFFSET = 'TIMEZONE_OFFSET';
-
 
     public string $type;
     public int $decimalPlaces;
@@ -45,6 +45,12 @@ class Field
     public static function id(): Field
     {
         return (new Field(Type::ID))->readonly();
+    }
+
+    public function readonly(): Field
+    {
+        $this->readonly = true;
+        return $this;
     }
 
     public static function bool(): Field
@@ -77,6 +83,12 @@ class Field
     public static function updatedAt(): Field
     {
         return (new Field(static::UPDATED_AT))->nullable()->readonly();
+    }
+
+    public function nullable(): Field
+    {
+        $this->null = true;
+        return $this;
     }
 
     public static function deletedAt(): Field
@@ -138,12 +150,6 @@ class Field
         return $this;
     }
 
-    public function nullable(): Field
-    {
-        $this->null = true;
-        return $this;
-    }
-
     public function description(string $description): Field
     {
         $this->description = $description;
@@ -153,12 +159,6 @@ class Field
     public function default(string|int|float|bool $default): Field
     {
         $this->default = $default;
-        return $this;
-    }
-
-    public function readonly(): Field
-    {
-        $this->readonly = true;
         return $this;
     }
 

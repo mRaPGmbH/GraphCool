@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Enums;
-
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Model\Field;
@@ -30,7 +30,7 @@ class ColumnType extends EnumType
         ksort($values);
         $config = [
             'name' => $name,
-            'description' => 'List of column names of `' . $typeName. '` type.',
+            'description' => 'List of column names of `' . $typeName . '` type.',
             'values' => $values
         ];
         parent::__construct($config);

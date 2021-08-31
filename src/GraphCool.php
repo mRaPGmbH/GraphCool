@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Mrap\GraphCool;
@@ -36,7 +37,7 @@ class GraphCool
             foreach ($request as $index => $query) {
                 $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $result = ErrorHandler::handleError($e);
         }
         StopWatch::stop(__METHOD__);
@@ -45,41 +46,6 @@ class GraphCool
         foreach (static::$shutdown as $closure) {
             $closure();
         }
-    }
-
-
-    public static function runScript(array $args): bool
-    {
-        Env::init();
-        $scriptName = strtolower(trim(array_shift($args)));
-        foreach (ClassFinder::scripts() as $shortname => $classname) {
-            if ($scriptName === strtolower($shortname)) {
-                $script = new $classname();
-                if ($script instanceof Script) {
-                    try {
-                        $script->run($args);
-                        return true;
-                    } catch (Throwable $e) {
-                        ErrorHandler::sentryCapture($e);
-                    }
-                } else {
-                    $e = new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)');
-                    ErrorHandler::sentryCapture($e);
-                }
-            }
-        }
-        return false;
-    }
-
-    public static function migrate(): void
-    {
-        Env::init();
-        DB::migrate();
-    }
-
-    public static function onShutdown(Closure $closure): void
-    {
-        static::$shutdown[] = $closure;
     }
 
     protected function parseRequest(): array
@@ -112,8 +78,8 @@ class GraphCool
         $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
-                'query'      => new QueryType($typeLoader),
-                'mutation'   => new MutationType($typeLoader),
+                'query' => new QueryType($typeLoader),
+                'mutation' => new MutationType($typeLoader),
                 'typeLoader' => $this->getTypeLoaderClosure($typeLoader),
             ]
         );
@@ -174,6 +140,42 @@ class GraphCool
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         }
+    }
+
+    public static function runScript(array $args): bool
+    {
+        Env::init();
+        $scriptName = strtolower(trim(array_shift($args)));
+        foreach (ClassFinder::scripts() as $shortname => $classname) {
+            if ($scriptName === strtolower($shortname)) {
+                $script = new $classname();
+                if ($script instanceof Script) {
+                    try {
+                        $script->run($args);
+                        return true;
+                    } catch (Throwable $e) {
+                        ErrorHandler::sentryCapture($e);
+                    }
+                } else {
+                    $e = new RuntimeException(
+                        $classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)'
+                    );
+                    ErrorHandler::sentryCapture($e);
+                }
+            }
+        }
+        return false;
+    }
+
+    public static function migrate(): void
+    {
+        Env::init();
+        DB::migrate();
+    }
+
+    public static function onShutdown(Closure $closure): void
+    {
+        static::$shutdown[] = $closure;
     }
 
 }
