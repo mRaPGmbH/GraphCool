@@ -25,7 +25,7 @@ class MysqlEdgeReader
             if (!$relation instanceof Relation) {
                 continue;
             }
-            $node->$key = $this->getClosure($node->id, $relation, $node->tenant_id);
+            $node->$key = $this->getClosure($node->id, $relation, (string)$node->tenant_id);
         }
         return $node;
     }

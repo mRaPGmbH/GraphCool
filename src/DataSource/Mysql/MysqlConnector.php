@@ -34,7 +34,7 @@ class MysqlConnector
                 $this->connect();
                 return;
             } catch (RuntimeException $e) {
-                sleep(1); // ignore and retry
+                sleep(2); // ignore and retry
             }
         }
         $this->connect(); // final try - don't catch exception
