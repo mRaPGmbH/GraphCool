@@ -5,9 +5,9 @@ namespace Mrap\GraphCool\Tests\Model;
 
 
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Settings;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Settings;
 use Mrap\GraphCool\Tests\TestCase;
 
 class ModelTest extends TestCase

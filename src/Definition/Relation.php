@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Model;
+namespace Mrap\GraphCool\Definition;
 
-class Relation
+use stdClass;
+
+class Relation extends stdClass
 {
     public const BELONGS_TO = 'BELONGS_TO';
     public const BELONGS_TO_MANY = 'BELONGS_TO_MANY';

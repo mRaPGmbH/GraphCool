@@ -4,8 +4,8 @@
 namespace Model;
 
 
-use Mrap\GraphCool\Model\QuerySettings;
-use Mrap\GraphCool\Model\Settings;
+use Mrap\GraphCool\Definition\QuerySettings;
+use Mrap\GraphCool\Definition\Settings;
 use Mrap\GraphCool\Tests\TestCase;
 
 class SettingsTest extends TestCase

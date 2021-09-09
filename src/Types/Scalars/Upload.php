@@ -14,12 +14,12 @@ class Upload extends ScalarType
     public $name = '_Upload';
     public $description = 'A file to be uploaded (as multipart/blob).';
 
-    public function serialize($value): void
+    public function serialize(mixed $value): void
     {
         throw new Error('File upload can only be used as input.');
     }
 
-    public function parseValue($value): ?string
+    public function parseValue(mixed $value): ?string
     {
         return null;
     }

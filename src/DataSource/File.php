@@ -13,6 +13,15 @@ class File
     protected static FileExport $exporter;
     protected static FileImport2 $importer;
 
+    /**
+     * @param string $name
+     * @param mixed[] $data
+     * @param mixed[] $args
+     * @param string $type
+     * @return stdClass
+     * @throws \Box\Spout\Common\Exception\IOException
+     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     */
     public static function write(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
         return self::getExporter()->export($name, $data, $args, $type);
@@ -29,11 +38,19 @@ class File
         return static::$exporter;
     }
 
-    public static function setExporter(FileExport $exporter)
+    public static function setExporter(FileExport $exporter): void
     {
         static::$exporter = $exporter;
     }
 
+    /**
+     * @param string $name
+     * @param mixed[] $args
+     * @param int $index
+     * @return array[]
+     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     * @throws \GraphQL\Error\Error
+     */
     public static function read(string $name, array $args, int $index): array
     {
         return self::getImporter()->import($name, $args, $index);
@@ -50,7 +67,7 @@ class File
         return static::$importer;
     }
 
-    public static function setImporter($importer)
+    public static function setImporter(FileImport2 $importer): void
     {
         static::$importer = $importer;
     }

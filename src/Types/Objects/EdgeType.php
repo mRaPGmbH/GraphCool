@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeType extends ObjectType

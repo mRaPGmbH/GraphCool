@@ -14,6 +14,9 @@ use stdClass;
 class MysqlConnector
 {
     protected PDO $pdo;
+    /**
+     * @var PDOStatement[]
+     */
     protected array $statements = [];
 
     public function setPdo(PDO $pdo): void
@@ -62,6 +65,11 @@ class MysqlConnector
         }
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return int
+     */
     public function execute(string $sql, array $params): int
     {
         $statement = $this->statement($sql);
@@ -93,6 +101,11 @@ class MysqlConnector
         return $this->pdo()->exec($sql);
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return stdClass|null
+     */
     public function fetch(string $sql, array $params): ?stdClass
     {
         $statement = $this->statement($sql);
@@ -104,13 +117,28 @@ class MysqlConnector
         return $return;
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return stdClass[]
+     */
     public function fetchAll(string $sql, array $params): array
     {
         $statement = $this->statement($sql);
         $statement->execute($params);
-        return $statement->fetchAll(PDO::FETCH_OBJ);
+        $result = $statement->fetchAll(PDO::FETCH_OBJ);
+        if ($result === false) {
+            throw new RuntimeException('PDOStatement::FetchAll failed.');
+        }
+        return $result;
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @param int $column
+     * @return mixed
+     */
     public function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
         $statement = $this->statement($sql);

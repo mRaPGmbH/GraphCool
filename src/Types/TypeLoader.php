@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Types;
 
 use GraphQL\Type\Definition\Type;
 use MLL\GraphQLScalars\MixedScalar;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\Enums\ColumnType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
@@ -50,7 +50,10 @@ use RuntimeException;
 
 class TypeLoader
 {
+    /** @var string[] */
     protected static array $registry = [];
+
+    /** @var Type[]  */
     protected array $types = [];
 
     public function __construct()
@@ -77,7 +80,7 @@ class TypeLoader
         self::register('_Upload', Upload::class);
     }
 
-    public static function register($name, $classname): void
+    public static function register(string $name, string $classname): void
     {
         static::$registry[$name] = $classname;
     }
@@ -105,11 +108,9 @@ class TypeLoader
     public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
     {
         return function () use ($name) {
-            StopWatch::start('load');
             if (!isset($this->types[$name])) {
                 $this->types[$name] = $this->create($name);
             }
-            StopWatch::stop('load');
             return $this->types[$name];
         };
     }

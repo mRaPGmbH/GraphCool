@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use RuntimeException;
 use stdClass;
 
 class MysqlConverter
 {
+    /**
+     * @param Field $field
+     * @param mixed $value
+     * @return mixed[]
+     */
     public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value): array
     {
         $return = static::convertInputTypeToDatabase($field, $value);
@@ -20,6 +25,7 @@ class MysqlConverter
             'integer' => [$return, null, null],
             'double' => [null, null, $return], // float
             'string' => [null, $return, null],
+            default => [null, null, null]
         };
     }
 
@@ -42,6 +48,11 @@ class MysqlConverter
         };
     }
 
+    /**
+     * @param stdClass[] $properties
+     * @param Model|Relation $fieldSource
+     * @return mixed[]
+     */
     public static function convertProperties(array $properties, Model|Relation $fieldSource): array
     {
         $result = [];
@@ -68,6 +79,11 @@ class MysqlConverter
         };
     }
 
+    /**
+     * @param Model $model
+     * @param mixed[]|null $where
+     * @return mixed[]|null
+     */
     public static function convertWhereValues(Model $model, ?array &$where): ?array
     {
         if ($where === null) {

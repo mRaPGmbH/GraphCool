@@ -5,8 +5,8 @@ namespace Mrap\GraphCool\Tests\DataSource\Mysql;
 
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlConverter;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Tests\TestCase;
 
 class MysqlConverterTest extends TestCase

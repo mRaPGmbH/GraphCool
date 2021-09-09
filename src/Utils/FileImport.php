@@ -13,9 +13,10 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
+use RuntimeException;
 use stdClass;
 
 class FileImport
@@ -33,6 +34,11 @@ class FileImport
         $this->model = new $classname();
     }
 
+    /**
+     * @param mixed[] $args
+     * @return stdClass
+     * @throws Error
+     */
     public function import(array $args): stdClass
     {
         $result = new stdClass();
@@ -43,7 +49,7 @@ class FileImport
         $result->failed_rows = 0;
         $result->failed_row_numbers = [];
         $edgeColumns = [];
-        foreach ($this->model as $key => $relation) {
+        foreach (get_object_vars($this->model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -87,6 +93,16 @@ class FileImport
         return $result;
     }
 
+    /**
+     * @param string|null $input
+     * @param array[] $columns
+     * @param array[] $edgeColumns
+     * @param int $index
+     * @return array[]
+     * @throws Error
+     * @throws \Box\Spout\Common\Exception\IOException
+     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     */
     public function importFile(?string $input, array $columns, array $edgeColumns, int $index): array
     {
         if ($input === null) {
@@ -97,10 +113,15 @@ class FileImport
             $file = $tmp['tmp_name'];
         } else {
             $file = tempnam(sys_get_temp_dir(), 'import');
+            if ($file === false) {
+                throw new RuntimeException('Could not save temporary file for import.');
+            }
             file_put_contents($file, base64_decode($input));
         }
         $mimeType = mime_content_type($file);
-
+        if ($mimeType === false) {
+            throw new Error('Could not import file: MimeType could not be detected.');
+        }
         $reader = $this->getReader($mimeType);
         if ($reader === null) {
             throw new Error('Could not import file: Unknown MimeType: ' . $mimeType);
@@ -171,6 +192,11 @@ class FileImport
         return $result;
     }
 
+    /**
+     * @param int $index
+     * @return mixed[]|null
+     * @throws Error
+     */
     protected function getFile(int $index): ?array
     {
         if (!isset($_REQUEST['map'])) {
@@ -186,6 +212,11 @@ class FileImport
         return $_FILES[$fileNumber] ?? null;
     }
 
+    /**
+     * @param array[] $map
+     * @param int $index
+     * @return int|null
+     */
     protected function findInMap(array $map, int $index): ?int
     {
         $key = 'variables.file';
@@ -213,7 +244,13 @@ class FileImport
     protected function detectSeparator(CSVReader $reader, string $file): CSVReader
     {
         $handle = fopen($file, 'rb');
+        if ($handle === false) {
+            throw new RuntimeException('CSV separator detection failed to open file ' . $file);
+        }
         $sample = fread($handle, 100);
+        if ($sample === false) {
+            throw new RuntimeException('CSV separator detection failed to read sample from file ' . $file);
+        }
         fclose($handle);
 
         if (strlen(str_replace(';', '', $sample)) < strlen(str_replace(',', '', $sample))) {
@@ -223,6 +260,12 @@ class FileImport
         return $reader;
     }
 
+    /**
+     * @param Row $row
+     * @param array[] $columns
+     * @param array[] $edgeColumns
+     * @return array[]
+     */
     protected function getHeaderMapping(Row $row, array $columns, array $edgeColumns): array
     {
         $mapping = [];
@@ -231,7 +274,6 @@ class FileImport
             $header = $cell->getValue();
             foreach ($columns as $column) {
                 $property = $column['column'];
-                /** @var Field $field */
                 $field = $this->model->$property ?? null;
                 if ($field === null || !$field instanceof Field || ($field->readonly === true && $field->type !== Type::ID)) {
                     continue;
@@ -262,7 +304,7 @@ class FileImport
         return [$mapping, $edgeMapping];
     }
 
-    protected function convertField(Field $field, $value): float|int|string|null
+    protected function convertField(Field $field, mixed $value): float|int|string|null
     {
         if (empty($value)) {
             return null;
@@ -284,6 +326,10 @@ class FileImport
         }
     }
 
+    /**
+     * @param mixed[] $item
+     * @return mixed[]
+     */
     protected function convertItem(array $item): array
     {
         foreach ($item as $key => $value) {

@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use RuntimeException;
 use stdClass;
@@ -36,7 +35,6 @@ class MysqlNodeReader
             if (!property_exists($model, $key)) {
                 continue;
             }
-            /** @var Field $field */
             $field = $model->$key;
             if ($field instanceof Relation) {
                 continue;
@@ -76,6 +74,10 @@ class MysqlNodeReader
         return $node;
     }
 
+    /**
+     * @param string $id
+     * @return stdClass[]
+     */
     protected function fetchNodeProperties(string $id): array
     {
         $sql = 'SELECT * FROM `node_property` WHERE `node_id` = :node_id AND `deleted_at` IS NULL';

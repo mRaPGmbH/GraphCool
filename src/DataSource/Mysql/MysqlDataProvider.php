@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Utils\StopWatch;
@@ -30,6 +31,13 @@ class MysqlDataProvider implements DataProvider
         $migration->migrate();
     }
 
+    /**
+     * @param string|null $tenantId
+     * @param string $name
+     * @param mixed[] $args
+     * @return stdClass
+     * @throws Error
+     */
     public function findAll(?string $tenantId, string $name, array $args): stdClass
     {
         $limit = $args['first'] ?? 10;
@@ -53,7 +61,7 @@ class MysqlDataProvider implements DataProvider
             ->orderBy($args['orderBy'] ?? [])
             ->search($args['search'] ?? null);
 
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -111,6 +119,13 @@ class MysqlDataProvider implements DataProvider
         return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
     }
 
+    /**
+     * @param string|null $tenantId
+     * @param string $name
+     * @param string[] $ids
+     * @param string|null $resultType
+     * @return stdClass[]
+     */
     public function loadAll(
         ?string $tenantId,
         string $name,
@@ -119,7 +134,10 @@ class MysqlDataProvider implements DataProvider
     ): array {
         $result = [];
         foreach ($ids as $id) {
-            $result[] = $this->load($tenantId, $name, $id, $resultType);
+            $node = $this->load($tenantId, $name, $id, $resultType);
+            if ($node !== null) {
+                $result[] = $node;
+            }
         }
         return $result;
     }
@@ -133,7 +151,14 @@ class MysqlDataProvider implements DataProvider
         return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
     }
 
-    public function insert(string $tenantId, string $name, array $data): stdClass
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param mixed[] $data
+     * @return stdClass
+     * @throws Error
+     */
+    public function insert(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = Model::get($name);
         $data = $model->beforeInsert($tenantId, $data);
@@ -149,6 +174,13 @@ class MysqlDataProvider implements DataProvider
         return $loaded;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param mixed[] $data
+     * @return stdClass|null
+     * @throws Error
+     */
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = Model::get($name);
@@ -167,6 +199,13 @@ class MysqlDataProvider implements DataProvider
         return $loaded;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param mixed[] $data
+     * @return stdClass
+     * @throws Error
+     */
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
         $model = Model::get($name);
@@ -211,6 +250,11 @@ class MysqlDataProvider implements DataProvider
     }
 
     /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string[] $ids
+     * @param string $resultType
+     * @return Closure
      * @codeCoverageIgnore
      */
     protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
@@ -220,6 +264,14 @@ class MysqlDataProvider implements DataProvider
         };
     }
 
+    /**
+     * @param Model $model
+     * @param string $name
+     * @param string $tenantId
+     * @param mixed[]|null $where
+     * @param string $resultType
+     * @return string[]
+     */
     protected function getIdsForWhere(
         Model $model,
         string $name,
@@ -243,9 +295,17 @@ class MysqlDataProvider implements DataProvider
         return $ids;
     }
 
+    /**
+     * @param string $tenantId
+     * @param Model $model
+     * @param string $name
+     * @param mixed[] $data
+     * @param string|null $id
+     * @throws Error
+     */
     protected function checkUnique(string $tenantId, Model $model, string $name, array $data, string $id = null): void
     {
-        foreach ($model as $key => $field) {
+        foreach (get_object_vars($model) as $key => $field) {
             if (!$field instanceof Field || !isset($data[$key])) {
                 continue;
             }
@@ -268,9 +328,14 @@ class MysqlDataProvider implements DataProvider
         }
     }
 
+    /**
+     * @param Model $model
+     * @param mixed[] $updates
+     * @throws Error
+     */
     protected function checkNull(Model $model, array $updates): void
     {
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if ($item instanceof Field && array_key_exists(
                     $key,
                     $updates

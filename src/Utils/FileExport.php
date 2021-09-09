@@ -10,11 +10,12 @@ use Box\Spout\Writer\Common\Creator\Style\StyleBuilder;
 use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Writer\CSV\Writer;
 use Box\Spout\Writer\WriterAbstract;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
+use RuntimeException;
 use stdClass;
 
 class FileExport
@@ -25,6 +26,15 @@ class FileExport
     protected Style $excelDateTimeStyle;
     protected Style $excelTimeStyle;
 
+    /**
+     * @param string $name
+     * @param stdClass[] $data
+     * @param mixed[] $args
+     * @param string $type
+     * @return stdClass
+     * @throws \Box\Spout\Common\Exception\IOException
+     * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
+     */
     public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
         $classname = 'App\\Models\\' . $name;
@@ -44,6 +54,9 @@ class FileExport
         }
 
         $file = tempnam(sys_get_temp_dir(), 'export');
+        if ($file === false) {
+            throw new RuntimeException('Export failed to open temp file.');
+        }
         $writer->openToFile($file);
         $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
         foreach ($data as $row) {
@@ -52,7 +65,11 @@ class FileExport
         $writer->close();
 
         $result->mime_type = $this->getMimeType($type);
-        $result->data_base64 = base64_encode(file_get_contents($file));
+        $contents = file_get_contents($file);
+        if ($contents === false) {
+            throw new RuntimeException('Export failed to get contents from file ' . $file);
+        }
+        $result->data_base64 = base64_encode($contents);
         unlink($file);
         return $result;
     }
@@ -66,6 +83,11 @@ class FileExport
         };
     }
 
+    /**
+     * @param Model $model
+     * @param mixed[] $args
+     * @return Cell[]
+     */
     protected function getHeaders(Model $model, array $args): array
     {
         $headers = [];
@@ -73,7 +95,7 @@ class FileExport
         foreach ($args['columns'] as $column) {
             $headers[] = WriterEntityFactory::createCell($column['label'] ?? ('Column ' . $i++));
         }
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -93,6 +115,12 @@ class FileExport
         return $headers;
     }
 
+    /**
+     * @param Model $model
+     * @param mixed[] $args
+     * @param stdClass $row
+     * @return Cell[]
+     */
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
@@ -104,7 +132,7 @@ class FileExport
             $key = $column['column'];
             $cells[] = $this->getCell($model->$key, $row->$key ?? null);
         }
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }

@@ -18,26 +18,26 @@ class Time extends ScalarType
     public $name = '_Time';
     public $description = 'A Time string in ISO 8601 format: "11:54:04+00:00" or "11:54:04Z"';
 
-    public static function getObject($value): Carbon
+    public static function getObject(mixed $value): Carbon
     {
         $dateTime = Carbon::createFromTimestampMs($value);
         $dateTime->setTimezone(TimeZone::get());
         return $dateTime;
     }
 
-    public function serialize($value): string
+    public function serialize(mixed $value): string
     {
         $dateTime = Carbon::createFromTimestampMs($value);
         $dateTime->setTimezone(TimeZone::get());
         return $dateTime->format('H:i:s.vp');
     }
 
-    public function parseValue($value): ?int
+    public function parseValue(mixed $value): ?int
     {
         return $this->validate($value);
     }
 
-    protected function validate($value): ?int
+    protected function validate(mixed $value): ?int
     {
         if ($value === null) {
             return null;
@@ -53,7 +53,7 @@ class Time extends ScalarType
     public function parseLiteral(Node $valueNode, ?array $variables = null): int
     {
         if (!$valueNode instanceof StringValueNode) {
-            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
+            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, $valueNode);
         }
         return $this->validate($valueNode->value);
     }

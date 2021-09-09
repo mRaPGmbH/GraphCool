@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Model;
+namespace Mrap\GraphCool\Definition;
 
 class Settings
 {

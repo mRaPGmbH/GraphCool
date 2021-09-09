@@ -4,14 +4,31 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Mutation;
+use Mrap\GraphCool\Definition\Query;
+use Mrap\GraphCool\Definition\Script;
+use RuntimeException;
+
 class ClassFinder
 {
+    /** @var string[]|null */
     protected static ?array $models;
+
+    /** @var string[]|null */
     protected static ?array $queries;
+
+    /** @var string[]|null */
     protected static ?array $mutations;
+
+    /** @var string[]|null */
     protected static ?array $scripts;
+
     protected static ?string $appRootPath = null;
 
+    /**
+     * @return string[]
+     */
     public static function models(): array
     {
         if (!isset(static::$models)) {
@@ -22,11 +39,19 @@ class ClassFinder
         return static::$models;
     }
 
+    /**
+     * @param string $path
+     * @param string $namespace
+     * @return string[]
+     */
     protected static function findClasses(string $path, string $namespace): array
     {
         $result = [];
         if (is_dir($path)) {
             $files = scandir($path);
+            if ($files === false) {
+                throw new RuntimeException('Find classes failed to scan directory ' . $path);
+            }
             $classes = array_map(function ($file) {
                 return str_replace('.php', '', $file);
             }, $files);
@@ -59,7 +84,7 @@ class ClassFinder
         return static::$appRootPath;
     }
 
-    public static function setRootPath(?string $appRootPath)
+    public static function setRootPath(?string $appRootPath): void
     {
         static::$models = null;
         static::$queries = null;
@@ -68,6 +93,9 @@ class ClassFinder
         static::$appRootPath = $appRootPath;
     }
 
+    /**
+     * @return string[]
+     */
     public static function queries(): array
     {
         if (!isset(static::$queries)) {
@@ -78,6 +106,9 @@ class ClassFinder
         return static::$queries;
     }
 
+    /**
+     * @return string[]
+     */
     public static function mutations(): array
     {
         if (!isset(static::$mutations)) {
@@ -88,6 +119,9 @@ class ClassFinder
         return static::$mutations;
     }
 
+    /**
+     * @return string[]
+     */
     public static function scripts(): array
     {
         if (!isset(static::$scripts)) {

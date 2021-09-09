@@ -7,8 +7,8 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ModelInputType extends InputObjectType
@@ -21,10 +21,6 @@ class ModelInputType extends InputObjectType
         $model = new $classname();
 
         $fields = [];
-        /**
-         * @var string $key
-         * @var Field $field
-         */
         foreach ($model as $key => $field) {
             if ($field instanceof Relation) {
                 $relation = $field;

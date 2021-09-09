@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Model;
+namespace Mrap\GraphCool\Definition;
 
 class QuerySettings
 {
@@ -13,7 +13,10 @@ class QuerySettings
     public const USER = 'USER';
     public const ADMIN = 'ADMIN';
 
+    /** @var string */
     public $type;
+
+    /** @var string */
     public $access;
 
     public function __construct(string $type = self::QUERY, string $access = self::USER)

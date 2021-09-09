@@ -14,6 +14,11 @@ use Throwable;
 class ErrorHandler
 {
 
+    /**
+     * @param Throwable $e
+     * @return array[]
+     * @throws Throwable
+     */
     public static function handleError(Throwable $e): array
     {
         if (!$e instanceof ClientAware || !$e->isClientSafe()) {

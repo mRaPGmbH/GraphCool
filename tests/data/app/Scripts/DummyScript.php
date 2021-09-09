@@ -2,7 +2,7 @@
 
 namespace App\Scripts;
 
-use Mrap\GraphCool\Model\Script;
+use Mrap\GraphCool\Definition\Script;
 
 class DummyScript extends Script
 {

@@ -6,7 +6,7 @@ namespace Model;
 
 use App\Queries\DummyQuery;
 use App\Queries\PublicQuery;
-use Mrap\GraphCool\Model\Query;
+use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\TypeLoader;
 

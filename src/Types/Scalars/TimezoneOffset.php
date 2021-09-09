@@ -18,17 +18,17 @@ class TimezoneOffset extends ScalarType
     public $name = '_TimezoneOffset';
     public $description = 'A Timezone offset string in ISO 8601 format: "+00:00" or "Z"';
 
-    public function serialize($value): string
+    public function serialize(mixed $value): string
     {
         return TimeZone::serialize((int)$value);
     }
 
-    public function parseValue($value): int
+    public function parseValue(mixed $value): int
     {
         return $this->validate($value);
     }
 
-    protected function validate(string $value): int
+    protected function validate(mixed $value): int
     {
         try {
             $dateTime = Carbon::parse($value);
@@ -41,7 +41,7 @@ class TimezoneOffset extends ScalarType
     public function parseLiteral(Node $valueNode, ?array $variables = null): int
     {
         if (!$valueNode instanceof StringValueNode) {
-            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, [$valueNode]);
+            throw new Error('Query error: Can only parse strings but got: ' . $valueNode->kind, $valueNode);
         }
         return $this->validate($valueNode->value);
     }

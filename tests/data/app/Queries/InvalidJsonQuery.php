@@ -4,7 +4,7 @@ namespace App\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Query;
+use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class InvalidJsonQuery extends Query
@@ -18,7 +18,7 @@ class InvalidJsonQuery extends Query
         ];
     }
 
-    public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
+    public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         return "\xB1\x31";
     }

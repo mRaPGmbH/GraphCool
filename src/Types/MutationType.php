@@ -11,9 +11,9 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
@@ -23,6 +23,7 @@ use stdClass;
 class MutationType extends ObjectType
 {
 
+    /** @var callable[] */
     protected array $customResolvers = [];
 
     public function __construct(TypeLoader $typeLoader)
@@ -57,14 +58,16 @@ class MutationType extends ObjectType
         parent::__construct($config);
     }
 
+    /**
+     * @param string $name
+     * @param Model $model
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function create(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [];
-        /**
-         * @var string $key
-         * @var Field $field
-         */
-        foreach ($model as $key => $field) {
+        foreach (get_object_vars($model) as $key => $field) {
             if ($field instanceof Relation) {
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
@@ -98,13 +101,18 @@ class MutationType extends ObjectType
             'type' => $typeLoader->load($name),
             'description' => 'Create a single new ' . $name . ' entry',
         ];
-        if (count($args) > 0) {
+        //if (count($args) > 0) {
             ksort($args);
             $ret['args'] = $args;
-        }
+        //}
         return $ret;
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function update(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -118,6 +126,11 @@ class MutationType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function updateMany(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -130,6 +143,11 @@ class MutationType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function delete(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -142,6 +160,11 @@ class MutationType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function restore(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -154,6 +177,11 @@ class MutationType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function import(string $name, TypeLoader $typeLoader): array
     {
         $args = [
@@ -190,7 +218,15 @@ class MutationType extends ObjectType
         ];
     }
 
-    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
+    /**
+     * @param mixed[] $rootValue
+     * @param mixed[] $args
+     * @param mixed $context
+     * @param ResolveInfo $info
+     * @return mixed
+     * @throws \GraphQL\Error\Error
+     */
+    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info): mixed
     {
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
@@ -223,6 +259,12 @@ class MutationType extends ObjectType
         throw new RuntimeException(print_r($info->fieldName, true));
     }
 
+    /**
+     * @param string $name
+     * @param mixed[] $args
+     * @param int $index
+     * @return stdClass
+     */
     protected function resolveImport(string $name, array $args, int $index): stdClass
     {
         [$create, $update, $errors] = File::read($name, $args, $index);

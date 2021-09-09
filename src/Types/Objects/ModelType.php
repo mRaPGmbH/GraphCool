@@ -10,9 +10,9 @@ use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
 use stdClass;
 
@@ -34,10 +34,6 @@ class ModelType extends ObjectType
                 return $this->resolve($rootValue, $args, $context, $info);
             }
         ];
-        /**
-         * @var string $key
-         * @var Field $field
-         */
         foreach ($this->model as $key => $field) {
             $args = null;
             if ($field instanceof Relation) {
@@ -82,7 +78,14 @@ class ModelType extends ObjectType
         parent::__construct($config);
     }
 
-    protected function resolve(stdClass $modelData, array $args, $context, ResolveInfo $info)
+    /**
+     * @param stdClass $modelData
+     * @param mixed[] $args
+     * @param mixed $context
+     * @param ResolveInfo $info
+     * @return mixed
+     */
+    protected function resolve(stdClass $modelData, array $args, mixed $context, ResolveInfo $info): mixed
     {
         $field = $this->model->{$info->fieldName} ?? null;
         if ($field instanceof Relation) {

@@ -5,9 +5,8 @@ namespace Types;
 
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\ScalarType;
-use GraphQL\Type\Definition\Type;
 use MLL\GraphQLScalars\MixedScalar;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\ColumnType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;

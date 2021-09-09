@@ -5,7 +5,7 @@ namespace App\Queries;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Query;
+use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ErrorQuery extends Query
@@ -19,7 +19,7 @@ class ErrorQuery extends Query
         ];
     }
 
-    public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
+    public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         throw new Error('nada');
     }

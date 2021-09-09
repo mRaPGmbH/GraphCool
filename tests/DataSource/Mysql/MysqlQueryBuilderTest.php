@@ -5,8 +5,8 @@ namespace Mrap\GraphCool\Tests\DataSource\Mysql;
 use App\Models\DummyModel;
 use GraphQL\Error\Error;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Tests\TestCase;
 use RuntimeException;
 

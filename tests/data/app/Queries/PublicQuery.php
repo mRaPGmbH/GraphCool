@@ -3,7 +3,7 @@
 namespace App\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\Model\Query;
+use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class PublicQuery extends Query
@@ -12,11 +12,11 @@ class PublicQuery extends Query
     public function __construct(TypeLoader $typeLoader)
     {
         $this->noAuthentication();
-        $this->name = 'DummyQuery';
+        $this->name = 'PublicQuery';
         $this->config = [];
     }
 
-    public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
+    public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         return 'dummy-query-resolve';
     }

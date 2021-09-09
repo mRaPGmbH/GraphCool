@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Model;
+namespace Mrap\GraphCool\Definition;
 
 use GraphQL\Type\Definition\Type;
 
@@ -28,6 +28,7 @@ class Field
     public string $description;
     public string|int|float|bool $default;
     public bool $readonly = false;
+    /** @var mixed[] */
     public array $enumValues;
     public bool $unique = false;
     public bool $uniqueIgnoreTrashed = false;
@@ -136,6 +137,10 @@ class Field
         return new Field(static::TIMEZONE_OFFSET);
     }
 
+    /**
+     * @param mixed[] $values
+     * @return Field
+     */
     public static function enum(array $values): Field
     {
         $field = new Field(static::ENUM);

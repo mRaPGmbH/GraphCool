@@ -3,7 +3,7 @@
 namespace App\Mutations;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\Model\Mutation;
+use Mrap\GraphCool\Definition\Mutation;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class PublicMutation extends Mutation

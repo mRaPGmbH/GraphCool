@@ -14,7 +14,7 @@ class DB
     /** @var DataProvider */
     protected static DataProvider $provider;
 
-    public static function setProvider(DataProvider $provider)
+    public static function setProvider(DataProvider $provider): void
     {
         static::$provider = $provider;
     }
@@ -50,6 +50,12 @@ class DB
         return $result;
     }
 
+    /**
+     * @param string|null $tenantId
+     * @param string $name
+     * @param mixed[] $args
+     * @return stdClass
+     */
     public static function findAll(?string $tenantId, string $name, array $args): stdClass
     {
         StopWatch::start(__METHOD__);
@@ -58,6 +64,12 @@ class DB
         return $result;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $modelName
+     * @param mixed[] $data
+     * @return stdClass
+     */
     public static function insert(string $tenantId, string $modelName, array $data): stdClass
     {
         StopWatch::start(__METHOD__);
@@ -66,6 +78,12 @@ class DB
         return $result;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $modelName
+     * @param mixed[] $data
+     * @return stdClass|null
+     */
     public static function update(string $tenantId, string $modelName, array $data): ?stdClass
     {
         StopWatch::start(__METHOD__);
@@ -74,6 +92,12 @@ class DB
         return $result;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $modelName
+     * @param mixed[] $data
+     * @return stdClass
+     */
     public static function updateAll(string $tenantId, string $modelName, array $data): stdClass
     {
         StopWatch::start(__METHOD__);

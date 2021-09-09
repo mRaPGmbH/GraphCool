@@ -4,7 +4,7 @@
 namespace Mrap\GraphCool\Tests\Model;
 
 
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Tests\TestCase;
 
 class RelationTest extends TestCase

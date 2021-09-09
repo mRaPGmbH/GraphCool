@@ -7,7 +7,7 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeInputType extends InputObjectType

@@ -6,10 +6,13 @@ namespace Mrap\GraphCool\Utils;
 
 class StopWatch
 {
+    /** @var float[] */
     protected static array $starts = [];
+
+    /** @var float[] */
     protected static array $times = [];
 
-    public static function start($name): void
+    public static function start(string $name): void
     {
         self::$starts[$name] = microtime(true);
         if (!isset(self::$times[$name])) {
@@ -17,11 +20,14 @@ class StopWatch
         }
     }
 
-    public static function stop($name): void
+    public static function stop(string $name): void
     {
         self::$times[$name] += 1000 * (microtime(true) - self::$starts[$name]);
     }
 
+    /**
+     * @return array[]
+     */
     public static function get(): array
     {
         arsort(self::$times);

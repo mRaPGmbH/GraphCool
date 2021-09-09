@@ -6,18 +6,24 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
 use RuntimeException;
 use stdClass;
 
 class MysqlNodeWriter
 {
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string $id
+     * @param mixed[] $data
+     */
     public function insert(string $tenantId, string $name, string $id, array $data): void
     {
         $this->insertNode($tenantId, $id, $name);
         $model = Model::get($name);
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if (!$item instanceof Field) {
                 continue;
             }
@@ -50,7 +56,7 @@ class MysqlNodeWriter
         return Mysql::execute($sql, $params) > 0;
     }
 
-    protected function insertOrUpdateModelField(Field $field, $value, $id, $name, $key): void
+    protected function insertOrUpdateModelField(Field $field, mixed $value, string $id, string $name, string $key): void
     {
         if ($value === null && $field->null === true) {
             $this->deleteNodeProperty($id, $key);
@@ -96,6 +102,12 @@ class MysqlNodeWriter
         return Mysql::execute($sql, $params) > 0;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string $id
+     * @param mixed[] $updates
+     */
     public function update(string $tenantId, string $name, string $id, array $updates): void
     {
         $model = Model::get($name);
@@ -103,7 +115,7 @@ class MysqlNodeWriter
 
         $updates = $model->afterRelationUpdateButBeforeNodeUpdate($tenantId, $id, $updates);
 
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if (!array_key_exists($key, $updates)) {
                 continue;
             }
@@ -113,13 +125,21 @@ class MysqlNodeWriter
         }
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string[] $ids
+     * @param mixed[] $updateData
+     * @return stdClass
+     * @throws Error
+     */
     public function updateMany(string $tenantId, string $name, array $ids, array $updateData): stdClass
     {
         $model = Model::get($name);
         $updates = [
             'deleted_at' => null
         ];
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if (!array_key_exists($key, $updateData)) {
                 continue;
             }

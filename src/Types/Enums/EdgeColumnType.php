@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeColumnType extends EnumType
@@ -19,7 +18,6 @@ class EdgeColumnType extends EnumType
         $classname = 'App\\Models\\' . $names[0];
         $parentModel = new $classname();
 
-        /** @var Relation $relation */
         $relation = $parentModel->$key;
 
         $values = [];
@@ -37,7 +35,7 @@ class EdgeColumnType extends EnumType
         $classname = $relation->classname;
         $model = new $classname();
 
-        foreach ($model as $key => $field) {
+        foreach (get_object_vars($model) as $key => $field) {
             if (!$field instanceof Field) {
                 continue;
             }

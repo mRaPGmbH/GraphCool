@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Model;
+namespace Mrap\GraphCool\Definition;
 
 use Closure;
 use stdClass;
 
-class Model
+class Model extends stdClass
 {
-    private static $instances = [];
-    private $settings;
+    /** @var Model[] */
+    private static array $instances = [];
+    private Settings $settings;
 
     public function __construct()
     {
@@ -27,19 +28,37 @@ class Model
             $classname = 'App\\Models\\' . $name;
             self::$instances[$name] = new $classname();
         }
+
         return self::$instances[$name];
     }
 
+    /**
+     * @param string $tenantId
+     * @param mixed[] $data
+     * @return mixed[]
+     */
     public function beforeInsert(string $tenantId, array $data): array
     {
         return $data;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $id
+     * @param mixed[] $updates
+     * @return mixed[]
+     */
     public function beforeUpdate(string $tenantId, string $id, array $updates): array
     {
         return $updates;
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $id
+     * @param mixed[] $updates
+     * @return mixed[]
+     */
     public function afterRelationUpdateButBeforeNodeUpdate(string $tenantId, string $id, array $updates): array
     {
         return $updates;
@@ -61,7 +80,10 @@ class Model
     {
     }
 
-    public function settings()
+    /**
+     * @return Settings
+     */
+    public function settings(): Settings
     {
         return $this->settings;
     }

@@ -6,9 +6,9 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -17,20 +17,31 @@ class MysqlQueryBuilder
 
     protected string $name;
     protected ?string $mode = null;
+    /** @var string[] */
     protected array $columns;
+    /** @var string[] */
     protected array $orderBys = [];
     protected string $resultType;
     protected Model $model;
     protected Relation $relation;
     protected string $limit = '';
     protected string $parameterPrefix = 'p';
+    /** @var mixed[] */
     protected array $parameters = [];
+    /** @var mixed[] */
     protected array $updateParameters = [];
+    /** @var string[] */
     protected array $where = [];
+    /** @var string[] */
     protected array $joins = [];
     protected string $groupBy = '';
     protected string $sql;
 
+    /**
+     * @param Relation $relation
+     * @param string[] $parentIds
+     * @return MysqlQueryBuilder
+     */
     public static function forRelation(Relation $relation, array $parentIds): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
@@ -68,6 +79,10 @@ class MysqlQueryBuilder
         return '`' . $name . '`.`' . $field . '`';
     }
 
+    /**
+     * @param mixed[] $array
+     * @return string
+     */
     protected function parameterArray(array $array): string
     {
         $params = [];
@@ -77,7 +92,7 @@ class MysqlQueryBuilder
         return '(' . implode(',', $params) . ')';
     }
 
-    protected function parameter($value): string
+    protected function parameter(mixed $value): string
     {
         $key = ':' . $this->parameterPrefix . count($this->parameters);
         $this->parameters[$key] = $value;
@@ -104,6 +119,10 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @param mixed[] $fieldValues
+     * @return $this
+     */
     public function update(array $fieldValues): MysqlQueryBuilder
     {
         if ($this->mode !== null && $this->mode !== 'UPDATE') {
@@ -131,6 +150,9 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @return string[]
+     */
     protected function getBaseColumns(): array
     {
         return match ($this->name) {
@@ -148,18 +170,19 @@ class MysqlQueryBuilder
                 '_updated_at',
                 '_deleted_at',
                 '*'
-            ]
+            ],
+            default => []
         };
     }
 
-    protected function updateParameter($value)
+    protected function updateParameter(mixed $value): string
     {
         $key = ':u' . count($this->updateParameters);
         $this->updateParameters[$key] = $value;
         return $key;
     }
 
-    protected function join(string $property)
+    protected function join(string $property): string
     {
         if (str_starts_with($property, '_')) {
             $name = '`edge' . $property . '`';
@@ -175,9 +198,9 @@ class MysqlQueryBuilder
                 'node' => $name . '.`node_id` = `node`.`id`',
                 'edge' => $name . '.`parent_id` = `edge`.`parent_id` AND ' . $name . '.`child_id` = `edge`.`child_id` '
             };
-            if (!is_null($property)) {
+            //if (!is_null($property)) {
                 $join .= ' AND ' . $name . '.`property` = ' . $this->parameter($property);
-            }
+            //}
             $join .= ' AND ' . $name . '.`deleted_at` IS NULL)';
             $this->joins[$name] = $join;
         }
@@ -199,6 +222,10 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @param array[] $orderBys
+     * @return $this
+     */
     public function orderBy(array $orderBys): MysqlQueryBuilder
     {
         foreach ($orderBys as $orderBy) {
@@ -241,6 +268,13 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @param Model $model
+     * @param string $name
+     * @param string $relationType
+     * @param mixed[]|null $where
+     * @return $this
+     */
     public function whereHas(Model $model, string $name, string $relationType, ?array $where): MysqlQueryBuilder
     {
         if ($where === null || count($where) === 0) {
@@ -274,6 +308,10 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @param mixed[]|null $where
+     * @return $this
+     */
     public function where(?array $where): MysqlQueryBuilder
     {
         if ($where === null || count($where) === 0) {
@@ -286,6 +324,12 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @param mixed[] $wheres
+     * @param string $mode
+     * @return string|null
+     * @throws Error
+     */
     protected function whereRecursive(array $wheres, string $mode = 'AND'): ?string
     {
         if (
@@ -321,6 +365,11 @@ class MysqlQueryBuilder
         return implode(' ' . $mode . ' ', $sqls);
     }
 
+    /**
+     * @param mixed[] $where
+     * @return string
+     * @throws Error
+     */
     protected function resolveSingleWhere(array $where): string
     {
         if (in_array($where['column'], $this->getBaseColumns())) {
@@ -368,6 +417,10 @@ class MysqlQueryBuilder
         };
     }
 
+    /**
+     * @param string[] $fields
+     * @return $this
+     */
     public function select(array $fields): MysqlQueryBuilder
     {
         if ($this->mode !== null && $this->mode !== 'SELECT') {
@@ -449,11 +502,19 @@ class MysqlQueryBuilder
         throw new RuntimeException('not implemented yet'); // TODO
     }
 
+    /**
+     * @return mixed[]
+     */
     public function getParameters(): array
     {
         return $this->parameters;
     }
 
+    /**
+     * @param mixed[]|null $where
+     * @return $this
+     * @throws Error
+     */
     public function whereRelated(?array $where): MysqlQueryBuilder
     {
         if ($this->name !== 'edge') {
@@ -511,6 +572,9 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    /**
+     * @return mixed[]
+     */
     public function getUpdateParameters(): array
     {
         return array_merge($this->parameters, $this->updateParameters);

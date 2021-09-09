@@ -222,7 +222,11 @@ class Date
                 $pattern = str_replace(['\\', '.'], ['', '\.'], $pattern);
 
                 if (preg_match($pattern, $value)) {
-                    return Carbon::createFromFormat($format, $value, $timezone);
+                    $result = Carbon::createFromFormat($format, $value, $timezone);
+                    if ($result === false) {
+                        return null;
+                    }
+                    return $result;
                 }
             }
         }

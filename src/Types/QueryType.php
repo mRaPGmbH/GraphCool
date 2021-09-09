@@ -11,8 +11,8 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
@@ -20,6 +20,7 @@ use Mrap\GraphCool\Utils\TimeZone;
 class QueryType extends ObjectType
 {
 
+    /** @var callable[] */
     protected array $customResolvers = [];
 
     public function __construct(TypeLoader $typeLoader)
@@ -51,6 +52,11 @@ class QueryType extends ObjectType
         parent::__construct($config);
     }
 
+    /**
+     * @param string $name
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function read(string $name, TypeLoader $typeLoader): array
     {
         return [
@@ -63,6 +69,12 @@ class QueryType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param Model $model
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function list(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
@@ -70,7 +82,7 @@ class QueryType extends ObjectType
             'page' => Type::int(),
             'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
         ];
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -88,6 +100,12 @@ class QueryType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param Model $model
+     * @param TypeLoader $typeLoader
+     * @return mixed[]
+     */
     protected function export(string $name, Model $model, TypeLoader $typeLoader): array
     {
         $args = [
@@ -98,7 +116,7 @@ class QueryType extends ObjectType
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
         ];
 
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -138,7 +156,15 @@ class QueryType extends ObjectType
         ];
     }*/
 
-    protected function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
+    /**
+     * @param mixed[] $rootValue
+     * @param mixed[] $args
+     * @param mixed $context
+     * @param ResolveInfo $info
+     * @return mixed
+     * @throws \GraphQL\Error\Error
+     */
+    protected function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);

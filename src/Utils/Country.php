@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
+use RuntimeException;
+
 class Country
 {
+    /** @var array[] */
     protected static array $namesByCountry;
+
+    /** @var array[] */
     protected static array $mistypedNamesByCountry;
 
     public static function parseLenient(string $value): ?string
@@ -58,6 +63,9 @@ class Country
         return null;
     }
 
+    /**
+     * @return string[]
+     */
     protected static function alpha2to3(): array
     {
         return [
@@ -313,24 +321,32 @@ class Country
         ];
     }
 
+    /**
+     * @return array[]
+     */
     protected static function namesByCountry(): array
     {
         if (!isset(static::$namesByCountry)) {
-            static::$namesByCountry = unserialize(
-                file_get_contents(__DIR__ . '/country-data.cache'),
-                ['allowed_classes' => []]
-            );
+            $contents = file_get_contents(__DIR__ . '/country-data.cache');
+            if ($contents === false) {
+                throw new RuntimeException('Could not get data from country-data.cache');
+            }
+            static::$namesByCountry = unserialize($contents, ['allowed_classes' => []]);
         }
         return static::$namesByCountry;
     }
 
+    /**
+     * @return array[]
+     */
     protected static function mistypedNamesByCountry(): array
     {
         if (!isset(static::$mistypedNamesByCountry)) {
-            static::$mistypedNamesByCountry = unserialize(
-                file_get_contents(__DIR__ . '/country-data-mistyped.cache'),
-                ['allowed_classes' => []]
-            );
+            $contents = file_get_contents(__DIR__ . '/country-data-mistyped.cache');
+            if ($contents === false) {
+                throw new RuntimeException('Could not get data from country-data-mistyped.cache');
+            }
+            static::$mistypedNamesByCountry = unserialize($contents, ['allowed_classes' => []]);
         }
         return static::$mistypedNamesByCountry;
     }

@@ -7,8 +7,8 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Utils\StopWatch;
@@ -21,7 +21,7 @@ class MysqlEdgeReader
     public function loadEdges(stdClass $node, string $name): stdClass
     {
         $model = Model::get($name);
-        foreach ($model as $key => $relation) {
+        foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
@@ -44,6 +44,14 @@ class MysqlEdgeReader
         };
     }
 
+    /**
+     * @param string|null $tenantId
+     * @param string $id
+     * @param Relation $relation
+     * @param mixed[] $args
+     * @return mixed[]|stdClass
+     * @throws Error
+     */
     protected function findRelatedNodes(?string $tenantId, string $id, Relation $relation, array $args): array|stdClass
     {
         StopWatch::start(__METHOD__);
@@ -156,6 +164,11 @@ class MysqlEdgeReader
         return $edge;
     }
 
+    /**
+     * @param string $parentId
+     * @param string $childId
+     * @return stdClass[]
+     */
     protected function fetchEdgeProperties(string $parentId, string $childId): array
     {
         $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';

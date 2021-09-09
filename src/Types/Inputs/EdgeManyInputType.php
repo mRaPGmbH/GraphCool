@@ -7,8 +7,7 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeManyInputType extends InputObjectType
@@ -21,7 +20,7 @@ class EdgeManyInputType extends InputObjectType
 
         $classname = 'App\\Models\\' . $names[0];
         $model = new $classname();
-        /** @var Relation $relation */
+
         $relation = $model->$key;
 
         $fields = [
@@ -29,7 +28,7 @@ class EdgeManyInputType extends InputObjectType
             'search' => Type::string(),
             'mode' => $typeLoader->load('_RelationUpdateMode'),
         ];
-        foreach ($relation as $fieldKey => $field) {
+        foreach (get_object_vars($relation) as $fieldKey => $field) {
             if ($field instanceof Field && $field->readonly === false) {
                 $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
                 if ($field->null === false) {

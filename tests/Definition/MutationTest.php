@@ -6,7 +6,7 @@ namespace Model;
 
 use App\Mutations\DummyMutation;
 use App\Mutations\PublicMutation;
-use Mrap\GraphCool\Model\Mutation;
+use Mrap\GraphCool\Definition\Mutation;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\TypeLoader;
 

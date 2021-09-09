@@ -25,9 +25,10 @@ class JwtAuthentication
     public const ADMIN = 3;
     public const SUPER_ADMIN = 4;
 
+    /** @var mixed[] */
     protected static array $claims;
 
-    public static function authenticate()
+    public static function authenticate(): void
     {
         $config = Configuration::forAsymmetricSigner(
             new Signer\Rsa\Sha256(),

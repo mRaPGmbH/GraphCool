@@ -1,0 +1,5 @@
+parameters:
+    ignoreErrors:
+        - '#Function Sentry\\[a-zA-Z0-9_]+ not found.#'
+        - '#Constructor of class Mrap\\GraphCool\\Types\\[a-zA-Z0-9\\_]+ has an unused parameter \$typeLoader.#'
+        - '#Call to an undefined method Lcobucci\\JWT\\Token::claims\(\).#'

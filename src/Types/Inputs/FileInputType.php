@@ -8,8 +8,8 @@ use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\TypeLoader;
 
@@ -37,7 +37,7 @@ class FileInputType extends InputObjectType
     protected function getColumns(Model $model, ModelType $type): EnumType
     {
         $values = [];
-        foreach ($model as $name => $field) {
+        foreach (get_object_vars($model) as $name => $field) {
             if (!$field instanceof Field) {
                 continue;
             }

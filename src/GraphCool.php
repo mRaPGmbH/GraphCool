@@ -7,11 +7,12 @@ namespace Mrap\GraphCool;
 use Closure;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\Error;
+use GraphQL\Executor\ExecutionResult;
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
-use Mrap\GraphCool\Model\Script;
+use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\TypeLoader;
@@ -24,6 +25,7 @@ use Throwable;
 
 class GraphCool
 {
+    /** @var Closure[] */
     protected static array $shutdown = [];
 
     public static function run(): void
@@ -31,6 +33,7 @@ class GraphCool
         Env::init();
         StopWatch::start(__METHOD__);
         $instance = new self();
+        $result = [];
         try {
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
@@ -48,6 +51,10 @@ class GraphCool
         }
     }
 
+    /**
+     * @return mixed[]
+     * @throws Error
+     */
     protected function parseRequest(): array
     {
         StopWatch::start(__METHOD__);
@@ -97,6 +104,13 @@ class GraphCool
         };
     }
 
+    /**
+     * @param Schema $schema
+     * @param string $query
+     * @param mixed[]|null $variables
+     * @param int $index
+     * @return mixed[]
+     */
     protected function executeQuery(Schema $schema, string $query, ?array $variables, int $index): array
     {
         StopWatch::start(__METHOD__);
@@ -117,6 +131,10 @@ class GraphCool
         return 0;
     }
 
+    /**
+     * @param mixed[] $response
+     * @throws Throwable
+     */
     protected function sendResponse(array $response): void
     {
         header('Content-Type: application/json');
@@ -142,6 +160,10 @@ class GraphCool
         }
     }
 
+    /**
+     * @param mixed[] $args
+     * @return bool
+     */
     public static function runScript(array $args): bool
     {
         Env::init();
@@ -158,7 +180,7 @@ class GraphCool
                     }
                 } else {
                     $e = new RuntimeException(
-                        $classname . ' is not a script class. (Must extend Mrap\GraphCool\Model\Script)'
+                        $classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)'
                     );
                     ErrorHandler::sentryCapture($e);
                 }

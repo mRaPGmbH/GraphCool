@@ -4,7 +4,7 @@ namespace Mrap\GraphCool\Tests\Model;
 
 use Carbon\Carbon;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Model\Field;
+use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
 use Ramsey\Uuid\Uuid;
 

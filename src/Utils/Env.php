@@ -17,7 +17,7 @@ class Env
         StopWatch::stop('.env');
     }
 
-    public static function get(string $key, $default = null)
+    public static function get(string $key, mixed $default = null): mixed
     {
         $value = getenv($key);
         if ($value === false) {

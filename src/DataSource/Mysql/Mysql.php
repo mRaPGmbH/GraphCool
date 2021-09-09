@@ -30,6 +30,11 @@ class Mysql
         static::$connector = $connector;
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return int
+     */
     public static function execute(string $sql, array $params): int
     {
         StopWatch::start(__METHOD__ . $sql);
@@ -54,16 +59,32 @@ class Mysql
         return static::get()->executeRaw($sql);
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return stdClass|null
+     */
     public static function fetch(string $sql, array $params): ?stdClass
     {
         return static::get()->fetch($sql, $params);
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @return stdClass[]
+     */
     public static function fetchAll(string $sql, array $params): array
     {
         return static::get()->fetchAll($sql, $params);
     }
 
+    /**
+     * @param string $sql
+     * @param mixed[] $params
+     * @param int $column
+     * @return mixed
+     */
     public static function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
         return static::get()->fetchColumn($sql, $params, $column);

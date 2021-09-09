@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
-use Mrap\GraphCool\Model\Field;
-use Mrap\GraphCool\Model\Model;
-use Mrap\GraphCool\Model\Relation;
+use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 
 class MysqlEdgeWriter
 {
+
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string $id
+     * @param mixed[] $data
+     */
     public function writeEdges(string $tenantId, string $name, string $id, array $data): void
     {
         if (empty($id)) {
             return;
         }
         $model = Model::get($name);
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if (!$item instanceof Relation) {
                 continue;
             }
@@ -40,6 +47,10 @@ class MysqlEdgeWriter
         }
     }
 
+    /**
+     * @param string[] $childIds
+     * @param string $parentName
+     */
     protected function deleteAllRelations(array $childIds, string $parentName): void
     {
         $params = [];
@@ -54,6 +65,14 @@ class MysqlEdgeWriter
         Mysql::execute($sql, $params);
     }
 
+    /**
+     * @param string $tenantId
+     * @param Relation $relation
+     * @param mixed[] $data
+     * @param string $parentId
+     * @param string[] $childIds
+     * @param string $childName
+     */
     protected function insertOrUpdateBelongsRelation(
         string $tenantId,
         Relation $relation,
@@ -65,7 +84,7 @@ class MysqlEdgeWriter
         foreach ($childIds as $childId) {
             $this->insertOrUpdateEdge($tenantId, $parentId, $childId, $relation->name, $childName);
             /** @var Field $field */
-            foreach ($relation as $key => $field) {
+            foreach (get_object_vars($relation) as $key => $field) {
                 if (!isset($data[$key])) {
                     if (($field->default ?? null) !== null) {
                         [$intValue, $stringValue, $floatValue] = MysqlConverter::convertInputTypeToDatabaseTriplet(
@@ -145,6 +164,13 @@ class MysqlEdgeWriter
         return Mysql::execute($sql, $params) > 0;
     }
 
+    /**
+     * @param string|null $tenantId
+     * @param Relation $relation
+     * @param mixed[] $data
+     * @param string[] $childIds
+     * @param string $childName
+     */
     protected function insertOrUpdateBelongsManyRelation(
         ?string $tenantId,
         Relation $relation,
@@ -175,6 +201,10 @@ class MysqlEdgeWriter
         }
     }
 
+    /**
+     * @param string[] $childIds
+     * @param string[] $parentIds
+     */
     protected function deleteRelations(array $childIds, array $parentIds): void
     {
         if (count($childIds) === 0 || count($parentIds) === 0) {
@@ -196,13 +226,19 @@ class MysqlEdgeWriter
         Mysql::execute($sql, array_merge($params, $params2));
     }
 
+    /**
+     * @param string $tenantId
+     * @param string $name
+     * @param string[] $ids
+     * @param mixed[] $updates
+     */
     public function updateEdges(string $tenantId, string $name, array $ids, array $updates): void
     {
         if (count($ids) === 0) {
             return;
         }
         $model = Model::get($name);
-        foreach ($model as $key => $item) {
+        foreach (get_object_vars($model) as $key => $item) {
             if (!array_key_exists($key, $updates)) {
                 continue;
             }
