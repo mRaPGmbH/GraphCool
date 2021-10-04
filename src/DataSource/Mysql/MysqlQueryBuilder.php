@@ -547,21 +547,18 @@ class MysqlQueryBuilder
                             continue;
                         }
                         $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
+                        $ors = [];
                         if (is_numeric($part)) {
-                            if (str_contains($part, '.')) {
-                                $sql .= '`value_float` > ' . ((float)$part - 0.0001);
-                                $sql .= ' AND `value_float` < ' . ((float)$part + 0.0001);
-                            } else {
-                                $sql .= '`value_int` = ' . $this->parameter((int)$part);
-                            }
-                        } else {
-                            $sql .= '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+                            $ors[] = '(`value_float` > ' . ((float)$part - 0.0001) . ' AND `value_float` < ' . ((float)$part + 0.0001).')';
+                            $ors[] = '`value_int` = ' . $this->parameter((int)$part);
                         }
-                        $sql .= ' AND `deleted_at` IS NULL)';
+                        $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+
+                        $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
                         $this->where[] = $sql;
                     }
                     if (count($uuids) > 0) {
-                        $this->where[] = implode(' OR ', $uuids);
+                        $this->where[] = '(' . implode(' OR ', $uuids) . ')';
                     }
                     break;
                 //case 'edge':

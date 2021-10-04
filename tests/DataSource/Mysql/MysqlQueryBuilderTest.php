@@ -430,14 +430,17 @@ class MysqlQueryBuilderTest extends TestCase
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $builder->search('test  2 2.5 7bead738-fc30-4d11-87ee-74178abbc9fb');
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  WHERE `node`.`id` = :p3 OR `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` = :p4 AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_float` > 2.4999 AND `value_float` < 2.5001 AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_int` = :p2 AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` LIKE :p1 AND `deleted_at` IS NULL) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node`  WHERE (`node`.`id` = :p6 OR `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` = :p7 AND `deleted_at` IS NULL)) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ((`value_float` > 1.9999 AND `value_float` < 2.0001) OR `value_int` = :p2 OR `value_string` LIKE :p3) AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ((`value_float` > 2.4999 AND `value_float` < 2.5001) OR `value_int` = :p4 OR `value_string` LIKE :p5) AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE (`value_string` LIKE :p1) AND `deleted_at` IS NULL) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
             ':p1' => '%test%',
             ':p2' => 2,
-            ':p3' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
-            ':p4' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
+            ':p3' => '%2%',
+            ':p4' => 2,
+            ':p5' => '%2.5%',
+            ':p6' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
+            ':p7' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
         ];
         self::assertSame($expected, $params);
     }
