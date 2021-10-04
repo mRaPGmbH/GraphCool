@@ -38,7 +38,7 @@ class ModelInputType extends InputObjectType
                 continue;
             }
             if ($field->readonly === false) {
-                $fields[$key] = $typeLoader->loadForField($field, $shortname . '__' . $key);
+                $fields[$key] = $typeLoader->loadForField($field, $shortname . '__' . $key, true);
             }
         }
         ksort($fields);

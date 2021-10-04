@@ -19,9 +19,9 @@ class Upload extends ScalarType
         throw new Error('File upload can only be used as input.');
     }
 
-    public function parseValue(mixed $value): ?string
+    public function parseValue(mixed $value): mixed
     {
-        return null;
+        return $value;
     }
 
     public function parseLiteral(Node $valueNode, ?array $variables = null): ?string

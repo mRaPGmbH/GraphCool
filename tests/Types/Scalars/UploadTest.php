@@ -21,7 +21,8 @@ class UploadTest extends TestCase
     public function testParseValue(): void
     {
         $upload = new Upload();
-        self::assertNull($upload->parseValue('anything'));
+        self::assertSame('anything', $upload->parseValue('anything'));
+        self::assertNull($upload->parseValue(null));
     }
 
     public function testParseLiteral(): void

@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Mrap\GraphCool\Tests\DataSource\Mysql;
-
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\Tests\TestCase;

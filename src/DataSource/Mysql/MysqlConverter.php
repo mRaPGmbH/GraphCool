@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -18,9 +19,9 @@ class MysqlConverter
      * @param mixed $value
      * @return mixed[]
      */
-    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value): array
+    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value, string $key = ''): array
     {
-        $return = static::convertInputTypeToDatabase($field, $value);
+        $return = static::convertInputTypeToDatabase($field, $value, $key);
         return match (gettype($return)) {
             'integer' => [$return, null, null],
             'double' => [null, null, $return], // float
@@ -29,7 +30,7 @@ class MysqlConverter
         };
     }
 
-    public static function convertInputTypeToDatabase(Field $field, mixed $value): float|int|string|null
+    public static function convertInputTypeToDatabase(Field $field, mixed $value, string $key = ''): float|int|string|null
     {
         if ($field->null === false && $value === null) {
             $value = $field->default ?? null;
@@ -45,6 +46,7 @@ class MysqlConverter
             Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
             Type::FLOAT => (float)$value,
             Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
+            Field::FILE => File::store($key, $value)
         };
     }
 
@@ -68,14 +70,15 @@ class MysqlConverter
         return $result;
     }
 
-    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string
+    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property, string $key = ''): float|bool|int|string|stdClass
     {
         return match ($field->type) {
+            default => (string)$property->value_string,
             Type::BOOLEAN => (bool)$property->value_int,
             Type::FLOAT => (double)$property->value_float,
             Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
             Field::DECIMAL => (float)($property->value_int / (10 ** $field->decimalPlaces)),
-            default => (string)$property->value_string,
+            Field::FILE => File::retrieve($key, $property->value_string),
         };
     }
 

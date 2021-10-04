@@ -139,5 +139,21 @@ class GraphCoolTest extends TestCase
         self::assertFalse($result);
     }
 
+    public function xtestFileUpload(): void
+    {
+        $_REQUEST['map'] = '';
+
+        unset($_REQUEST['map']);
+    }
+
+    public function testFileUploadJsonError(): void
+    {
+        $_REQUEST['map'] = '{not-a-valid-json:(';
+        $this->expectOutputRegex('/file map/i');
+        $_POST['operations'] = '{"query":"query{DummyQuery(arg:\"asdf\")}"}';
+        GraphCool::run();
+        unset($_REQUEST['map']);
+    }
+
 
 }

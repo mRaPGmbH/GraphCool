@@ -28,6 +28,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
+use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereInputType;
@@ -78,6 +79,7 @@ class TypeLoader
         self::register('_UpdateManyResult', UpdateManyResult::class);
         self::register('_RelationUpdateMode', RelationUpdateModeEnum::class);
         self::register('_Upload', Upload::class);
+        self::register('_File', FileType::class);
     }
 
     public static function register(string $name, string $classname): void
@@ -85,7 +87,7 @@ class TypeLoader
         static::$registry[$name] = $classname;
     }
 
-    public function loadForField(Field $field, string $name = null): Type
+    public function loadForField(Field $field, string $name = null, bool $input = false): Type
     {
         return match ($field->type) {
             default => Type::string(),
@@ -102,6 +104,15 @@ class TypeLoader
             Field::DATE => $this->load('_Date')(),
             Field::TIME => $this->load('_Time')(),
             Field::TIMEZONE_OFFSET => $this->load('_TimezoneOffset')(),
+            Field::FILE => $this->loadFileType($input),
+        };
+    }
+
+    protected function loadFileType(bool $input = false): Type
+    {
+        return match($input) {
+            true => $this->load('_File')(),
+            false => $this->load('_FileExport')()
         };
     }
 
@@ -119,7 +130,7 @@ class TypeLoader
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
-            if ($name === '_ImportSummary') {
+            if ($name === '_ImportSummary' || $name === '_File') {
                 return new $classname($this);
             }
             return new $classname();

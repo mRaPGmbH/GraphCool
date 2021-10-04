@@ -6,8 +6,10 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Utils\FileUpload;
 use RuntimeException;
 use stdClass;
 
@@ -60,9 +62,12 @@ class MysqlNodeWriter
     {
         if ($value === null && $field->null === true) {
             $this->deleteNodeProperty($id, $key);
+            if ($field->type === Field::FILE) {
+                File::delete($name . '.' . $id . '.' . $key);
+            }
             return;
         }
-        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value);
+        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value, $name . '.' . $id . '.' . $key);
         $this->insertOrUpdateNodeProperty($id, $name, $key, $valueInt, $valueString, $valueFloat);
     }
 

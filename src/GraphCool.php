@@ -19,6 +19,7 @@ use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
+use Mrap\GraphCool\Utils\FileUpload;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use Throwable;
@@ -71,6 +72,9 @@ class GraphCool
         } catch (JsonException $e) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
+        }
+        if (isset($_REQUEST['map'])) {
+            $request = FileUpload::parse($request, $_REQUEST['map']);
         }
         if (isset($request['query'])) {
             $request = [$request];

@@ -39,7 +39,7 @@ class MysqlNodeReader
             if ($field instanceof Relation) {
                 continue;
             }
-            $node->$key = MysqlConverter::convertDatabaseTypeToOutput($field, $property);
+            $node->$key = MysqlConverter::convertDatabaseTypeToOutput($field, $property, $name . '.' . $id . '.' . $key);
         }
         return Mysql::edgeReader()->loadEdges($node, $name);
     }

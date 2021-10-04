@@ -15,6 +15,7 @@ use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\FileUpload;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
@@ -89,9 +90,9 @@ class MutationType extends ObjectType
             }
             if ($field->readonly === false) {
                 if ($field->null === true || ($field->default ?? null) !== null) {
-                    $args[$key] = $typeLoader->loadForField($field, $name . '__' . $key);
+                    $args[$key] = $typeLoader->loadForField($field, $name . '__' . $key, true);
                 } else {
-                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '__' . $key));
+                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '__' . $key, true));
                 }
             }
         }

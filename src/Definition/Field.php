@@ -21,6 +21,7 @@ class Field
     public const DATE = 'DATE';
     public const TIME = 'TIME';
     public const TIMEZONE_OFFSET = 'TIMEZONE_OFFSET';
+    public const FILE = 'FILE';
 
     public string $type;
     public int $decimalPlaces;
@@ -69,6 +70,11 @@ class Field
         return new Field(Type::FLOAT);
     }
 
+    public static function file(): Field
+    {
+        return (new Field(static::FILE));
+    }
+
     public static function decimal(int $decimalPlaces = 2): Field
     {
         $field = new Field(static::DECIMAL);
@@ -85,6 +91,7 @@ class Field
     {
         return (new Field(static::UPDATED_AT))->nullable()->readonly();
     }
+
 
     public function nullable(): Field
     {
