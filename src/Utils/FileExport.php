@@ -219,7 +219,7 @@ class FileExport
                 }
                 return WriterEntityFactory::createCell($value);
             default:
-                return WriterEntityFactory::createCell($value);
+                return WriterEntityFactory::createCell(substr($value, 0, 32767));
         }
     }
 

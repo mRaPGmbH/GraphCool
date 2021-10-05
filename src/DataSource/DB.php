@@ -70,7 +70,7 @@ class DB
      * @param mixed[] $data
      * @return stdClass
      */
-    public static function insert(string $tenantId, string $modelName, array $data): stdClass
+    public static function insert(string $tenantId, string $modelName, array $data): ?stdClass
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->insert($tenantId, $modelName, $data);

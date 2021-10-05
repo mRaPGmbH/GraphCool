@@ -384,6 +384,9 @@ class MysqlQueryBuilder
                 if (!is_array($where['value'])) {
                     throw new Error($where['operator'] . ' requires the value to be an array.');
                 }
+                if (count($where['value']) === 0) {
+                    return '0=1'; // TODO: throw error. this is now only rigged to not find anything, because Kassa can't handle Errors
+                }
                 $sql .= ' ' . $this->parameterArray($where['value']);
             } elseif ($where['operator'] === 'BETWEEN' || $where['operator'] === 'NOT BETWEEN') {
                 $values = $where['value'] ?? null;
