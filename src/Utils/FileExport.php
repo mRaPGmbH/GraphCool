@@ -59,6 +59,11 @@ class FileExport
         }
         $writer->openToFile($file);
         $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
+
+        $this->excelDateStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy')->build();
+        $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
+        $this->excelTimeStyle = (new StyleBuilder())->setFormat('hh:mm')->build();
+
         foreach ($data as $row) {
             $writer->addRow(WriterEntityFactory::createRow($this->getRowCells($model, $args, $row)));
         }
@@ -124,9 +129,6 @@ class FileExport
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
-        $this->excelDateStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy')->build();
-        $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
-        $this->excelTimeStyle = (new StyleBuilder())->setFormat('hh:mm')->build();
 
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
@@ -147,8 +149,13 @@ class FileExport
             }
             if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
                 foreach ($args[$key] as $related) {
+                    if (count($related['columns']) === 0) {
+                        continue;
+                    }
                     $closure = $row->$key;
+                    //StopWatch::start('Closure');
                     $data = $closure(['where' => [['column' => 'id', 'operator' => '=', 'value' => $related['id']]]]);
+                    //StopWatch::stop('Closure');
                     foreach ($related['columns'] as $column) {
                         if (count($data['edges']) === 0) {
                             $value = null;
@@ -219,7 +226,10 @@ class FileExport
                 }
                 return WriterEntityFactory::createCell($value);
             default:
-                return WriterEntityFactory::createCell(substr($value, 0, 32767));
+                if (is_string($value)) {
+                    $value = substr($value, 0, 32767);
+                }
+                return WriterEntityFactory::createCell($value);
         }
     }
 
