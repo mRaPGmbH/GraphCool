@@ -147,24 +147,39 @@ class FileExport
                     $cells[] = WriterEntityFactory::createCell($value);
                 }
             }
-            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
+            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key]) && count($args[$key]) > 0) {
+                $ids = [];
+                foreach ($args[$key] as $related) {
+                    $ids[] = $related['id'];
+                }
+                if (count($ids) === 0) {
+                    continue;
+                }
+                $closure = $row->$key;
+                $data = $closure(['where' => [['column' => 'id', 'operator' => 'IN', 'value' => $ids]]]);
+                $edges = [];
+                foreach ($data['edges'] as $edge) {
+                    $edges[$edge->parent_id] = $edge;
+                }
+
                 foreach ($args[$key] as $related) {
                     if (count($related['columns']) === 0) {
                         continue;
                     }
-                    $closure = $row->$key;
-                    //StopWatch::start('Closure');
-                    $data = $closure(['where' => [['column' => 'id', 'operator' => '=', 'value' => $related['id']]]]);
-                    //StopWatch::stop('Closure');
+                    if (!array_key_exists($related['id'], $edges)) {
+                        foreach ($related['columns'] as $column) {
+                            $cells[] = WriterEntityFactory::createCell(null);
+                        }
+                        continue;
+                    }
+                    $edge = $edges[$related['id']];
                     foreach ($related['columns'] as $column) {
-                        if (count($data['edges']) === 0) {
-                            $value = null;
-                        } elseif (str_starts_with($column['column'], '_')) {
+                        if (str_starts_with($column['column'], '_')) {
                             $property = substr($column['column'], 1);
-                            $value = $data['edges'][0]->$property ?? null;
+                            $value = $edge->$property ?? null;
                         } else {
                             $property = $column['column'];
-                            $value = $data['edges'][0]->_node->$property ?? null;
+                            $value = $edge->_node->$property ?? null;
                         }
                         $cells[] = WriterEntityFactory::createCell($value);
                     }

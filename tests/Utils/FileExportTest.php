@@ -99,6 +99,7 @@ class FileExportTest extends TestCase
                     return [
                         'edges' => [
                             (object) [
+                                'parent_id' => 125,
                                 'pivot_property' => 'pivot data',
                                 '_node' => (object) ['id' => 125, 'last_name' => 'yy']
                             ]
