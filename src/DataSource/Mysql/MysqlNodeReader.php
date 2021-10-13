@@ -19,7 +19,7 @@ class MysqlNodeReader
         string $id,
         ?string $resultType = ResultType::DEFAULT
     ): ?stdClass {
-        $node = $this->fetchNode($tenantId, $id, $resultType);
+        $node = $this->fetchNode($tenantId, $id, $name, $resultType);
         if ($node === null) {
             return null;
         }
@@ -44,11 +44,11 @@ class MysqlNodeReader
         return Mysql::edgeReader()->loadEdges($node, $name);
     }
 
-    protected function fetchNode(?string $tenantId, string $id, ?string $resultType = ResultType::DEFAULT): ?stdClass
+    protected function fetchNode(?string $tenantId, string $id, string $name, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {
         // TODO: use queryBuilder
-        $sql = 'SELECT * FROM `node` WHERE `id` = :id ';
-        $params = [':id' => $id];
+        $sql = 'SELECT * FROM `node` WHERE `id` = :id AND `model` = :model ';
+        $params = [':id' => $id, ':model' => $name];
         if ($tenantId !== null) {
             $sql .= 'AND `node`.`tenant_id` = :tenant_id ';
             $params[':tenant_id'] = $tenantId;

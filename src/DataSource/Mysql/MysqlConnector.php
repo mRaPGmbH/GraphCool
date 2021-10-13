@@ -27,7 +27,7 @@ class MysqlConnector
     /**
      * @codeCoverageIgnore
      */
-    public function waitForConnection(int $retries = 5): void
+    public function waitForConnection(int $retries = 15): void
     {
         for ($i = 0; $i < $retries; $i++) {
             try {
