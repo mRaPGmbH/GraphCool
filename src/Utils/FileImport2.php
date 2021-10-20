@@ -294,7 +294,12 @@ class FileImport2
             if ($field instanceof Field && isset($mapping[$key])) {
                 $columnNumber = $mapping[$key];
                 try {
-                    $value = $this->convertField($field, $cells[$columnNumber]->getValue() ?? null);
+                    $cell = $cells[$columnNumber];
+                    if (is_object($cell)) {
+                        $value = $this->convertField($field, $cell->getValue());
+                    } else {
+                        $value = null;
+                    }
                 } catch (Error $e) {
                     if ($field->null === false) {
                         $errors[] = [

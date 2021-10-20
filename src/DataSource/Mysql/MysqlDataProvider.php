@@ -222,10 +222,13 @@ class MysqlDataProvider implements DataProvider
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
-        $node = $this->load($tenantId, $name, $id);
+        $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
+        if ($node === null) {
+            return null;
+        }
         Mysql::nodeWriter()->delete($tenantId, $id);
         $model = Model::get($name);
-        $model->afterDelete($node); // TODO: nullpointer exception?
+        $model->afterDelete($node);
         return $node;
     }
 
@@ -233,8 +236,11 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::nodeWriter()->restore($tenantId, $id);
         $node = $this->load($tenantId, $name, $id);
+        if ($node === null) {
+            throw new Error($name . ' with ID ' . $id . ' not found.');
+        }
         $model = Model::get($name);
-        $model->afterUpdate($node);  // TODO: nullpointer exception?
+        $model->afterUpdate($node);
         return $node;
     }
 

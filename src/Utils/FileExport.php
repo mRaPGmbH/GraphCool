@@ -59,6 +59,11 @@ class FileExport
         }
         $writer->openToFile($file);
         $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
+
+        $this->excelDateStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy')->build();
+        $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
+        $this->excelTimeStyle = (new StyleBuilder())->setFormat('hh:mm')->build();
+
         foreach ($data as $row) {
             $writer->addRow(WriterEntityFactory::createRow($this->getRowCells($model, $args, $row)));
         }
@@ -124,9 +129,6 @@ class FileExport
     protected function getRowCells(Model $model, array $args, stdClass $row): array
     {
         $cells = [];
-        $this->excelDateStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy')->build();
-        $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
-        $this->excelTimeStyle = (new StyleBuilder())->setFormat('hh:mm')->build();
 
         foreach ($args['columns'] as $column) {
             $key = $column['column'];
@@ -145,19 +147,39 @@ class FileExport
                     $cells[] = WriterEntityFactory::createCell($value);
                 }
             }
-            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key])) {
+            if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key]) && count($args[$key]) > 0) {
+                $ids = [];
                 foreach ($args[$key] as $related) {
-                    $closure = $row->$key;
-                    $data = $closure(['where' => [['column' => 'id', 'operator' => '=', 'value' => $related['id']]]]);
+                    $ids[] = $related['id'];
+                }
+                if (count($ids) === 0) {
+                    continue;
+                }
+                $closure = $row->$key;
+                $data = $closure(['where' => [['column' => 'id', 'operator' => 'IN', 'value' => $ids]]]);
+                $edges = [];
+                foreach ($data['edges'] as $edge) {
+                    $edges[$edge->parent_id] = $edge;
+                }
+
+                foreach ($args[$key] as $related) {
+                    if (count($related['columns']) === 0) {
+                        continue;
+                    }
+                    if (!array_key_exists($related['id'], $edges)) {
+                        foreach ($related['columns'] as $column) {
+                            $cells[] = WriterEntityFactory::createCell(null);
+                        }
+                        continue;
+                    }
+                    $edge = $edges[$related['id']];
                     foreach ($related['columns'] as $column) {
-                        if (count($data['edges']) === 0) {
-                            $value = null;
-                        } elseif (str_starts_with($column['column'], '_')) {
+                        if (str_starts_with($column['column'], '_')) {
                             $property = substr($column['column'], 1);
-                            $value = $data['edges'][0]->$property ?? null;
+                            $value = $edge->$property ?? null;
                         } else {
                             $property = $column['column'];
-                            $value = $data['edges'][0]->_node->$property ?? null;
+                            $value = $edge->_node->$property ?? null;
                         }
                         $cells[] = WriterEntityFactory::createCell($value);
                     }
@@ -219,6 +241,9 @@ class FileExport
                 }
                 return WriterEntityFactory::createCell($value);
             default:
+                if (is_string($value)) {
+                    $value = substr($value, 0, 32767);
+                }
                 return WriterEntityFactory::createCell($value);
         }
     }
