@@ -112,6 +112,7 @@ class MysqlConverterTest extends TestCase
             ['where' => ['column' => 'float', 'operator' => '=', 'value' => '3'], 'expected' => ['column' => 'float', 'operator' => '=', 'value' => 3.0]],
             ['where' => ['column' => 'date', 'operator' => 'IN', 'value' => ['2020-01-01', '2021-01-01']], 'expected' => ['column' => 'date', 'operator' => 'IN', 'value' => [1577836800000,1609459200000]]],
             ['where' => ['column' => 'date', 'operator' => '=', 'value' => '2020-01-01'], 'expected' => ['column' => 'date', 'operator' => '=', 'value' => 1577836800000]],
+            ['where' => ['column' => 'file', 'operator' => 'LIKE', 'value' => 'test'], 'expected' => ['column' => 'file', 'operator' => 'LIKE', 'value' => 'test']],
             ['where' => ['AND'=>[['column' => 'last_name', 'operator' => '=', 'value' => 3]]], 'expected' => ['AND'=>[['column' => 'last_name', 'operator' => '=', 'value' => '3']]]],
             ['where' => ['OR'=>[['column' => 'last_name', 'operator' => '=', 'value' => 3]]], 'expected' => ['OR'=>[['column' => 'last_name', 'operator' => '=', 'value' => '3']]]],
         ];

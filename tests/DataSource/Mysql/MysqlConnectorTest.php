@@ -145,4 +145,28 @@ class MysqlConnectorTest extends TestCase
         self::assertSame('c', $result);
     }
 
+    public function testFetchAllError(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        $mock = $this->createMock(PDOStatement::class);
+        $mock->expects($this->once())
+            ->method('execute')
+            ->with(['b']);
+        $mock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_OBJ)
+            ->willReturn(false);
+
+        $mock2 = $this->createMock(PDO::class);
+        $mock2->expects($this->once())
+            ->method('prepare')
+            ->with('a')
+            ->willReturn($mock);
+
+        $connector = new MysqlConnector();
+        $connector->setPdo($mock2);
+        $connector->fetchAll('a', ['b']);
+    }
+
 }

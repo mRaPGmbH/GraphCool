@@ -62,12 +62,9 @@ class MysqlNodeWriter
     {
         if ($value === null && $field->null === true) {
             $this->deleteNodeProperty($id, $key);
-            if ($field->type === Field::FILE) {
-                File::delete($name . '.' . $id . '.' . $key);
-            }
             return;
         }
-        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value, $name . '.' . $id . '.' . $key);
+        [$valueInt, $valueString, $valueFloat] = MysqlConverter::convertInputTypeToDatabaseTriplet($field, $value);
         $this->insertOrUpdateNodeProperty($id, $name, $key, $valueInt, $valueString, $valueFloat);
     }
 

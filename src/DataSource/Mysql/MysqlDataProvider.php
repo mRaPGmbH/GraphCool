@@ -8,11 +8,13 @@ use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DataProvider;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
 use Ramsey\Uuid\Uuid;
 use stdClass;
@@ -148,7 +150,11 @@ class MysqlDataProvider implements DataProvider
         string $id,
         ?string $resultType = ResultType::DEFAULT
     ): ?stdClass {
-        return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        if ($data !== null) {
+            $data = $this->retrieveFiles($name, $data, $id);
+        }
+        return $data;
     }
 
     /**
@@ -161,10 +167,11 @@ class MysqlDataProvider implements DataProvider
     public function insert(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = Model::get($name);
+        $id = Uuid::uuid4()->toString();
+        $data = $this->storeFiles($model, $name, $data, $id);
         $data = $model->beforeInsert($tenantId, $data);
         $this->checkUnique($tenantId, $model, $name, $data);
 
-        $id = Uuid::uuid4()->toString();
         Mysql::nodeWriter()->insert($tenantId, $name, $id, $data);
 
         $loaded = $this->load($tenantId, $name, $id);
@@ -186,6 +193,7 @@ class MysqlDataProvider implements DataProvider
         $model = Model::get($name);
         $this->checkIfNodeExists($tenantId, $model, $name, $data['id']);
         $updates = $data['data'] ?? [];
+        $updates = $this->storeFiles($model, $name, $updates, $data['id']);
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
         $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
         $this->checkNull($model, $updates);
@@ -226,6 +234,7 @@ class MysqlDataProvider implements DataProvider
         if ($node === null) {
             return null;
         }
+        // $this->deleteFiles($name, $id); // this would HARD-delete files, according to Laurenz files shall only be soft-deleted!
         Mysql::nodeWriter()->delete($tenantId, $id);
         $model = Model::get($name);
         $model->afterDelete($node);
@@ -350,5 +359,68 @@ class MysqlDataProvider implements DataProvider
             }
         }
     }
+
+    protected function storeFiles(Model $model, string $name, array $data, string $id): array
+    {
+        foreach (get_object_vars($model) as $key => $item) {
+            if (
+                !$item instanceof Field
+                || !array_key_exists($key, $data)
+                || $item->type !== Field::FILE
+            ) {
+                continue;
+            }
+            $oldValue = $this->getOldValue($name, $id, $key);
+            if ($oldValue !== null) {
+                File::delete($name, $id, $key, $oldValue);
+            }
+            if ($data[$key] !== null) {
+                $data[$key] = File::store($name, $id, $key, $data[$key]);
+            }
+        }
+        return $data;
+    }
+
+    protected function getOldValue(string $name, string $id, string $key): ?string
+    {
+        $sql = 'SELECT value_string FROM `node_property` WHERE `node_id` = :id AND `model` = :model AND `property` = :property AND deleted_at IS NULL';
+        $params = [
+            ':id' => $id,
+            ':model' => $name,
+            ':property' => $key
+        ];
+        $property = Mysql::fetch($sql, $params);
+        return $property->value_string ?? null;
+    }
+
+    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
+    {
+        $model = Model::get($name);
+        foreach (get_object_vars($model) as $key => $item) {
+            if (
+                !$item instanceof Field
+                || $item->type !== Field::FILE
+                || ($data->$key ?? null) === null
+            ) {
+                continue;
+            }
+            $data->$key = File::retrieve($name, $id, $key, $data->$key);
+        }
+        return $data;
+    }
+
+    protected function deleteFiles(string $name, string $id): void
+    {
+        $model = Model::get($name);
+        foreach (get_object_vars($model) as $key => $item) {
+            if ($item instanceof Field) {
+                $oldValue = $this->getOldValue($name, $id, $key);
+                if ($oldValue !== null) {
+                    File::delete($name, $id, $key, $oldValue);
+                }
+            }
+        }
+    }
+
 
 }

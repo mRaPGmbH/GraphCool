@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource;
 
+use Mrap\GraphCool\DataSource\Aws\AwsFileProvider;
 use Mrap\GraphCool\DataSource\FileSystem\SystemFileProvider;
+use Mrap\GraphCool\DataSource\Microservice\MicroserviceFileProvider;
+use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\FileExport;
 use Mrap\GraphCool\Utils\FileImport2;
 use stdClass;
@@ -74,26 +77,33 @@ class File
         static::$importer = $importer;
     }
 
-    public static function store(string $key, array $file): ?string
+    public static function store(string $name, string $id, string $key, array $file): stdClass
     {
-        return static::getFileProvider()->store($key, $file);
+        return static::getFileProvider()->store($name, $id, $key, $file);
     }
 
-    public static function retrieve(string $key, string $value): stdClass
+    public static function retrieve(string $name, string $id, string $key, string $value): stdClass
     {
-        return static::getFileProvider()->retrieve($key, $value);
+        return static::getFileProvider()->retrieve($name, $id, $key, $value);
     }
 
-    public static function delete(string $key): void
+    public static function delete(string $name, string $id, string $key, string $value): void
     {
-        static::getFileProvider()->delete($key);
+        static::getFileProvider()->delete($name, $id, $key, $value);
     }
 
-    public static function getFileProvider(): FileProvider
+    /**
+     * @codeCoverageIgnore
+     */
+    protected static function getFileProvider(): FileProvider
     {
         if (!isset(static::$storage)) {
-            //static::$storage = new AwsFileProvider();
-            static::$storage = new SystemFileProvider();
+            if (Env::get('APP_ENV') === 'local') {
+                //static::$storage = new SystemFileProvider();
+                static::$storage = new MicroserviceFileProvider();
+            } else {
+                static::$storage = new AwsFileProvider();
+            }
         }
         return static::$storage;
     }

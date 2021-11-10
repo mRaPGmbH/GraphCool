@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\FileSystem;
 
 use GraphQL\Error\Error;
-use JsonException;
 use Mrap\GraphCool\DataSource\FileProvider;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
@@ -16,70 +15,53 @@ use stdClass;
 class SystemFileProvider implements FileProvider
 {
     protected string $path;
-    protected array $data;
 
     /**
-     * @throws JsonException
+     * @throws Error
      */
-    public function store(string $key, array $input): ?string
+    public function store(string $name, string $id, string $key, array $input): stdClass
     {
-        $base64 = $input['data_base64'] ?? null;
-        if ($base64 !== null) {
-            $data = base64_decode($base64);
-        } else {
-            $tmpFile = $input['file']['tmp_name'] ?? null;
-            $data = file_get_contents($tmpFile);
-        }
-        if ($data === false) {
-            throw new Error('Uploaded file could not be read.');
-        }
-        file_put_contents($this->filename($key), $data);
-        return $input['filename'];
+        $file = FileUpload::get($input);
+        $file->id = $file->filename;
+        file_put_contents($this->filename($name, $id, $key), base64_decode($file->data_base64));
+        return $file;
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function retrieve(string $key, string $value): stdClass
+    public function retrieve(string $name, string $id, string $key, string $value): ?stdClass
     {
+        $filename = $this->filename($name, $id, $key);
+        if (!file_exists($filename)) {
+            return null;
+        }
         return (object) [
             'filename' => $value,
-            'mime_type' => function() use ($key) {
-                return FileUpload::getMimetype($this->loadData($key));
+            'mime_type' => function() use ($filename) {
+                return mime_content_type($filename);
             },
-            'data_base64' => function() use ($key) {
-                return base64_encode($this->loadData($key));
+            'data_base64' => function() use ($filename) {
+                return base64_encode(file_get_contents($filename));
             }
         ];
     }
 
-    public function delete(string $key): void
+    public function delete(string $name, string $id, string $key, string $value): void
     {
-        $filename = $this->filename($key);
+        $filename = $this->filename($name, $id, $key);
         if (file_exists($filename)) {
             unlink($filename);
         }
     }
 
-    protected function loadData(string $key): string
+    protected function filename(string $name, string $id, string $key): string
     {
-        if (!isset($this->data[$key])) {
-            $this->data[$key] = file_get_contents($this->filename($key));
-        }
-        return $this->data[$key];
-    }
-
-    protected function filename(string $key): string
-    {
-        $parts = explode('.', $key);
         $path = $this->getPath() . '/'
-            . $parts[0] . '/'
-            . substr($parts[1], 0, 3) . '/'
-            . substr($parts[1], 3, 3);
-        if (!file_exists($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+            . $name . '/'
+            . substr($id, 0, 3) . '/'
+            . substr($id, 3, 3);
+        if (!file_exists($path) && !@mkdir($path, 0777, true) && !is_dir($path)) {
             throw new RuntimeException(sprintf('Directory "%s" was not created', $path));
         }
-        return $path . '/' . $key;
+        return $path . '/' . $name . '.' . $id . '.' . $key;
     }
 
     protected function getPath(): string
@@ -92,7 +74,7 @@ class SystemFileProvider implements FileProvider
 
     public function setPath(string $path): void
     {
-        if (!file_exists($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+        if (!file_exists($path) && !@mkdir($path, 0777, true) && !is_dir($path)) {
             throw new RuntimeException(sprintf('Directory "%s" could not be created', $path));
         }
         $this->path = $path;

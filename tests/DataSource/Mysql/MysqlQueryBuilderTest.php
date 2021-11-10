@@ -292,6 +292,23 @@ class MysqlQueryBuilderTest extends TestCase
         self::assertSame($expected, $params);
     }
 
+    public function testWhereInError(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->where(
+            ['column' => 'id', 'operator' => 'IN', 'value' => []]
+        );
+        $query = trim($builder->toSql());
+        self::assertSame('SELECT * FROM `node`  WHERE 0=1 AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        $params = $builder->getParameters();
+        $expected = [
+            ':p0' => 'DummyModel',
+        ];
+        self::assertSame($expected, $params);
+    }
+
     public function testWhereNull(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');

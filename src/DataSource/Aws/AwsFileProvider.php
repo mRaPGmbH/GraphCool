@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Aws;
 
 use Aws\S3\S3Client;
-use GraphQL\Error\Error;
-use JsonException;
 use Mrap\GraphCool\DataSource\FileProvider;
+use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\FileUpload;
 use stdClass;
 
@@ -15,58 +14,51 @@ class AwsFileProvider implements FileProvider
 {
     protected S3Client $client;
 
-    /**
-     * @throws JsonException
-     */
-    public function store(string $key, array $input): ?string
+    public function store(string $name, string $id, string $key, array $input): stdClass
     {
-        $base64 = $input['data_base64'] ?? null;
-        if ($base64 === null) {
-            $tmpFile = $input['file']['tmp_name'] ?? null;
-            $data = file_get_contents($tmpFile);
-            if ($data === false) {
-                throw new Error('Uploaded file could not be read.');
-            }
-            $base64 = base64_encode($data);
-        }
+        $file = FileUpload::get($input);
         $result = $this->getClient()->putObject([
-            'Bucket' => 'my-bucket',
-            'Key' => $key,
-            'Body' => $base64
+            'Bucket' => $this->bucket(),
+            'Key' => $this->key($name, $id, $key),
+            'Body' => $file->data_base64
         ]);
         // TODO: check result?
-        return $input['filename'];
+        $file->id = $input['filename'];
+        return $file;
     }
 
-    /**
-     * @throws JsonException
-     */
-    public function retrieve(string $key, string $value): stdClass
+    public function retrieve(string $name, string $id, string $key, string $value): ?stdClass
     {
+        $fileKey = $this->key($name, $id, $key);
         return (object) [
             'filename' => $value,
-            'mime_type' => function() use ($key) {
-                return FileUpload::getMimetype($this->loadData($key));
+            'mime_type' => function() use ($fileKey) {
+                return FileUpload::getMimetype($this->loadData($fileKey));
             },
-            'data_base64' => function() use ($key) {
-                return $this->loadData($key);
+            'data_base64' => function() use ($fileKey) {
+                return $this->loadData($fileKey);
             }
         ];
     }
 
-    public function delete(string $key): void
+    public function delete(string $name, string $id, string $key, string $value): void
     {
         $this->getClient()->deleteObject([
-            'Bucket' => 'my-bucket',
-            'Key' => $key
+            'Bucket' => $this->bucket(),
+            'Key' => $this->key($name, $id, $key),
         ]);
+    }
+
+    protected function key(string $name, string $id, string $key): string
+    {
+        return $name.'.'.$id.'.'.$key;
     }
 
     protected function loadData(string $key): string
     {
         if (!isset($this->data[$key])) {
             $result = $this->getClient()->getObject([
-                'Bucket' => 'my-bucket',
+                'Bucket' => $this->bucket(),
                 'Key' => $key
             ]);
             $this->data[$key] = $result['Body'];
@@ -74,6 +66,9 @@ class AwsFileProvider implements FileProvider
         return $this->data[$key];
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     protected function getClient(): S3Client
     {
         if (!isset($this->client)) {
@@ -81,7 +76,7 @@ class AwsFileProvider implements FileProvider
             // AWS_SECRET_ACCESS_KEY -> must be in environment -> $_ENV[]?
             $this->client = new S3Client([
                 'version' => 'latest',
-                'region' => 'eu-central-1'
+                'region' => Env::get('AWS_REGION'),
             ]);
         }
         return $this->client;
@@ -90,5 +85,10 @@ class AwsFileProvider implements FileProvider
     public function setClient(S3Client $client): void
     {
         $this->client = $client;
+    }
+
+    protected function bucket(): string
+    {
+        return Env::get('AWS_BUCKET_NAME', 'GraphCool-Uploaded-Files');
     }
 }

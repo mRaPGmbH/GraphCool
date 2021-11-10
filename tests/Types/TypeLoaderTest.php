@@ -26,6 +26,7 @@ use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
+use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
 use Mrap\GraphCool\Types\TypeLoader;
 
@@ -44,6 +45,14 @@ class TypeLoaderTest extends TestCase
         $mixed = $typeLoader->load('Mixed')();
         self::assertInstanceOf(MixedScalar::class, $mixed);
     }
+
+    public function testLoadModel(): void
+    {
+        $typeLoader = new TypeLoader();
+        $model = $typeLoader->load('DummyModel')();
+        self::assertInstanceOf(ModelType::class, $model);
+    }
+
 
     public function testLoadForBoolean(): void
     {

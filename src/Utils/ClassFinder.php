@@ -49,9 +49,6 @@ class ClassFinder
         $result = [];
         if (is_dir($path)) {
             $files = scandir($path);
-            if ($files === false) {
-                throw new RuntimeException('Find classes failed to scan directory ' . $path);
-            }
             $classes = array_map(function ($file) {
                 return str_replace('.php', '', $file);
             }, $files);

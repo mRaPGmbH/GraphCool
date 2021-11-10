@@ -1002,7 +1002,11 @@ class CountryTest extends TestCase
     {
         $codes = new CountryCodeEnumType();
         foreach ($codes->getValues() as $value) {
-            self::assertSame($value->value, Country::parse(Country::convertToAlpha3($value->value)));
+            if ($value->value === 'XK') {
+                self::assertNull(Country::convertToAlpha3($value->value));
+            } else {
+                self::assertSame($value->value, Country::parse(Country::convertToAlpha3($value->value)));
+            }
         }
     }
 

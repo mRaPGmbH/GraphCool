@@ -3,6 +3,8 @@
 namespace Mrap\GraphCool\Tests\DataSource\Mysql;
 
 use GraphQL\Error\Error;
+use Mrap\GraphCool\DataSource\File;
+use Mrap\GraphCool\DataSource\FileSystem\SystemFileProvider;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\DataSource\Mysql\MysqlNodeWriter;

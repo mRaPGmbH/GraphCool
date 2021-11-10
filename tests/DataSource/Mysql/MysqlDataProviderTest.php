@@ -358,6 +358,24 @@ class MysqlDataProviderTest extends TestCase
         self::assertEquals($node, $result);
     }
 
+    public function testDeleteNull(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn(null);
+
+        Mysql::setNodeReader($readerMock);
+
+        $provider = new MysqlDataProvider();
+        $result = $provider->delete('a12f', 'DummyModel', 'y5');
+
+        self::assertNull($result);
+    }
+
     public function testRestore(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
@@ -389,6 +407,30 @@ class MysqlDataProviderTest extends TestCase
         $result = $provider->restore('a12f', 'DummyModel', 'y5');
 
         self::assertEquals($node, $result);
+    }
+
+    public function testRestoreError(): void
+    {
+        $this->expectException(Error::class);
+
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $writerMock = $this->createMock(MysqlNodeWriter::class);
+        $writerMock->expects($this->once())
+            ->method('restore')
+            ->withAnyParameters();
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->once())
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn(null);
+
+        Mysql::setNodeWriter($writerMock);
+        Mysql::setNodeReader($readerMock);
+
+        $provider = new MysqlDataProvider();
+        $provider->restore('a12f', 'DummyModel', 'y5');
     }
 
 }

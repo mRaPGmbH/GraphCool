@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
-use finfo;
 use GraphQL\Error\Error;
 use JsonException;
+use RuntimeException;
+use stdClass;
 
 class FileUpload
 {
@@ -36,18 +37,69 @@ class FileUpload
         return $request;
     }
 
-    public static function getMimetype(string $data): string
+    public static function getData(array $input): string
+    {
+        $base64 = $input['data_base64'] ?? null;
+        if ($base64 !== null) {
+            $data = base64_decode($base64);
+        } else {
+            $tmpFile = $input['file']['tmp_name'] ?? null;
+            if ($tmpFile === null) {
+                $data = false;
+            } else {
+                $data = file_get_contents($tmpFile);
+            }
+        }
+        if ($data === false || $data === '') {
+            throw new Error('Uploaded file could not be read.');
+        }
+        return $data;
+    }
+
+    public static function getMimetype(?string $data): string
     {
         if (empty($data)) {
             return 'application/octet-stream';
         }
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        /** @var string|bool $mimeType */
-        $mimeType = $finfo->buffer($data);
-        if ($mimeType === false) {
-            return 'application/octet-stream';
+        $file = tempnam(sys_get_temp_dir(), 'file');
+        if ($file === false) {
+            throw new RuntimeException('Could not save temporary file.');
         }
+        file_put_contents($file, $data);
+        $mimeType = mime_content_type($file);
+        unlink($file);
         return $mimeType;
+    }
+
+    public static function get(array $input): stdClass
+    {
+        $base64 = $input['data_base64'] ?? null;
+        if ($base64 !== null && strlen($base64) === 0) {
+            throw new Error('Received empty base64 string.');
+        }
+        if ($base64 !== null) {
+            $file = tempnam(sys_get_temp_dir(), 'file');
+            if ($file == false) {
+                throw new RuntimeException('Could not save temporary file.');
+            }
+            file_put_contents($file, base64_decode($base64));
+        } else {
+            $file = $input['file']['tmp_name'] ?? null;
+            if ($file === null || !file_exists($file)) {
+                throw new Error('Uploaded file could not be read.');
+            }
+            $base64 = base64_encode(file_get_contents($file));
+        }
+        $size = filesize($file);
+        if ($size === 0) {
+            throw new Error('Received empty file.');
+        }
+        return (object)[
+            'filename' => $input['filename'],
+            'filesize' => $size,
+            'mime_type' => mime_content_type($file),
+            'data_base64' => $base64
+        ];
     }
 
 

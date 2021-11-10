@@ -28,12 +28,15 @@ class Country
         return null;
     }
 
-    public static function parse(string $value): ?string
+    public static function parse(?string $value): ?string
     {
-        if (strlen($value) <= 1) {
+        if ($value === null || strlen($value) <= 1) {
             return null;
         }
         if (strlen($value) === 2) {
+            if ($value === 'XK' || $value === 'xk') {
+                return 'XK';
+            }
             $tmp = static::alpha2to3();
             if (array_key_exists($value, $tmp)) {
                 return $value;
@@ -317,7 +320,7 @@ class Country
             'YE' => 'YEM',
             'ZM' => 'ZMB',
             'ZW' => 'ZWE',
-            'AX' => 'ALA'
+            'AX' => 'ALA',
         ];
     }
 

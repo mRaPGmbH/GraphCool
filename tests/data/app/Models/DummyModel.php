@@ -31,6 +31,8 @@ class DummyModel extends Model
 
         $this->ignoreMe = 'not a field';
 
+        $this->file = Field::file()->nullable();
+
         $this->belongs_to = Relation::belongsTo(__CLASS__)->nullable();
         $this->belongs_to->pivot_property = Field::string()->default('default');
         $this->belongs_to->pivot_property2 = Field::string()->nullable();

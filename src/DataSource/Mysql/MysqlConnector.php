@@ -60,7 +60,7 @@ class MysqlConnector
             throw new RuntimeException(
                 'Could not connect to database: ' . $connection . ' - user: ' . Env::get('DB_USERNAME') . ' ' . getenv(
                     'DB_USERNAME'
-                ) . ' ' . print_r($_ENV, true)
+                )
             );
         }
     }

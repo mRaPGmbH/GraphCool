@@ -19,9 +19,9 @@ class MysqlConverter
      * @param mixed $value
      * @return mixed[]
      */
-    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value, string $key = ''): array
+    public static function convertInputTypeToDatabaseTriplet(Field $field, mixed $value): array
     {
-        $return = static::convertInputTypeToDatabase($field, $value, $key);
+        $return = static::convertInputTypeToDatabase($field, $value);
         return match (gettype($return)) {
             'integer' => [$return, null, null],
             'double' => [null, null, $return], // float
@@ -30,7 +30,7 @@ class MysqlConverter
         };
     }
 
-    public static function convertInputTypeToDatabase(Field $field, mixed $value, string $key = ''): float|int|string|null
+    public static function convertInputTypeToDatabase(Field $field, mixed $value): float|int|string|null
     {
         if ($field->null === false && $value === null) {
             $value = $field->default ?? null;
@@ -46,7 +46,7 @@ class MysqlConverter
             Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
             Type::FLOAT => (float)$value,
             Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
-            Field::FILE => File::store($key, $value)
+            Field::FILE => (string)$value->id
         };
     }
 
@@ -70,7 +70,7 @@ class MysqlConverter
         return $result;
     }
 
-    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property, string $key = ''): float|bool|int|string|stdClass
+    public static function convertDatabaseTypeToOutput(Field $field, stdClass $property): float|bool|int|string|stdClass
     {
         return match ($field->type) {
             default => (string)$property->value_string,
@@ -78,7 +78,7 @@ class MysqlConverter
             Type::FLOAT => (double)$property->value_float,
             Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
             Field::DECIMAL => (float)($property->value_int / (10 ** $field->decimalPlaces)),
-            Field::FILE => File::retrieve($key, $property->value_string),
+            //Field::FILE => File::retrieve($name, $id, $key, $property->value_string),
         };
     }
 
@@ -94,22 +94,12 @@ class MysqlConverter
         }
         if (isset($where['column']) && array_key_exists('value', $where)) {
             $column = $where['column'];
-            /** @var Field $field */
-            $field = $model->$column;
             if (is_array($where['value'])) {
                 foreach ($where['value'] as $key => $value) {
-                    // TODO: is there a better way to do this? are there other types that need special treatment?
-                    if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
-                        $value = strtotime($value) * 1000;
-                    }
-                    $where['value'][$key] = static::convertInputTypeToDatabase($model->$column, $value);
+                    $where['value'][$key] = static::convertSingleWhereValue($model->$column, $value);
                 }
             } else {
-                // TODO: is there a better way to do this? are there other types that need special treatment?
-                if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
-                    $where['value'] = strtotime($where['value']) * 1000;
-                }
-                $where['value'] = static::convertInputTypeToDatabase($model->$column, $where['value']);
+                $where['value'] = static::convertSingleWhereValue($model->$column, $where['value']);
             }
         }
         if (isset($where['AND'])) {
@@ -123,6 +113,18 @@ class MysqlConverter
             }
         }
         return $where;
+    }
+
+    protected static function convertSingleWhereValue(Field $field, mixed $value): mixed
+    {
+        if ($field->type === Field::FILE) {
+            return (string) $value; // search string in filename
+        }
+        // TODO: is there a better way to do this? are there other types that need special treatment?
+        if ($field->type === Field::DATE || $field->type === Field::TIME || $field->type === Field::DATE_TIME) {
+            $value = strtotime($value) * 1000;
+        }
+        return static::convertInputTypeToDatabase($field, $value);
     }
 
 

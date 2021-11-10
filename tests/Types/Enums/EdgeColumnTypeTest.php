@@ -45,7 +45,8 @@ class EdgeColumnTypeTest extends TestCase
             'LOCALE' => 'locale',
             'DECIMAL' => 'decimal',
             'BOOL' => 'bool',
-            'UNIQUE' => 'unique'
+            'UNIQUE' => 'unique',
+            'FILE' => 'file',
         ];
         self::assertEquals($expected, $columns);
     }
