@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Aws;
 
 use Aws\S3\S3Client;
+use GuzzleHttp\Psr7\Stream;
 use Mrap\GraphCool\DataSource\FileProvider;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\FileUpload;
@@ -61,7 +62,9 @@ class AwsFileProvider implements FileProvider
                 'Bucket' => $this->bucket(),
                 'Key' => $key
             ]);
-            $this->data[$key] = $result['Body'];
+            /** @var Stream $stream */
+            $stream = $result['Body'];
+            $this->data[$key] = $stream->getContents();
         }
         return $this->data[$key];
     }
@@ -72,11 +75,13 @@ class AwsFileProvider implements FileProvider
     protected function getClient(): S3Client
     {
         if (!isset($this->client)) {
-            // AWS_ACCESS_KEY_ID
-            // AWS_SECRET_ACCESS_KEY -> must be in environment -> $_ENV[]?
             $this->client = new S3Client([
                 'version' => 'latest',
                 'region' => Env::get('AWS_REGION'),
+                'credentials' => [
+                    'key'    => Env::get('AWS_ACCESS_KEY_ID'),
+                    'secret' => Env::get('AWS_SECRET_ACCESS_KEY'),
+                ],
             ]);
         }
         return $this->client;

@@ -98,12 +98,11 @@ class File
     protected static function getFileProvider(): FileProvider
     {
         if (!isset(static::$storage)) {
-            if (Env::get('APP_ENV') === 'local') {
-                //static::$storage = new SystemFileProvider();
-                static::$storage = new MicroserviceFileProvider();
-            } else {
-                static::$storage = new AwsFileProvider();
-            }
+            static::$storage = match(Env::get('FILE_PROVIDER')) {
+                default => new SystemFileProvider(),
+                'aws_bucket' => new AwsFileProvider(),
+                'microservice' => new MicroserviceFileProvider(),
+            };
         }
         return static::$storage;
     }
