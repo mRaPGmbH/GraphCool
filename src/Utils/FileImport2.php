@@ -389,6 +389,9 @@ class FileImport2
                 }
                 throw new Error('Invalid value: ' . $value);
             default:
+                if ($value instanceof \DateTime) {
+                    throw new Error('Importing date columns into text fields is not supported.');
+                }
                 return trim((string)$value);
         }
     }

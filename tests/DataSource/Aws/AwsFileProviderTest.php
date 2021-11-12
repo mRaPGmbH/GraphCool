@@ -5,6 +5,7 @@ namespace Mrap\GraphCool\Tests\DataSource\Aws;
 
 use Aws\S3\S3Client;
 use GraphQL\Error\Error;
+use GuzzleHttp\Psr7\Stream;
 use Mrap\GraphCool\DataSource\Aws\AwsFileProvider;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Utils\Env;
@@ -122,6 +123,11 @@ class AwsFileProviderTest extends TestCase
         $key = 'file';
         $data = base64_encode('Hello World!');
 
+        $mock2 = $this->createMock(Stream::class);
+        $mock2->expects($this->once())
+            ->method('getContents')
+            ->willReturn($data);
+
         $mock = $this->getMockBuilder(S3Client::class)
             ->disableOriginalConstructor()
             ->disableOriginalClone()
@@ -136,7 +142,7 @@ class AwsFileProviderTest extends TestCase
                 'Key' => $name . '.' . $id . '.' . $key,
             ])
             ->willReturn([
-                'Body' => $data
+                'Body' => $mock2
             ]);
 
         $provider = new AwsFileProvider();
