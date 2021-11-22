@@ -114,21 +114,25 @@ class FileImport2
         return $edgeColumns;
     }
 
-    protected function getReader(?string $input, int $index): ReaderInterface
+    protected function getReader(mixed $input, int $index): ReaderInterface
     {
-        if ($input === null) {
-            $tmp = $this->getFile($index);
-            if ($tmp === null) {
-                throw new Error('File is missing.');
-            }
-            $file = $tmp['tmp_name'];
-        } else {
+        if (is_array($input)) {
+            $file = $input['tmp_name'] ?? null;
+        } elseif (is_string($input)) {
             $file = tempnam(sys_get_temp_dir(), 'import');
             if ($file === false) {
                 throw new RuntimeException('Could not save temporary file for import.');
             }
-            file_put_contents($file, base64_decode($input));
+            $data = base64_decode($input, true);
+            if ($data === false) {
+                throw new Error('data_base64 could not be decoded.');
+            }
+            file_put_contents($file, $data);
         }
+        if ($input === null || $file === null) {
+            throw new Error('Neither data_base64 nor file received.');
+        }
+
         $mimeType = mime_content_type($file);
         if ($mimeType === false) {
             throw new Error('Could not import file: MimeType could not be detected.');
@@ -143,25 +147,6 @@ class FileImport2
         $reader->open($file);
         $this->file = $file;
         return $reader;
-    }
-
-    /**
-     * @param int $index
-     * @return string[]|null
-     * @throws Error
-     */
-    protected function getFile(int $index): ?array
-    {
-        if (!isset($_REQUEST['map'])) {
-            throw new Error('Neither data_base64 nor file received.');
-        }
-        try {
-            $map = json_decode($_REQUEST['map'], true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            throw new Error('Could not parse file map - not a valid JSON.');
-        }
-        $fileNumber = $this->findInMap($map, $index);
-        return $_FILES[$fileNumber] ?? null;
     }
 
     /**
