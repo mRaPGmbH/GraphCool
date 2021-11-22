@@ -292,7 +292,7 @@ class MysqlQueryBuilder
             $whereSql .= '.`child_id` IN (';
         } elseif ($relationType === Relation::BELONGS_TO || $relationType === Relation::BELONGS_TO_MANY) {
             $joinSql .= $as . '.`child_id` = `node`.`id` AND ' . $as . '.`parent` = ';
-            $whereSql .= '.`parent` IN (';
+            $whereSql .= '.`parent_id` IN (';
         } else {
             throw new RuntimeException('Unknown relation type: ' . $relationType);
         }
@@ -555,7 +555,7 @@ class MysqlQueryBuilder
                             $ors[] = '(`value_float` > ' . ((float)$part - 0.0001) . ' AND `value_float` < ' . ((float)$part + 0.0001).')';
                             $ors[] = '`value_int` = ' . $this->parameter((int)$part);
                         }
-                        $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+                        $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%'); // . ' COLLATE utf8mb4_general_ci ';
 
                         $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
                         $this->where[] = $sql;
