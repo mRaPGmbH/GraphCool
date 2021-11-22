@@ -26,6 +26,7 @@ class EdgeManyInputType extends InputObjectType
         $fields = [
             'where' => new NonNull($typeLoader->load('_' . $relation->name . 'WhereConditions')),
             'search' => Type::string(),
+            'searchLoosely' => Type::string(),
             'mode' => $typeLoader->load('_RelationUpdateMode'),
         ];
         foreach (get_object_vars($relation) as $fieldKey => $field) {

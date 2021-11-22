@@ -61,7 +61,8 @@ class MysqlDataProvider implements DataProvider
             ->limit($limit, $offset)
             ->where($args['where'] ?? null)
             ->orderBy($args['orderBy'] ?? [])
-            ->search($args['search'] ?? null);
+            ->search($args['search'] ?? null)
+            ->searchLoosely($args['searchLoosely'] ?? null);
 
         foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {

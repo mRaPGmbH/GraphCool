@@ -49,6 +49,7 @@ class ModelType extends ObjectType
                             new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause', null, $this))
                         ),
                         'search' => Type::string(),
+                        'searchLoosely' => Type::string(),
                         'result' => $typeLoader->load('_Result'),
                     ];
                 } else {

@@ -90,6 +90,7 @@ class QueryType extends ObjectType
         }
         $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause')));
         $args['search'] = Type::string();
+        $args['searchLoosely'] = Type::string();
         $args['result'] = $typeLoader->load('_Result');
         $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
 
@@ -113,6 +114,7 @@ class QueryType extends ObjectType
             'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
             'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
             'search' => Type::string(),
+            'searchLoosely' => Type::string(),
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
         ];
 

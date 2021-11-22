@@ -64,6 +64,7 @@ class MysqlEdgeReader
         $whereNode = $args['where'] ?? null;
         $whereEdge = $args['whereEdge'] ?? null;
         $search = $args['search'] ?? null;
+        $searchLoosely = $args['searchLoosely'] ?? null;
         $orderBy = $args['orderBy'] ?? [];
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
@@ -77,7 +78,8 @@ class MysqlEdgeReader
             ->where($whereEdge)
             ->whereRelated($whereNode)
             ->orderBy($orderBy)
-            ->search($search);
+            ->search($search)
+            ->searchLoosely($searchLoosely);
         match ($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
