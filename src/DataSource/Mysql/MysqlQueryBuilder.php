@@ -536,37 +536,29 @@ class MysqlQueryBuilder
     public function search(?string $value): MysqlQueryBuilder
     {
         if ($value !== null && trim($value) !== '') {
-            switch ($this->name) {
-                case 'node':
-                    $uuids = [];
-                    foreach (explode(' ', $value, 10) as $part) {
-                        if (empty($part)) {
-                            continue;
-                        }
-                        if (strlen($part) === 36 && Uuid::isValid($part)) {
-                            $uuids[] = '`node`.`id` = ' . $this->parameter($part);
-                            $uuids[] = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` = '
-                                . $this->parameter($part) . ' AND `deleted_at` IS NULL)';
-                            continue;
-                        }
-                        $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
-                        $ors = [];
-                        if (is_numeric($part)) {
-                            $ors[] = '(`value_float` > ' . ((float)$part - 0.0001) . ' AND `value_float` < ' . ((float)$part + 0.0001).')';
-                            $ors[] = '`value_int` = ' . $this->parameter((int)$part);
-                        }
-                        $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%'); // . ' COLLATE utf8mb4_general_ci ';
-
-                        $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
-                        $this->where[] = $sql;
-                    }
-                    if (count($uuids) > 0) {
-                        $this->where[] = '(' . implode(' OR ', $uuids) . ')';
-                    }
-                    break;
-                //case 'edge':
-                // TODO!
-                //break;
+            $uuids = [];
+            foreach (explode(' ', $value, 10) as $part) {
+                if (empty($part)) {
+                    continue;
+                }
+                if (strlen($part) === 36 && Uuid::isValid($part)) {
+                    $uuids[] = '`node`.`id` = ' . $this->parameter($part);
+                    $uuids[] = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE `value_string` = '
+                        . $this->parameter($part) . ' AND `deleted_at` IS NULL)';
+                    continue;
+                }
+                $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
+                $ors = [];
+                if (is_numeric($part)) {
+                    $ors[] = '(`value_float` > ' . ((float)$part - 0.0001) . ' AND `value_float` < ' . ((float)$part + 0.0001).')';
+                    $ors[] = '`value_int` = ' . $this->parameter((int)$part);
+                }
+                $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%'); // . ' COLLATE utf8mb4_general_ci ';
+                $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
+                $this->where[] = $sql;
+            }
+            if (count($uuids) > 0) {
+                $this->where[] = '(' . implode(' OR ', $uuids) . ')';
             }
         }
         return $this;
@@ -575,27 +567,21 @@ class MysqlQueryBuilder
     public function searchLoosely(?string $value): MysqlQueryBuilder
     {
         if ($value !== null && trim($value) !== '') {
-            switch ($this->name) {
-                case 'node':
-                    foreach (explode(' ', $value, 10) as $part) {
-                        if (empty($part)) {
-                            continue;
-                        }
-                        $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
-                        $ors = [];
-                        if (is_numeric($part)) {
-                            $ors[] = '(`value_float` > ' . ((float)$part - 0.5) . ' AND `value_float` < ' . ((float)$part + 0.5).')';
-                            $ors[] = '`value_int` LIKE ' . $this->parameter('%'.$part.'%');
-                        }
-                        $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
-
-                        $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
-                        $this->where[] = $sql;
+                foreach (explode(' ', $value, 10) as $part) {
+                    if (empty($part)) {
+                        continue;
                     }
-                    break;
-                //case 'edge':
-                // TODO!
-                //break;
+                    $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
+                    $ors = [];
+                    if (is_numeric($part)) {
+                        $ors[] = '(`value_float` > ' . ((float)$part - 0.5) . ' AND `value_float` < ' . ((float)$part + 0.5).')';
+                        $ors[] = '`value_int` LIKE ' . $this->parameter('%'.$part.'%');
+                    }
+                    $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+
+                    $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
+                    $this->where[] = $sql;
+                }
             }
         }
         return $this;
