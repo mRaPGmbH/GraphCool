@@ -567,21 +567,20 @@ class MysqlQueryBuilder
     public function searchLoosely(?string $value): MysqlQueryBuilder
     {
         if ($value !== null && trim($value) !== '') {
-                foreach (explode(' ', $value, 10) as $part) {
-                    if (empty($part)) {
-                        continue;
-                    }
-                    $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
-                    $ors = [];
-                    if (is_numeric($part)) {
-                        $ors[] = '(`value_float` > ' . ((float)$part - 0.5) . ' AND `value_float` < ' . ((float)$part + 0.5).')';
-                        $ors[] = '`value_int` LIKE ' . $this->parameter('%'.$part.'%');
-                    }
-                    $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
-
-                    $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
-                    $this->where[] = $sql;
+            foreach (explode(' ', $value, 10) as $part) {
+                if (empty($part)) {
+                    continue;
                 }
+                $sql = '`node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ';
+                $ors = [];
+                if (is_numeric($part)) {
+                    $ors[] = '(`value_float` > ' . ((float)$part - 0.5) . ' AND `value_float` < ' . ((float)$part + 0.5).')';
+                    $ors[] = '`value_int` LIKE ' . $this->parameter('%'.$part.'%');
+                }
+                $ors[] = '`value_string` LIKE ' . $this->parameter('%' . $part . '%');
+
+                $sql .= '(' . implode(' OR ', $ors) . ') AND `deleted_at` IS NULL)';
+                $this->where[] = $sql;
             }
         }
         return $this;
