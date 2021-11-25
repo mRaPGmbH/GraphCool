@@ -14,8 +14,6 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
-use Mrap\GraphCool\Utils\JwtAuthentication;
-use Mrap\GraphCool\Utils\StopWatch;
 use Ramsey\Uuid\Uuid;
 use stdClass;
 
@@ -151,11 +149,7 @@ class MysqlDataProvider implements DataProvider
         string $id,
         ?string $resultType = ResultType::DEFAULT
     ): ?stdClass {
-        $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
-        if ($data !== null) {
-            $data = $this->retrieveFiles($name, $data, $id);
-        }
-        return $data;
+        return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
     }
 
     /**
@@ -392,22 +386,6 @@ class MysqlDataProvider implements DataProvider
         ];
         $property = Mysql::fetch($sql, $params);
         return $property->value_string ?? null;
-    }
-
-    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
-    {
-        $model = Model::get($name);
-        foreach (get_object_vars($model) as $key => $item) {
-            if (
-                !$item instanceof Field
-                || $item->type !== Field::FILE
-                || ($data->$key ?? null) === null
-            ) {
-                continue;
-            }
-            $data->$key = File::retrieve($name, $id, $key, $data->$key);
-        }
-        return $data;
     }
 
     protected function deleteFiles(string $name, string $id): void

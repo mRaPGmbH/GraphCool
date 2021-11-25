@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Microservice;
 
-use GraphQL\Error\Error;
 use Mrap\GraphCool\DataSource\FileProvider;
-use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\FileUpload;
-use RuntimeException;
 use stdClass;
 
 class MicroserviceFileProvider implements FileProvider
