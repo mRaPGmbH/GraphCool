@@ -83,6 +83,7 @@ class MysqlDataProvider implements DataProvider
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $ids[] = $row->id;
         }
+        $ids = array_unique($ids);
         $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         $result = new stdClass();
@@ -149,7 +150,11 @@ class MysqlDataProvider implements DataProvider
         string $id,
         ?string $resultType = ResultType::DEFAULT
     ): ?stdClass {
-        return Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        if ($data !== null) {
+            $data = $this->retrieveFiles($name, $data, $id);
+        }
+        return $data;
     }
 
     /**
@@ -386,6 +391,22 @@ class MysqlDataProvider implements DataProvider
         ];
         $property = Mysql::fetch($sql, $params);
         return $property->value_string ?? null;
+    }
+
+    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
+    {
+        $model = Model::get($name);
+        foreach (get_object_vars($model) as $key => $item) {
+            if (
+                !$item instanceof Field
+                || $item->type !== Field::FILE
+                || ($data->$key ?? null) === null
+            ) {
+                continue;
+            }
+            $data->$key = File::retrieve($name, $id, $key, $data->$key);
+        }
+        return $data;
     }
 
     protected function deleteFiles(string $name, string $id): void

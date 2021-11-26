@@ -7,6 +7,7 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
@@ -109,9 +110,9 @@ class MysqlEdgeReader
                 $edge->$key = $value;
             }
             if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-                $edge->_node = Mysql::nodeReader()->load($tenantId, $relation->name, $edge->child_id);
+                $edge->_node = DB::load($tenantId, $relation->name, $edge->child_id); // must be DB::load instead of Mysql::nodeReader()->load because of file::retrieve
             } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-                $edge->_node = Mysql::nodeReader()->load($tenantId, $relation->name, $edge->parent_id);
+                $edge->_node = DB::load($tenantId, $relation->name, $edge->parent_id);
             }
             $edges[] = $edge;
         }

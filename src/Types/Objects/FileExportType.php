@@ -19,6 +19,7 @@ class FileExportType extends ObjectType
                 'filename' => new NonNull(Type::string()),
                 'mime_type' => new NonNull(Type::string()),
                 'data_base64' => new NonNull(Type::string()),
+                'url' => new NonNull(Type::string()),
             ],
         ];
         parent::__construct($config);

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
-use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
@@ -43,29 +41,8 @@ class MysqlNodeReader
             }
             $node->$key = MysqlConverter::convertDatabaseTypeToOutput($field, $property, $name . '.' . $id . '.' . $key);
         }
-        $data = Mysql::edgeReader()->loadEdges($node, $name);
-        if ($data !== null) {
-            $data = $this->retrieveFiles($name, $data, $id);
-        }
-        return $data;
+        return Mysql::edgeReader()->loadEdges($node, $name);
     }
-
-    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
-    {
-        $model = Model::get($name);
-        foreach (get_object_vars($model) as $key => $item) {
-            if (
-                !$item instanceof Field
-                || $item->type !== Field::FILE
-                || ($data->$key ?? null) === null
-            ) {
-                continue;
-            }
-            $data->$key = File::retrieve($name, $id, $key, $data->$key);
-        }
-        return $data;
-    }
-
 
     protected function fetchNode(?string $tenantId, string $id, string $name, ?string $resultType = ResultType::DEFAULT): ?stdClass
     {

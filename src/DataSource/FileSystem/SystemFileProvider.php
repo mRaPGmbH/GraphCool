@@ -38,6 +38,7 @@ class SystemFileProvider implements FileProvider
             'mime_type' => function() use ($filename) {
                 return mime_content_type($filename);
             },
+            'url' => '/' . Env::get('APP_NAME') . '/download/' . $name . '.' . $id . '.' . $key,
             'data_base64' => function() use ($filename) {
                 return base64_encode(file_get_contents($filename));
             }

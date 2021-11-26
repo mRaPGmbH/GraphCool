@@ -24,9 +24,12 @@ class MicroserviceFileProvider implements FileProvider
             ->paramString('model_id', $id)
             ->paramString('property', $key)
             ->paramRawValue('file', $this->getParamValue($file))
-            ->fields(['id'])
+            ->fields(['id', 'filesize', 'file' => ['url', 'data_base64']])
             ->call();
         $file->id = $result->id;
+        $file->filesize = $result->filesize ?? 0;
+        $file->url = $result->file->url ?? '';
+        $file->data_base64 = $result->file->data_base64 ?? null;
         $this->cache[$result->id] = $file;
         return $file;
     }
@@ -42,9 +45,10 @@ class MicroserviceFileProvider implements FileProvider
         $result = Microservice::endpoint('file:query:file')
             ->authorization($_SERVER['HTTP_AUTHORIZATION'])
             ->paramString('id', $value)
-            ->fields(['id', 'filesize', 'file' => ['data_base64'], 'filename', 'mime_type'])
+            ->fields(['id', 'filesize', 'file' => ['url', 'data_base64'], 'filename', 'mime_type'])
             ->call();
         if ($result !== null) {
+            $result->url = $result->file->url ?? '';
             $result->data_base64 = $result->file->data_base64 ?? null;
         }
         return $result;

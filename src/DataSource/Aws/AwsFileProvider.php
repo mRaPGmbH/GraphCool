@@ -36,6 +36,7 @@ class AwsFileProvider implements FileProvider
             'mime_type' => function() use ($fileKey) {
                 return FileUpload::getMimetype($this->loadData($fileKey));
             },
+            'url' => '/' . Env::get('APP_NAME') . '/download/' . $name . '.' . $id . '.' . $key,
             'data_base64' => function() use ($fileKey) {
                 return $this->loadData($fileKey);
             }
