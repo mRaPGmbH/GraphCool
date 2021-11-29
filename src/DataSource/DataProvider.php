@@ -58,4 +58,8 @@ interface DataProvider
     public function restore(string $tenantId, string $name, string $id): stdClass;
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string;
+
+    public function getSum(?string $tenantId, string $name, string $key): float|int;
+
+    public function getCount(?string $tenantId, string $name): int;
 }

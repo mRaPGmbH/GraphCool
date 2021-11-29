@@ -50,6 +50,22 @@ class DB
         return $result;
     }
 
+    public static function getSum(?string $tenantId, string $name, string $key): float|int
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->getSum($tenantId, $name, $key);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function getCount(?string $tenantId, string $name): int
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->getCount($tenantId, $name);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
     /**
      * @param string|null $tenantId
      * @param string $name

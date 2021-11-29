@@ -222,6 +222,22 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    public function selectSum(string $field, string $alias, string $valueType = 'value_int'): MysqlQueryBuilder
+    {
+        if ($this->mode !== null && $this->mode !== 'SELECT') {
+            throw new RuntimeException('Cannot do UPDATE on a query that\'s already set to ' . $this->mode);
+        }
+        $this->mode = 'SELECT';
+        if (in_array($field, $this->getBaseColumns())) {
+            $this->columns[] = 'sum(' . $this->fieldName($field) . ') AS `' . $alias . '`';
+        } else {
+            $join = $this->join($field);
+            $this->columns[] = 'sum(' . $join . '.`' . $valueType . '`) AS `' . $alias . '`';
+        }
+        return $this;
+    }
+
+
     /**
      * @param array[] $orderBys
      * @return $this
@@ -596,7 +612,6 @@ class MysqlQueryBuilder
 
     public function toCountSql(): string
     {
-
         return 'SELECT count(DISTINCT `node`.`id`) ' . $this->createSql();
     }
 

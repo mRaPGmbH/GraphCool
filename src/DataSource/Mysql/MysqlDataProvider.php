@@ -97,8 +97,8 @@ class MysqlDataProvider implements DataProvider
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         $valueType = match ($model->$key->type) {
-            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 'value_int',
-            Type::FLOAT, Field::DECIMAL => 'value_float',
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL => 'value_int',
+            Type::FLOAT => 'value_float',
             default => 'value_string'
         };
 
@@ -119,6 +119,42 @@ class MysqlDataProvider implements DataProvider
 
         return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
     }
+
+    public function getSum(?string $tenantId, string $name, string $key): float|int
+    {
+        $model = Model::get($name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+
+        $valueType = match ($model->$key->type) {
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL => 'value_int',
+            Type::FLOAT => 'value_float',
+            default => 'value_string'
+        };
+
+        $query->selectSum($key, 'sum', $valueType);
+        $result = Mysql::fetch($query->toSql(), $query->getParameters());
+        if ($result === null) {
+            return match ($model->$key->type) {
+                Type::BOOLEAN => false,
+                Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => 0,
+                Type::FLOAT, Field::DECIMAL => 0.0,
+                default => ''
+            };
+        }
+
+        $property = new stdClass();
+        $property->$valueType = $result->sum;
+
+        return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
+    }
+
+    public function getCount(?string $tenantId, string $name): int
+    {
+        $model = Model::get($name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+        return (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+    }
+
 
     /**
      * @param string|null $tenantId
