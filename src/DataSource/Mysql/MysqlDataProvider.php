@@ -83,7 +83,6 @@ class MysqlDataProvider implements DataProvider
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $ids[] = $row->id;
         }
-        $ids = array_unique($ids);
         $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         $result = new stdClass();

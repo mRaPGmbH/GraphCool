@@ -304,7 +304,7 @@ class MysqlQueryBuilder
             $this->where[] = $whereSql;
         }
         $this->parameters = array_merge($this->parameters, $query->getParameters());
-
+        $this->groupBy = ' GROUP BY `node`.`id` ';
         return $this;
     }
 
@@ -596,7 +596,8 @@ class MysqlQueryBuilder
 
     public function toCountSql(): string
     {
-        return 'SELECT count(*) ' . $this->createSql();
+
+        return 'SELECT count(DISTINCT `node`.`id`) ' . $this->createSql();
     }
 
 }
