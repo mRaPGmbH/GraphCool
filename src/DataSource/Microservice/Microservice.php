@@ -6,6 +6,7 @@ use BadMethodCallException;
 use GraphQL\Error\Error;
 use GuzzleHttp\Client;
 use Mrap\GraphCool\Utils\Env;
+use RuntimeException;
 
 /**
  * Class Microservice
@@ -180,7 +181,7 @@ class Microservice
 
         $response = $client->request('POST', $this->getUrl(), $this->getOptions());
         if ($response->getStatusCode() !== 200) {
-            throw new Error('Got response status code ' . $response->getStatusCode() . ' from ' . $this->endpoint. ' Response was: ' . $response->getBody());
+            throw new RuntimeException('Got response status code ' . $response->getStatusCode() . ' from ' . $this->endpoint. ' Response was: ' . $response->getBody());
         }
         return $this->decodeBody($response->getBody());
     }
@@ -289,7 +290,7 @@ class Microservice
     {
         $json = json_decode($body, false, 512, JSON_THROW_ON_ERROR);
         if (isset($json->errors)) {
-            throw new \RuntimeException($json->errors[0]->message ?? 'Microservice call returned unknown error.');
+            throw new Error($json->errors[0]->message ?? 'Internal error.');
         }
         if ($this->isRaw) {
             return $json->data;
