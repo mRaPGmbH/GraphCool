@@ -33,6 +33,7 @@ class Field
     public array $enumValues;
     public bool $unique = false;
     public bool $uniqueIgnoreTrashed = false;
+    public bool $fulltextIndex = false;
 
     protected function __construct(string $type)
     {
@@ -171,6 +172,12 @@ class Field
     public function default(string|int|float|bool $default): Field
     {
         $this->default = $default;
+        return $this;
+    }
+
+    public function fulltextIndex(): Field
+    {
+        $this->fulltextIndex = true;
         return $this;
     }
 

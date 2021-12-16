@@ -226,7 +226,7 @@ class MysqlDataProvider implements DataProvider
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
         $model = Model::get($name);
-        $this->checkIfNodeExists($tenantId, $model, $name, $data['id']);
+        $this->checkIfNodeExists($tenantId, $model, $name, (string)$data['id']);
         $updates = $data['data'] ?? [];
         $updates = $this->storeFiles($model, $name, $updates, $data['id']);
         $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
@@ -439,6 +439,9 @@ class MysqlDataProvider implements DataProvider
             ) {
                 continue;
             }
+            // cant use closure here, because there are subfields
+            //$value = $data->$key;
+            //$data->$key = function() use($name, $id, $key, $value) {File::retrieve($name, $id, $key, $value);};
             $data->$key = File::retrieve($name, $id, $key, $data->$key);
         }
         return $data;

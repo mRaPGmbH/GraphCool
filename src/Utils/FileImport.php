@@ -30,8 +30,7 @@ class FileImport
     {
         $this->tenantId = $tenantId;
         $this->name = $name;
-        $classname = '\\App\\Models\\' . $name;
-        $this->model = new $classname();
+        $this->model = Model::get($name);
     }
 
     /**

@@ -34,6 +34,7 @@ class Microservice
     protected array $fields = [];
     protected Client $client;
     protected bool $isRaw = false;
+    protected int $timeout = 2;
 
     protected function __construct(string $endpoint, Client $client = null)
     {
@@ -175,6 +176,12 @@ class Microservice
         return $this;
     }
 
+    public function setTimeout(int $seconds): Microservice
+    {
+        $this->timeout = $seconds;
+        return $this;
+    }
+
     public function call(): mixed
     {
         $client = $this->getClient();
@@ -216,7 +223,7 @@ class Microservice
         return [
             'headers' => $this->getHeaders(),
             'body'    => $this->getBody(),
-            'timeout' => 2,
+            'timeout' => $this->timeout,
         ];
     }
 

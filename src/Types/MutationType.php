@@ -192,8 +192,7 @@ class MutationType extends ObjectType
             '_timezone' => $typeLoader->load('_TimezoneOffset'),
         ];
 
-        $classname = '\\App\\Models\\' . $name;
-        $model = new $classname();
+        $model = Model::get($name);
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;

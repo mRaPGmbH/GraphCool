@@ -12,7 +12,6 @@ use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
-use JsonException;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -39,8 +38,7 @@ class FileImport2
      */
     public function import(string $name, array $args, int $index): array
     {
-        $classname = '\\App\\Models\\' . $name;
-        $model = new $classname();
+        $model = Model::get($name);
 
         $columns = $args['columns'];
         $edgeColumns = $this->getEdgeColumns($model, $args);
@@ -452,7 +450,11 @@ class FileImport2
                     ]
                 ];
             }
-            $value = $cell->getValue();
+            if ($cell === null) {
+                $value = null;
+            } else {
+                $value = $cell->getValue();
+            }
             if (empty($value)) {
                 $value = $field->default ?? null;
             }

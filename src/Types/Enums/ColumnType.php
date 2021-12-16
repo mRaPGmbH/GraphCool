@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ColumnType extends EnumType
@@ -14,8 +15,7 @@ class ColumnType extends EnumType
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $typeName = substr($name, 1, -6);
-        $classname = 'App\\Models\\' . $typeName;
-        $model = new $classname();
+        $model = Model::get($typeName);
         $values = [];
         foreach ($model as $key => $field) {
             if (!$field instanceof Field) {

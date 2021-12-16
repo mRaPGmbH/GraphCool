@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
+use GraphQL\Error\Error;
 use stdClass;
 
 class Model extends stdClass
@@ -26,9 +27,11 @@ class Model extends stdClass
     {
         if (!isset(self::$instances[$name])) {
             $classname = 'App\\Models\\' . $name;
+            if (!class_exists($classname)) {
+                throw new Error('Unknown entity: '.$name);
+            }
             self::$instances[$name] = new $classname();
         }
-
         return self::$instances[$name];
     }
 

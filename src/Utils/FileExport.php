@@ -37,8 +37,7 @@ class FileExport
      */
     public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
-        $classname = 'App\\Models\\' . $name;
-        $model = new $classname();
+        $model = Model::get($name);
 
         $this->type = $type;
 

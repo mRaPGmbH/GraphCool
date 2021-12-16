@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -16,10 +15,11 @@ class FileExportType extends ObjectType
             'name' => '_FileExport',
             'description' => 'An exported file in base64 encoding',
             'fields' => [
-                'filename' => new NonNull(Type::string()),
-                'mime_type' => new NonNull(Type::string()),
-                'data_base64' => new NonNull(Type::string()),
-                'url' => new NonNull(Type::string()),
+                'filename' => Type::string(),
+                'mime_type' => Type::string(),
+                'data_base64' => Type::string(),
+                'url' => Type::string(),
+                'filesize' => Type::int(),
             ],
         ];
         parent::__construct($config);

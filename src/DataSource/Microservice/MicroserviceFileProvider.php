@@ -12,46 +12,58 @@ use stdClass;
 class MicroserviceFileProvider implements FileProvider
 {
 
-    protected array $cache;
+    protected array $cache = [];
 
     public function store(string $name, string $id, string $key, array $input): stdClass
     {
         $file = FileUpload::get($input);
         $result = Microservice::endpoint('file:mutation:createFile')
+            ->setTimeout(30)
             ->authorization($_SERVER['HTTP_AUTHORIZATION'])
             ->paramString('service', Env::get('APP_NAME'))
             ->paramString('model', $name)
             ->paramString('model_id', $id)
             ->paramString('property', $key)
             ->paramRawValue('file', $this->getParamValue($file))
-            ->fields(['id', 'filesize', 'file' => ['url', 'data_base64']])
+            ->fields(['id', 'filesize', 'file' => ['url']])
             ->call();
         $file->id = $result->id;
         $file->filesize = $result->filesize ?? 0;
         $file->url = $result->file->url ?? '';
-        $file->data_base64 = $result->file->data_base64 ?? null;
         $this->cache[$result->id] = $file;
         return $file;
     }
 
     public function retrieve(string $name, string $id, string $key, string $value): ?stdClass
     {
-        if (empty($value)) {
-            return null;
+        return (object)[
+            'filename' => function() use($value) {return $this->getField('filename', $value);},
+            'filesize' => function() use($value) {return $this->getField('filesize', $value);},
+            'mime_type' => function() use($value) {return $this->getField('mime_type', $value);},
+            'url' => function() use($value) {return $this->getField('url', $value);},
+        ];
+    }
+
+    protected function getField(string $field, string $id): mixed
+    {
+        if (!array_key_exists($id, $this->cache)) {
+            $this->fetch($id);
         }
-        if (isset($this->cache[$value])) {
-            return $this->cache[$value];
-        }
+        return $this->cache[$id]->$field ?? null;
+    }
+
+    protected function fetch(string $id): void
+    {
         $result = Microservice::endpoint('file:query:file')
             ->authorization($_SERVER['HTTP_AUTHORIZATION'])
-            ->paramString('id', $value)
-            ->fields(['id', 'filesize', 'file' => ['url', 'data_base64'], 'filename', 'mime_type'])
+            ->paramString('id', $id)
+            ->fields(['id', 'filesize', 'file' => ['url'], 'filename', 'mime_type'])
             ->call();
         if ($result !== null) {
             $result->url = $result->file->url ?? '';
             $result->data_base64 = $result->file->data_base64 ?? null;
         }
-        return $result;
+        $this->cache[$id] = $result;
     }
 
     public function delete(string $name, string $id, string $key, string $value): void

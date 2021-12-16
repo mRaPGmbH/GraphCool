@@ -22,11 +22,7 @@ class ModelType extends ObjectType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $classname = 'App\\Models\\' . $name;
-        if (!class_exists($classname)) {
-            throw new Error('Unknown type "' . $name . '"');
-        }
-        $this->model = new $classname();
+        $this->model = Model::get($name);
         $config = [
             'name' => $name,
             'fields' => [],

@@ -7,7 +7,6 @@ namespace Mrap\GraphCool;
 use Closure;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Error\Error;
-use GraphQL\Executor\ExecutionResult;
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
@@ -47,6 +46,7 @@ class GraphCool
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
 
+        //FullTextIndex::shutdown();
         foreach (static::$shutdown as $closure) {
             $closure();
         }

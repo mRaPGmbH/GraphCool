@@ -8,6 +8,7 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeInputType extends InputObjectType
@@ -18,8 +19,7 @@ class EdgeInputType extends InputObjectType
         $names = explode('__', substr($name, 1, -8), 2);
         $key = $names[1];
 
-        $classname = 'App\\Models\\' . $names[0];
-        $model = new $classname();
+        $model = Model::get($names[0]);
         $relation = $model->$key;
         $fields = [
             'id' => new NonNull(Type::id())
