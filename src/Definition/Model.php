@@ -56,6 +56,10 @@ class Model extends stdClass
         return $updates;
     }
 
+    public function beforeRestore(string $tenantId, string $id): void
+    {
+    }
+
     /**
      * @param string $tenantId
      * @param string $id
@@ -76,6 +80,10 @@ class Model extends stdClass
     }
 
     public function afterDelete(stdClass $data): void
+    {
+    }
+
+    public function afterRestore(stdClass $data): void
     {
     }
 

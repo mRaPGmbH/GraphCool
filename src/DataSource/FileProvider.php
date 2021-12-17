@@ -11,4 +11,5 @@ interface FileProvider
     public function store(string $name, string $id, string $key, array $input): stdClass;
     public function retrieve(string $name, string $id, string $key, string $value): ?stdClass;
     public function delete(string $name, string $id, string $key, string $value): void;
+    public function softDelete(string $name, string $id, string $key, string $value): void;
 }

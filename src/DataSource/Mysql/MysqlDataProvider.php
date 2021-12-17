@@ -269,7 +269,7 @@ class MysqlDataProvider implements DataProvider
         if ($node === null) {
             return null;
         }
-        // $this->deleteFiles($name, $id); // this would HARD-delete files, according to Laurenz files shall only be soft-deleted!
+        $this->softDeleteFiles($name, $node);
         Mysql::nodeWriter()->delete($tenantId, $id);
         $model = Model::get($name);
         $model->afterDelete($node);
@@ -278,13 +278,14 @@ class MysqlDataProvider implements DataProvider
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
+        $model = Model::get($name);
+        $model->beforeRestore($tenantId, $id);
         Mysql::nodeWriter()->restore($tenantId, $id);
         $node = $this->load($tenantId, $name, $id);
         if ($node === null) {
             throw new Error($name . ' with ID ' . $id . ' not found.');
         }
-        $model = Model::get($name);
-        $model->afterUpdate($node);
+        $model->afterRestore($node);
         return $node;
     }
 
@@ -439,7 +440,7 @@ class MysqlDataProvider implements DataProvider
             ) {
                 continue;
             }
-            // cant use closure here, because there are subfields
+            //can't use closure here, because there are subfields - graphql-php only allows closures at leaf-nodes
             //$value = $data->$key;
             //$data->$key = function() use($name, $id, $key, $value) {File::retrieve($name, $id, $key, $value);};
             $data->$key = File::retrieve($name, $id, $key, $data->$key);
@@ -447,14 +448,14 @@ class MysqlDataProvider implements DataProvider
         return $data;
     }
 
-    protected function deleteFiles(string $name, string $id): void
+    protected function softDeleteFiles(string $name, stdClass $node): void
     {
         $model = Model::get($name);
         foreach (get_object_vars($model) as $key => $item) {
-            if ($item instanceof Field) {
-                $oldValue = $this->getOldValue($name, $id, $key);
+            if ($item instanceof Field && $item->type === Field::FILE) {
+                $oldValue = $node->$key ?? null;
                 if ($oldValue !== null) {
-                    File::delete($name, $id, $key, $oldValue);
+                    File::softDelete($name, $node->id, $key, $oldValue);
                 }
             }
         }

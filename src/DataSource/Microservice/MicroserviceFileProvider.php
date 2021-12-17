@@ -78,6 +78,12 @@ class MicroserviceFileProvider implements FileProvider
             ->call();
     }
 
+    public function softDelete(string $name, string $id, string $key, string $value): void
+    {
+        $this->delete($name, $id, $key, $value);
+    }
+
+
     protected function getParamValue(stdClass $file): string
     {
         return '{filename: "'.str_replace('"', '', $file->filename).'" data_base64: "'.$file->data_base64.'"}';

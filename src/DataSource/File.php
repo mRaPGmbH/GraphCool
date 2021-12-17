@@ -92,6 +92,11 @@ class File
         static::getFileProvider()->delete($name, $id, $key, $value);
     }
 
+    public static function softDelete(string $name, string $id, string $key, string $value): void
+    {
+        static::getFileProvider()->softDelete($name, $id, $key, $value);
+    }
+
     /**
      * @codeCoverageIgnore
      */

@@ -53,6 +53,11 @@ class SystemFileProvider implements FileProvider
         }
     }
 
+    public function softDelete(string $name, string $id, string $key, string $value): void
+    {
+    }
+
+
     protected function filename(string $name, string $id, string $key): string
     {
         $path = $this->getPath() . '/'
