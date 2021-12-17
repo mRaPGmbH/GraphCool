@@ -19,8 +19,8 @@ class MysqlMigration
 
         $sql = 'CREATE TABLE IF NOT EXISTS `node` (
               `id` char(36) NOT NULL COMMENT \'uuid\',
-              `tenant_id` int(11) NOT NULL,
-              `model` varchar(255) NOT NULL,
+              `tenant_id` char(255) NOT NULL,
+              `model` char(255) NOT NULL,
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
@@ -31,8 +31,8 @@ class MysqlMigration
 
         $sql = 'CREATE TABLE IF NOT EXISTS `node_property` (
               `node_id` char(36) NOT NULL,
-              `model` varchar(255) NOT NULL,
-              `property` varchar(255) NOT NULL,
+              `model` char(255) NOT NULL,
+              `property` char(255) NOT NULL,
               `value_int` bigint(20) DEFAULT NULL,
               `value_string` longtext,
               `value_float` double DEFAULT NULL,
@@ -54,9 +54,9 @@ class MysqlMigration
         $sql = 'CREATE TABLE IF NOT EXISTS `edge` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
               `child_id` char(36) NOT NULL COMMENT \'node.id\',
-              `tenant_id` int(11) NOT NULL,
-              `parent` varchar(255) NOT NULL,
-              `child` varchar(255) NOT NULL,
+              `tenant_id` char(255) NOT NULL,
+              `parent` char(255) NOT NULL,
+              `child` char(255) NOT NULL,
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
               `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
               `deleted_at` timestamp NULL DEFAULT NULL,
@@ -73,9 +73,9 @@ class MysqlMigration
         $sql = 'CREATE TABLE IF NOT EXISTS `edge_property` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
               `child_id` char(36) NOT NULL COMMENT \'node.id\',
-              `parent` varchar(255) NOT NULL COMMENT \'node.name\',
-              `child` varchar(255) NOT NULL COMMENT \'node.name\',
-              `property` varchar(255) NOT NULL,
+              `parent` char(255) NOT NULL COMMENT \'node.name\',
+              `child` char(255) NOT NULL COMMENT \'node.name\',
+              `property` char(255) NOT NULL,
               `value_int` bigint(20) DEFAULT NULL,
               `value_string` longtext,
               `value_float` double DEFAULT NULL,

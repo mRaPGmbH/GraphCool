@@ -285,6 +285,7 @@ class MysqlDataProvider implements DataProvider
         if ($node === null) {
             throw new Error($name . ' with ID ' . $id . ' not found.');
         }
+        $this->restoreFiles($name, $node);
         $model->afterRestore($node);
         return $node;
     }
@@ -458,6 +459,19 @@ class MysqlDataProvider implements DataProvider
                 $oldValue = $this->getOldValue($name, $node->id, $key);
                 if ($oldValue !== null) {
                     File::softDelete($name, $node->id, $key, $oldValue);
+                }
+            }
+        }
+    }
+
+    protected function restoreFiles(string $name, stdClass $node): void
+    {
+        $model = Model::get($name);
+        foreach (get_object_vars($model) as $key => $item) {
+            if ($item instanceof Field && $item->type === Field::FILE) {
+                $oldValue = $this->getOldValue($name, $node->id, $key);
+                if ($oldValue !== null) {
+                    File::restore($name, $node->id, $key, $oldValue);
                 }
             }
         }

@@ -57,6 +57,10 @@ class SystemFileProvider implements FileProvider
     {
     }
 
+    public function restore(string $name, string $id, string $key, string $value): void
+    {
+    }
+
 
     protected function filename(string $name, string $id, string $key): string
     {

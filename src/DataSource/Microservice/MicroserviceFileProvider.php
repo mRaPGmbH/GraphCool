@@ -83,6 +83,17 @@ class MicroserviceFileProvider implements FileProvider
         $this->delete($name, $id, $key, $value);
     }
 
+    public function restore(string $name, string $id, string $key, string $value): void
+    {
+        if (empty($value)) {
+            return;
+        }
+        Microservice::endpoint('file:mutation:restoreFile')
+            ->authorization($_SERVER['HTTP_AUTHORIZATION'])
+            ->paramString('id', $value)
+            ->fields(['id'])
+            ->call();
+    }
 
     protected function getParamValue(stdClass $file): string
     {

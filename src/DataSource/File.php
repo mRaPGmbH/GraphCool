@@ -97,6 +97,11 @@ class File
         static::getFileProvider()->softDelete($name, $id, $key, $value);
     }
 
+    public static function restore(string $name, string $id, string $key, string $value): void
+    {
+        static::getFileProvider()->restore($name, $id, $key, $value);
+    }
+
     /**
      * @codeCoverageIgnore
      */
