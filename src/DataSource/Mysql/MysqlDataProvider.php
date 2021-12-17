@@ -280,12 +280,13 @@ class MysqlDataProvider implements DataProvider
     {
         $model = Model::get($name);
         $model->beforeRestore($tenantId, $id);
-        Mysql::nodeWriter()->restore($tenantId, $id);
-        $node = $this->load($tenantId, $name, $id);
+        $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
         if ($node === null) {
             throw new Error($name . ' with ID ' . $id . ' not found.');
         }
         $this->restoreFiles($name, $node);
+        Mysql::nodeWriter()->restore($tenantId, $id);
+        $node->deleted_at = null;
         $model->afterRestore($node);
         return $node;
     }
