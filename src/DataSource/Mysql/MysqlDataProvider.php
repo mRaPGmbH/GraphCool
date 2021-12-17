@@ -453,7 +453,9 @@ class MysqlDataProvider implements DataProvider
         $model = Model::get($name);
         foreach (get_object_vars($model) as $key => $item) {
             if ($item instanceof Field && $item->type === Field::FILE) {
-                $oldValue = $node->$key ?? null;
+                // $node contains the replaced file-object instead of the original db-value
+                // thus the original value has to be loaded from DB
+                $oldValue = $this->getOldValue($name, $node->id, $key);
                 if ($oldValue !== null) {
                     File::softDelete($name, $node->id, $key, $oldValue);
                 }
