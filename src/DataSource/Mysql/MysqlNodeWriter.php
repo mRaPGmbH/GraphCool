@@ -125,6 +125,7 @@ class MysqlNodeWriter
                 $this->insertOrUpdateModelField($item, $updates[$key], $id, $name, $key);
             }
         }
+        $this->updateNode($tenantId, $id);
     }
 
     /**
@@ -181,6 +182,17 @@ class MysqlNodeWriter
     protected function deleteNode(?string $tenantId, string $id): bool
     {
         $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` = :id';
+        $params = [':id' => $id];
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
+        return Mysql::execute($sql, $params) > 0;
+    }
+
+    protected function updateNode(?string $tenantId, string $id): bool
+    {
+        $sql = 'UPDATE `node` SET `updated_at` = now() WHERE `id` = :id';
         $params = [':id' => $id];
         if ($tenantId !== null) {
             $sql .= ' AND `tenant_id` = :tenant_id';
