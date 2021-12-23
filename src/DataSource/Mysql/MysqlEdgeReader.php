@@ -84,6 +84,7 @@ class MysqlEdgeReader
         match ($resultType) {
             'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
             'WITH_TRASHED' => $query->withTrashed(),
+            'NONTRASHED_EDGES_OF_TRASHED_NODES' => $query->nontrashedEdgesOfTrashedNodes(),
             default => null
         };
 
@@ -148,7 +149,7 @@ class MysqlEdgeReader
         }
         $sql .= match ($resultType) {
             'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
-            'WITH_TRASHED' => '',
+            'WITH_TRASHED', 'NONTRASHED_EDGES_OF_TRASHED_NODES' => '',
             default => 'AND `deleted_at` IS NULL ',
         };
 

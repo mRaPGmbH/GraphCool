@@ -284,6 +284,15 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    public function nontrashedEdgesOfTrashedNodes(): MysqlQueryBuilder
+    {
+        $this->resultType = ' AND ' . $this->fieldName('deleted_at') . ' IS NULL';
+        if ($this->name === 'edge') {
+            $this->resultType .= ' AND ' . $this->fieldName('_deleted_at') . ' IS NOT NULL';
+        }
+        return $this;
+    }
+
     /**
      * @param Model $model
      * @param string $name
