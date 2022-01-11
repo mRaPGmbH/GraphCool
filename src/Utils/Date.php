@@ -5,21 +5,35 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Utils;
 
 use Carbon\Carbon;
+use GraphQL\Error\Error;
 use RuntimeException;
 use Throwable;
 
 class Date
 {
 
-    public static function parse(mixed $value): ?Carbon
+    public static function parseToInt(mixed $value, bool $forceUtc = false): int
+    {
+        $carbon = static::parse($value, $forceUtc);
+        if ($carbon === null) {
+            throw new Error('Could not parse date value: ' . ((string)$value));
+        }
+        return (int)$carbon->getPreciseTimestamp(3);
+    }
+
+    public static function parse(mixed $value, bool $forceUtc = false): ?Carbon
     {
         if (empty($value)) {
             return null;
         }
 
-        $timezone = TimeZone::get();
-        if ($timezone === '+00:00') {
+        if ($forceUtc) {
             $timezone = null;
+        } else {
+            $timezone = TimeZone::get();
+            if ($timezone === '+00:00') {
+                $timezone = null;
+            }
         }
 
         if (is_string($value)) {
@@ -100,97 +114,97 @@ class Date
                 'Y-m-d H:i:s',
                 'Y-m-d\TH:i:s',
 
-                'm/d/Y',
-                'm/d/Y h:ia',
-                'm/d/Y h:i a',
-                'm/d/Y h:iA',
-                'm/d/Y h:i A',
-                'm/d/Y h:i:sa',
-                'm/d/Y h:i:s a',
-                'm/d/Y h:i:sA',
-                'm/d/Y h:i:s A',
-                'm/d/Y g:ia',
-                'm/d/Y g:i a',
-                'm/d/Y g:iA',
-                'm/d/Y g:i A',
-                'm/d/Y g:i:sa',
-                'm/d/Y g:i:s a',
-                'm/d/Y g:i:sA',
-                'm/d/Y g:i:s A',
-                'm/d/Y H:i',
-                'm/d/Y Hi',
-                'm/d/Y H:i:s',
-                'm/d/Y G:i',
-                'm/d/Y G:i:s',
+                'd/m/Y',
+                'd/m/Y h:ia',
+                'd/m/Y h:i a',
+                'd/m/Y h:iA',
+                'd/m/Y h:i A',
+                'd/m/Y h:i:sa',
+                'd/m/Y h:i:s a',
+                'd/m/Y h:i:sA',
+                'd/m/Y h:i:s A',
+                'd/m/Y g:ia',
+                'd/m/Y g:i a',
+                'd/m/Y g:iA',
+                'd/m/Y g:i A',
+                'd/m/Y g:i:sa',
+                'd/m/Y g:i:s a',
+                'd/m/Y g:i:sA',
+                'd/m/Y g:i:s A',
+                'd/m/Y H:i',
+                'd/m/Y Hi',
+                'd/m/Y H:i:s',
+                'd/m/Y G:i',
+                'd/m/Y G:i:s',
 
-                'm/d/y',
-                'm/d/y h:ia',
-                'm/d/y h:i a',
-                'm/d/y h:iA',
-                'm/d/y h:i A',
-                'm/d/y h:i:sa',
-                'm/d/y h:i:s a',
-                'm/d/y h:i:sA',
-                'm/d/y h:i:s A',
-                'm/d/y g:ia',
-                'm/d/y g:i a',
-                'm/d/y g:iA',
-                'm/d/y g:i A',
-                'm/d/y g:i:sa',
-                'm/d/y g:i:s a',
-                'm/d/y g:i:sA',
-                'm/d/y g:i:s A',
-                'm/d/y H:i',
-                'm/d/y Hi',
-                'm/d/y H:i:s',
-                'm/d/y G:i',
-                'm/d/y G:i:s',
+                'd/m/y',
+                'd/m/y h:ia',
+                'd/m/y h:i a',
+                'd/m/y h:iA',
+                'd/m/y h:i A',
+                'd/m/y h:i:sa',
+                'd/m/y h:i:s a',
+                'd/m/y h:i:sA',
+                'd/m/y h:i:s A',
+                'd/m/y g:ia',
+                'd/m/y g:i a',
+                'd/m/y g:iA',
+                'd/m/y g:i A',
+                'd/m/y g:i:sa',
+                'd/m/y g:i:s a',
+                'd/m/y g:i:sA',
+                'd/m/y g:i:s A',
+                'd/m/y H:i',
+                'd/m/y Hi',
+                'd/m/y H:i:s',
+                'd/m/y G:i',
+                'd/m/y G:i:s',
 
-                'n/j/Y',
-                'n/j/Y h:ia',
-                'n/j/Y h:i a',
-                'n/j/Y h:iA',
-                'n/j/Y h:i A',
-                'n/j/Y h:i:sa',
-                'n/j/Y h:i:s a',
-                'n/j/Y h:i:sA',
-                'n/j/Y h:i:s A',
-                'n/j/Y g:ia',
-                'n/j/Y g:i a',
-                'n/j/Y g:iA',
-                'n/j/Y g:i A',
-                'n/j/Y g:i:sa',
-                'n/j/Y g:i:s a',
-                'n/j/Y g:i:sA',
-                'n/j/Y g:i:s A',
-                'n/j/Y H:i',
-                'n/j/Y Hi',
-                'n/j/Y H:i:s',
-                'n/j/Y G:i',
-                'n/j/Y G:i:s',
+                'j/n/Y',
+                'j/n/Y h:ia',
+                'j/n/Y h:i a',
+                'j/n/Y h:iA',
+                'j/n/Y h:i A',
+                'j/n/Y h:i:sa',
+                'j/n/Y h:i:s a',
+                'j/n/Y h:i:sA',
+                'j/n/Y h:i:s A',
+                'j/n/Y g:ia',
+                'j/n/Y g:i a',
+                'j/n/Y g:iA',
+                'j/n/Y g:i A',
+                'j/n/Y g:i:sa',
+                'j/n/Y g:i:s a',
+                'j/n/Y g:i:sA',
+                'j/n/Y g:i:s A',
+                'j/n/Y H:i',
+                'j/n/Y Hi',
+                'j/n/Y H:i:s',
+                'j/n/Y G:i',
+                'j/n/Y G:i:s',
 
-                'n/j/y',
-                'n/j/y h:ia',
-                'n/j/y h:i a',
-                'n/j/y h:iA',
-                'n/j/y h:i A',
-                'n/j/y h:i:sa',
-                'n/j/y h:i:s a',
-                'n/j/y h:i:sA',
-                'n/j/y h:i:s A',
-                'n/j/y g:ia',
-                'n/j/y g:i a',
-                'n/j/y g:iA',
-                'n/j/y g:i A',
-                'n/j/y g:i:sa',
-                'n/j/y g:i:s a',
-                'n/j/y g:i:sA',
-                'n/j/y g:i:s A',
-                'n/j/y H:i',
-                'n/j/y Hi',
-                'n/j/y H:i:s',
-                'n/j/y G:i',
-                'n/j/y G:i:s',
+                'j/n/y',
+                'j/n/y h:ia',
+                'j/n/y h:i a',
+                'j/n/y h:iA',
+                'j/n/y h:i A',
+                'j/n/y h:i:sa',
+                'j/n/y h:i:s a',
+                'j/n/y h:i:sA',
+                'j/n/y h:i:s A',
+                'j/n/y g:ia',
+                'j/n/y g:i a',
+                'j/n/y g:iA',
+                'j/n/y g:i A',
+                'j/n/y g:i:sa',
+                'j/n/y g:i:s a',
+                'j/n/y g:i:sA',
+                'j/n/y g:i:s A',
+                'j/n/y H:i',
+                'j/n/y Hi',
+                'j/n/y H:i:s',
+                'j/n/y G:i',
+                'j/n/y G:i:s',
 
                 'H:i',
                 'Hi',

@@ -333,6 +333,17 @@ class FileImport2
         return $data;
     }
 
+    /*
+    protected function getValueString(Cell $cell): string
+    {
+        $value = $cell->getValue() ?? '';
+        if ($value instanceof DateTime) {
+            $format = $cell->getStyle()->getFormat();
+            $value = $format;
+        }
+        return $value;
+    }*/
+
     protected function convertField(Field $field, mixed $value): float|int|string|null
     {
         if (empty($value)) {
@@ -340,14 +351,9 @@ class FileImport2
         }
         switch ($field->type) {
             case Field::DATE:
-                $type = new \Mrap\GraphCool\Types\Scalars\Date();
-                return $type->parseValue($value);
             case Field::DATE_TIME:
-                $type = new DateTime();
-                return $type->parseValue($value);
             case Field::TIME:
-                $type = new Time();
-                return $type->parseValue($value);
+                return Date::parseToInt($value);
             case Field::DECIMAL:
             case Type::FLOAT:
                 return (float)$value;
