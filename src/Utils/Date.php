@@ -248,8 +248,6 @@ class Date
         try {
             return Carbon::parse($value, $timezone);
         } catch (Throwable $e) {
-            $e = new RuntimeException('Could not parse date: ' . $value, 0, $e);
-            ErrorHandler::sentryCapture($e);
             return null;
         }
     }
