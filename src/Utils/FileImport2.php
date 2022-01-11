@@ -136,6 +136,7 @@ class FileImport2
             throw new Error('Could not import file: MimeType could not be detected.');
         }
         $reader = $this->getReaderObject($mimeType);
+        $reader->setShouldFormatDates(true); // get text-string for dates, instead of DateTime object
         if ($reader === null) {
             throw new Error('Could not import file: Unknown MimeType: ' . $mimeType);
         }
@@ -168,8 +169,7 @@ class FileImport2
     protected function getReaderObject(string $mimeType): ?ReaderInterface
     {
         return match ($mimeType) {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(
-            ),
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => ReaderEntityFactory::createXLSXReader(),
             'application/vnd.oasis.opendocument.spreadsheet' => ReaderEntityFactory::createODSReader(),
             'text/csv', 'text/plain', 'application/csv' => ReaderEntityFactory::createCSVReader(),
             default => null
@@ -261,6 +261,7 @@ class FileImport2
      * @param array[] $errors
      * @param int $rowNumber
      * @return mixed[]|null
+     * @throws Error
      */
     protected function getItem(
         Model $model,
