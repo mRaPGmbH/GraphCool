@@ -62,4 +62,6 @@ interface DataProvider
     public function getSum(?string $tenantId, string $name, string $key): float|int;
 
     public function getCount(?string $tenantId, string $name): int;
+
+    public function increment(string $tenantId, string $key, int $min = 0): int;
 }

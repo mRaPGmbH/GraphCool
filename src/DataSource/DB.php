@@ -145,4 +145,12 @@ class DB
         StopWatch::stop(__METHOD__);
     }
 
+    public static function increment(string $tenantId, string $key, int $min = 0): int
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->increment($tenantId, $key, $min);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
 }

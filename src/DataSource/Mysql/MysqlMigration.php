@@ -44,12 +44,6 @@ class MysqlMigration
               CONSTRAINT `node_property_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         Mysql::executeRaw($sql);
-        /*
-         *               KEY `value_int_deleted_at` (`value_int`, `deleted_at`),
-              KEY `value_string_deleted_at` (`value_string`, `deleted_at`),
-              KEY `value_float_deleted_at` (`value_float`, `deleted_at`),
-
-         */
 
         $sql = 'CREATE TABLE IF NOT EXISTS `edge` (
               `parent_id` char(36) NOT NULL COMMENT \'node.id\',
@@ -87,6 +81,14 @@ class MysqlMigration
               KEY `parent_id_child_property` (`parent_id`, `child`, `property`),
               CONSTRAINT `edge_property_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `node` (`id`) ON DELETE CASCADE,
               CONSTRAINT `edge_property_ibfk_2` FOREIGN KEY (`child_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        Mysql::executeRaw($sql);
+
+        $sql = 'CREATE TABLE IF NOT EXISTS `increment` (
+              `tenant_id` char(255) NOT NULL,
+              `key` char(255) NOT NULL,
+              `value` bigint(20) NOT NULL DEFAULT 0,
+              PRIMARY KEY (`tenant_id`,`key`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         Mysql::executeRaw($sql);
 

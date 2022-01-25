@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Mrap\GraphCool\Utils\Env;
+use Mrap\GraphCool\Utils\ErrorHandler;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -144,6 +145,33 @@ class MysqlConnector
         $statement = $this->statement($sql);
         $statement->execute($params);
         return $statement->fetchColumn($column);
+    }
+
+    public function increment(string $tenantId, string $key, int $min = 0): int
+    {
+        $this->pdo()->beginTransaction();
+        try {
+            $quotedTenantId = $this->pdo()->quote($tenantId);
+            $quotedKey = $this->pdo()->quote($key);
+            $where = 'WHERE `tenant_id` = '.$quotedTenantId.' AND `key` = '.$quotedKey;
+            $value = $this->pdo()->query('SELECT `value` FROM `increment` '.$where, PDO::FETCH_OBJ)->fetchColumn();
+            if ($value === false) {
+                $value = $min+1;
+                $this->pdo()->exec('INSERT INTO `increment` VALUES  (' . $quotedTenantId . ', ' . $quotedKey . ', ' . $value . ' )');
+            } else {
+                if ($value < $min) {
+                    $value = $min;
+                }
+                $value++;
+                $this->pdo()->exec('UPDATE `increment` SET `value` = ' . $value . ' '.$where);
+            }
+        } catch (PDOException $e) {
+            ErrorHandler::sentryCapture($e);
+            $this->pdo()->rollBack();
+            throw new RuntimeException('Increment for ' . $key . ' failed.');
+        }
+        $this->pdo()->commit();
+        return $value;
     }
 
 

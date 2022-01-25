@@ -291,6 +291,11 @@ class MysqlDataProvider implements DataProvider
         return $node;
     }
 
+    public function increment(string $tenantId, string $key, int $min = 0): int
+    {
+        return Mysql::increment($tenantId, $key, $min);
+    }
+
     protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
     {
         $query = MysqlQueryBuilder::forModel($model, $name)

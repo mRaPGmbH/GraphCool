@@ -147,5 +147,10 @@ class Mysql
         static::$edgeWriter = $edgeWriter;
     }
 
+    public static function increment(string $tenantId, string $key, int $min = 0): int
+    {
+        return static::get()->increment($tenantId, $key, $min);
+    }
+
 
 }
