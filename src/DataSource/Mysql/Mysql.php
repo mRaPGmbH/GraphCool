@@ -152,5 +152,10 @@ class Mysql
         return static::get()->increment($tenantId, $key, $min);
     }
 
+    public static function getPdo(): \PDO
+    {
+        return static::get()->pdo();
+    }
+
 
 }

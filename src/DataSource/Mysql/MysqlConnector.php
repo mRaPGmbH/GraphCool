@@ -89,7 +89,7 @@ class MysqlConnector
     /**
      * @codeCoverageIgnore
      */
-    protected function pdo(): PDO
+    public function pdo(): PDO
     {
         if (!isset($this->pdo)) {
             $this->connect();
