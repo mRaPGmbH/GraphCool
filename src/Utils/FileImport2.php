@@ -136,10 +136,10 @@ class FileImport2
             throw new Error('Could not import file: MimeType could not be detected.');
         }
         $reader = $this->getReaderObject($mimeType);
-        $reader->setShouldFormatDates(true); // get text-string for dates, instead of DateTime object
         if ($reader === null) {
             throw new Error('Could not import file: Unknown MimeType: ' . $mimeType);
         }
+        $reader->setShouldFormatDates(true); // get text-string for dates, instead of DateTime object
         if ($reader instanceof CSVReader) {
             $reader = $this->detectSeparator($reader, $file);
         }
