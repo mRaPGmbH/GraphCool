@@ -90,6 +90,7 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->insert($tenantId, $modelName, $data);
+        FullTextIndex::index($tenantId, $modelName, $result->id);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -104,6 +105,7 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->update($tenantId, $modelName, $data);
+        FullTextIndex::index($tenantId, $modelName, $result->id);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -118,6 +120,9 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->updateMany($tenantId, $modelName, $data);
+        foreach ($result->ids as $id) {
+            FullTextIndex::index($tenantId, $modelName, $id);
+        }
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -126,6 +131,7 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->delete($tenantId, $modelName, $id);
+        FullTextIndex::delete($tenantId, $modelName, $id);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -134,6 +140,7 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->restore($tenantId, $modelName, $id);
+        FullTextIndex::index($tenantId, $modelName, $id);
         StopWatch::stop(__METHOD__);
         return $result;
     }

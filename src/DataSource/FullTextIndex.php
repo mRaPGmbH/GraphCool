@@ -1,8 +1,7 @@
 <?php
 
-namespace Mrap\GraphCool\Utils;
+namespace Mrap\GraphCool\DataSource;
 
-use Mrap\GraphCool\DataSource\FullTextIndexProvider;
 use Mrap\GraphCool\DataSource\Mysql\MysqlFullTextIndexProvider;
 
 class FullTextIndex
@@ -26,9 +25,19 @@ class FullTextIndex
         return static::$provider;
     }
 
-    public static function index(string $model, \stdClass $data): void
+    public static function index(string $tenantId, string $model, string $id): void
     {
-        static::get()->index($model, $data);
+        static::get()->index($tenantId, $model, $id);
+    }
+
+    public static function delete(string $tenantId, string $model, string $id): void
+    {
+        static::get()->delete($tenantId, $model, $id);
+    }
+
+    public static function search(string $tenantId, string $searchString): array
+    {
+        return static::get()->search($tenantId, $searchString);
     }
 
     public static function shutdown(): void

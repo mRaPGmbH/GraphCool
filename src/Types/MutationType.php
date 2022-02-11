@@ -11,6 +11,7 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
+use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -276,13 +277,17 @@ class MutationType extends ObjectType
         foreach ($update as $data) {
             $updated_ids[] = DB::update(JwtAuthentication::tenantId(), $name, $data)->id;
         }
+        $affected_ids = array_merge($inserted_ids, $updated_ids);
+        foreach ($affected_ids as $id) {
+            FullTextIndex::index(JwtAuthentication::tenantId(), $name, $id);
+        }
         return (object)[
             'inserted_rows' => count($inserted_ids),
             'inserted_ids' => $inserted_ids,
             'updated_rows' => count($updated_ids),
             'updated_ids' => $updated_ids,
-            'affected_rows' => count($inserted_ids) + count($updated_ids),
-            'affected_ids' => array_merge($inserted_ids, $updated_ids),
+            'affected_rows' => count($affected_ids),
+            'affected_ids' => $affected_ids,
             'failed_rows' => 0,
             'failed_row_numbers' => [],
             'errors' => $errors

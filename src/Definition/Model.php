@@ -99,4 +99,37 @@ class Model extends stdClass
         return $this->settings;
     }
 
+    public function getPropertyNamesForFulltextIndexing(): array
+    {
+        $result = [];
+        foreach ($this as $key => $field) {
+            if (!$field instanceof Field) {
+                continue;
+            }
+            if ($field->fulltextIndex) {
+                $result[] = $key;
+            }
+        }
+        return $result;
+    }
+
+    public function getEdgePropertyNamesForFulltextIndexing(): array
+    {
+        $result = [];
+        foreach ($this as $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            foreach ($relation as $key => $field) {
+                if (!$field instanceof Field) {
+                    continue;
+                }
+                if ($field->fulltextIndex) {
+                    $result[] = $key;
+                }
+            }
+        }
+        return $result;
+    }
+
 }

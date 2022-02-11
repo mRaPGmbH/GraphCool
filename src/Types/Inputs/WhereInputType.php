@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ListOfType;
+use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class WhereInputType extends InputObjectType
@@ -17,6 +18,7 @@ class WhereInputType extends InputObjectType
             'column' => $typeLoader->load(substr($name, 0, -15) . 'Column'),
             'operator' => $typeLoader->load('_SQLOperator')(),
             'value' => $typeLoader->load('Mixed'),
+            'fulltextSearch' => Type::string(),
             'AND' => new ListOfType($this),
             'OR' => new ListOfType($this)
         ];

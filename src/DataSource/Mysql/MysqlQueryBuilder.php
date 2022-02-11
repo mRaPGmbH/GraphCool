@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -16,6 +17,7 @@ class MysqlQueryBuilder
 {
 
     protected string $name;
+    protected ?string $tenantId = null;
     protected ?string $mode = null;
     /** @var string[] */
     protected array $columns;
@@ -102,6 +104,7 @@ class MysqlQueryBuilder
     public function tenant(?string $tenantId): MysqlQueryBuilder
     {
         if ($tenantId !== null) {
+            $this->tenantId = $tenantId;
             $this->where[] = '`node`.`tenant_id` = ' . $this->parameter($tenantId);
             if ($this->name === 'edge') {
                 $this->where[] = '`edge`.`tenant_id` = ' . $this->parameter($tenantId);
@@ -362,6 +365,7 @@ class MysqlQueryBuilder
             || isset($wheres['column'])
             || isset($wheres['AND'])
             || isset($wheres['OR'])
+            || isset($wheres['fulltextSearch'])
         ) {
             $wheres = [$wheres];
         }
@@ -369,6 +373,9 @@ class MysqlQueryBuilder
         foreach ($wheres as $where) {
             if (isset($where['column'])) {
                 $sqls[] = $this->resolveSingleWhere($where);
+            }
+            if (isset($where['fulltextSearch'])) {
+                $sqls[] = $this->resolveFulltextWhere($where['fulltextSearch']);
             }
             if (isset($where['OR'])) {
                 $sql = $this->whereRecursive($where['OR'], 'OR');
@@ -427,6 +434,25 @@ class MysqlQueryBuilder
             }
         }
         return $sql;
+    }
+
+    protected function resolveFulltextWhere(string $searchValue): string
+    {
+        $sql = null;
+        if ($searchValue !== null && trim($searchValue) !== '') {
+            if ($this->tenantId === null) {
+                throw new \RuntimeException(__CLASS__ . ' cannot use fulltextSearch in ->where() without using ->tenant() first');
+            }
+            $ids = FullTextIndex::search($this->tenantId, $searchValue);
+            if (count($ids) > 0) {
+                $quotedIds = [];
+                foreach ($ids as $id) {
+                    $quotedIds[] = Mysql::getPdo()->quote($id);
+                }
+                $sql = '`node`.`id` IN (' . implode(', ', $quotedIds) . ')';
+            }
+        }
+        return $sql ?? '`node`.`id` IN (null)';
     }
 
     protected function getFieldType(string $property): string

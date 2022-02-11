@@ -259,6 +259,7 @@ class MysqlDataProvider implements DataProvider
         $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
 
         $model->afterBulkUpdate($this->getClosure($tenantId, $name, $ids, $resultType));
+        $result->ids = $ids;
 
         return $result;
     }
