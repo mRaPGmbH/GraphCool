@@ -19,6 +19,7 @@ use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
 use Mrap\GraphCool\Utils\FileUpload;
+use Mrap\GraphCool\Utils\Scheduler;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use Throwable;
@@ -166,31 +167,50 @@ class GraphCool
 
     /**
      * @param mixed[] $args
-     * @return bool
+     * @return array
      */
-    public static function runScript(array $args): bool
+    public static function runScript(array $args): array
     {
         Env::init();
         $scriptName = strtolower(trim(array_shift($args)));
+        if ($scriptName === 'scheduler') {
+            try {
+                $scheduler = new Scheduler();
+                return $scheduler->run();
+            } catch (Throwable $e) {
+                var_dump($e);
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
-                $script = new $classname();
-                if ($script instanceof Script) {
-                    try {
+                try {
+                    $script = new $classname();
+                    if ($script instanceof Script) {
                         $script->run($args);
-                        return true;
-                    } catch (Throwable $e) {
-                        ErrorHandler::sentryCapture($e);
+                        return [
+                            'success' => true,
+                            'log' => $script->getLog()
+                        ];
+                    } else {
+                        throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)');
                     }
-                } else {
-                    $e = new RuntimeException(
-                        $classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)'
-                    );
+                } catch (Throwable $e) {
+                    var_dump($e);
                     ErrorHandler::sentryCapture($e);
+                    $result = [
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    if (isset($script)) {
+                        $result['log'] = $script->getLog();
+                    }
+                    return $result;
                 }
             }
         }
-        return false;
+        throw new RuntimeException('Script ' . $scriptName . ' not found.');
     }
 
     public static function migrate(): void

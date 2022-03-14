@@ -7,9 +7,11 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
+use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
@@ -306,6 +308,71 @@ class MysqlDataProvider implements DataProvider
         if ((int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters()) === 0) {
             throw new Error($name . ' with ID ' . $id . ' not found.');
         }
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function addJob(string $tenantId, string $worker, ?array $data = null): void
+    {
+        if ($data !== null) {
+            $data = json_encode($data, JSON_THROW_ON_ERROR);
+        }
+        $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :status, :data)';
+        $params = [
+            'id' => Uuid::uuid4()->toString(),
+            'tenant_id' => $tenantId,
+            'worker' => $worker,
+            'status' => Job::NEW,
+            'data' => $data
+        ];
+        Mysql::execute($sql, $params);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function finishJob(string $id, ?array $result = null, bool $failed = false): void
+    {
+        if ($result !== null) {
+             $result = json_encode($result, JSON_THROW_ON_ERROR);
+        }
+        $sql = 'UPDATE `job` SET `status` = :status, `result` = :result, finished_at = now() WHERE `id` = :id';
+        $params = [
+            'status' => $failed ? Job::FAILED : Job::FINISHED,
+            'result' => $result,
+            'id' => $id
+        ];
+        Mysql::execute($sql, $params);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    public function takeJob(): ?Job
+    {
+        $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1';
+        $params = ['status' => Job::NEW];
+        $dto = Mysql::fetch($sql, $params);
+
+        if ($dto === null) {
+            return null;
+        }
+        $sql = 'UPDATE `job` SET `status` = :status, `started_at` = now() WHERE `id` = :id';
+        $params = ['id' => $dto->id, 'status' => Job::RUNNING];
+        Mysql::execute($sql, $params);
+
+        $job = new Job();
+        $job->id = $dto->id;
+        $job->tenantId = $dto->tenant_id;
+        $job->worker = $dto->worker;
+        if ($dto->data === null) {
+            $job->data = null;
+        } else {
+            $job->data = json_decode($dto->data, true, 512, JSON_THROW_ON_ERROR);
+        }
+        $job->result = null;
+        return $job;
     }
 
     /**

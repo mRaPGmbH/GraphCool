@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
+use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 
@@ -159,5 +160,29 @@ class DB
         StopWatch::stop(__METHOD__);
         return $result;
     }
+
+    public static function addJob(string $tenantId, string $worker, ?array $data = null): void
+    {
+        StopWatch::start(__METHOD__);
+        static::get()->addJob($tenantId, $worker, $data);
+        StopWatch::stop(__METHOD__);
+    }
+
+    public static function takeJob(): ?Job
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->takeJob();
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function finishJob(string $id, ?array $result = null, bool $failed = false): void
+    {
+        StopWatch::start(__METHOD__);
+        static::get()->finishJob($id, $result, $failed);
+        StopWatch::stop(__METHOD__);
+    }
+
+
 
 }
