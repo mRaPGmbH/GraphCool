@@ -178,7 +178,7 @@ class GraphCool
                 $scheduler = new Scheduler();
                 return $scheduler->run();
             } catch (Throwable $e) {
-                var_dump($e);
+                //var_dump($e);
                 ErrorHandler::sentryCapture($e);
                 return [];
             }
@@ -197,13 +197,13 @@ class GraphCool
                         throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)');
                     }
                 } catch (Throwable $e) {
-                    var_dump($e);
+                    //var_dump($e);
                     ErrorHandler::sentryCapture($e);
                     $result = [
                         'success' => false,
                         'error' => $e->getMessage()
                     ];
-                    if (isset($script)) {
+                    if (isset($script) && method_exists($script, 'getLog')) {
                         $result['log'] = $script->getLog();
                     }
                     return $result;

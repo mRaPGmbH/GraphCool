@@ -128,6 +128,13 @@ class FileImport2
             file_put_contents($file, $data);
         }
         if ($input === null || $file === null) {
+            /*
+            var_dump([
+                'input' => $input,
+                'file' => $file ?? null,
+            ]);
+            die();*/
+
             throw new Error('Neither data_base64 nor file received.');
         }
 

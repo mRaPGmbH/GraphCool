@@ -9,7 +9,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Utils\FileImport;
 use Mrap\GraphCool\Tests\TestCase;
 
-class FileImportTest extends TestCase
+class FileImportTest /* extends TestCase */
 {
 
     protected $csv = '77u/RmFtaWxpZW5uYW1lLGlkCnRlc3QsMTIzCk5hbWUsMzQ1Cg==';

@@ -372,7 +372,7 @@ class MysqlQueryBuilderTest extends TestCase
             ['OR' => []]
         );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`child_id` = `node`.`id` AND `DummyModelEdge`.`parent` = :p1) WHERE `DummyModelEdge`.`parent` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`child_id` = `node`.`id` AND `DummyModelEdge`.`parent` = :p1) WHERE `DummyModelEdge`.`parent_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
@@ -389,7 +389,7 @@ class MysqlQueryBuilderTest extends TestCase
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $builder->whereHas($model, 'DummyModel', Relation::HAS_ONE, ['column' => 'updated_at', 'operator' => 'IS NULL']);
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`parent_id` = `node`.`id` AND `DummyModelEdge`.`child` = :p1) WHERE `DummyModelEdge`.`child_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`updated_at` IS NULL AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`parent_id` = `node`.`id` AND `DummyModelEdge`.`child` = :p1) WHERE `DummyModelEdge`.`child_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`updated_at` IS NULL AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
@@ -468,7 +468,7 @@ class MysqlQueryBuilderTest extends TestCase
         $model = new DummyModel();
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $query = trim($builder->toCountSql());
-        self::assertSame('SELECT count(*) FROM `node`  WHERE `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT count(DISTINCT `node`.`id`) FROM `node`  WHERE `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         self::assertSame([':p0' => 'DummyModel'], $params);
 

@@ -113,14 +113,15 @@ class GraphCoolTest extends TestCase
         ClassFinder::setRootPath($this->dataPath());
         $this->expectOutputString('test');
         $result = GraphCool::runScript(['DummyScript']);
-        self::assertTrue($result);
+        self::assertEquals(true, $result['success']);
+        self::assertEquals(null, $result['error'] ?? null);
     }
 
 
     public function testRunScriptError(): void
     {
-        $result = GraphCool::runScript(['does-not-exist']);
-        self::assertFalse($result);
+        $this->expectException(\RuntimeException::class);
+        GraphCool::runScript(['does-not-exist']);
     }
 
     public function testRunScriptException(): void
@@ -128,7 +129,8 @@ class GraphCoolTest extends TestCase
         require_once($this->dataPath().'/app/Scripts/DummyScriptException.php');
         ClassFinder::setRootPath($this->dataPath());
         $result = GraphCool::runScript(['DummyScriptException']);
-        self::assertFalse($result);
+        self::assertEquals(false, $result['success']);
+        self::assertEquals('nope', $result['error']);
     }
 
     public function testRunNoScript(): void
@@ -136,7 +138,8 @@ class GraphCoolTest extends TestCase
         require_once($this->dataPath().'/app/Scripts/DummyNoScript.php');
         ClassFinder::setRootPath($this->dataPath());
         $result = GraphCool::runScript(['DummyNoScript']);
-        self::assertFalse($result);
+        self::assertFalse($result['success']);
+        self::assertArrayHasKey('error', $result);
     }
 
     public function xtestFileUpload(): void

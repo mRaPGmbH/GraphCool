@@ -237,6 +237,14 @@ class Date
 
                 if (preg_match($pattern, $value)) {
                     $result = Carbon::createFromFormat($format, $value, $timezone);
+                    if (!str_contains($format, 'i')) {
+                        // Carbon defaults to using the current time, if a pure date with no time is being parsed
+                        // but we want pure days to use 00:00:00 as time
+                        $result->setHour(0);
+                        $result->setMinute(0);
+                        $result->setSecond(0);
+                        $result->setMillisecond(0);
+                    }
                     if ($result === false) {
                         return null;
                     }

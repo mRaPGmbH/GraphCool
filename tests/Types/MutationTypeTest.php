@@ -52,11 +52,11 @@ class MutationTypeTest extends TestCase
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
-        $object = (object) ['id'=>123, 'last_name'=>'test'];
+        $object = (object) ['id'=>'123', 'last_name'=>'test'];
 
         $mock->expects($this->once())
             ->method('insert')
-            ->with(1, 'classname', ['id' => 'some-id-string'])
+            ->with('1', 'classname', ['id' => 'some-id-string'])
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -76,11 +76,11 @@ class MutationTypeTest extends TestCase
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
-        $object = (object) ['id'=>123, 'last_name'=>'test'];
+        $object = (object) ['ids'=>['123'], 'last_name'=>'test'];
 
         $mock->expects($this->once())
             ->method('updateMany')
-            ->with(1, 'Classname', ['id' => 'some-id-string'])
+            ->with('1', 'Classname', ['id' => 'some-id-string'])
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -103,11 +103,11 @@ class MutationTypeTest extends TestCase
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
-        $object = (object) ['id'=>123, 'last_name'=>'test'];
+        $object = (object) ['id'=>'123', 'last_name'=>'test'];
 
         $mock->expects($this->once())
             ->method('update')
-            ->with(1, 'classname', ['id' => 'some-id-string'])
+            ->with('1', 'classname', ['id' => 'some-id-string'])
             ->willReturn($object);
 
         DB::setProvider($mock);

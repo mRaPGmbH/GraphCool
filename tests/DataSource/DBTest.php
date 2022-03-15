@@ -49,7 +49,7 @@ class DBTest extends TestCase
     public function testInsert(): void
     {
         $mock = $this->createMock(MysqlDataProvider::class);
-        $expected = (object)['d'];
+        $expected = (object)['id' => '123'];
         $mock->expects($this->once())
             ->method('insert')
             ->with('a','b',['c'])
@@ -62,7 +62,7 @@ class DBTest extends TestCase
     public function testUpdate(): void
     {
         $mock = $this->createMock(MysqlDataProvider::class);
-        $expected = (object)['d'];
+        $expected = (object)['id' => '123'];
         $mock->expects($this->once())
             ->method('update')
             ->with('a','b',['c'])
@@ -75,7 +75,7 @@ class DBTest extends TestCase
     public function testUpdateAll(): void
     {
         $mock = $this->createMock(MysqlDataProvider::class);
-        $expected = (object)['d'];
+        $expected = (object)['ids' => ['123']];
         $mock->expects($this->once())
             ->method('updateMany')
             ->with('a','b',['c'])
@@ -88,7 +88,7 @@ class DBTest extends TestCase
     public function testDelete(): void
     {
         $mock = $this->createMock(MysqlDataProvider::class);
-        $expected = (object)['d'];
+        $expected = (object)['id' => '123'];
         $mock->expects($this->once())
             ->method('delete')
             ->with('a','b','c')
@@ -101,7 +101,7 @@ class DBTest extends TestCase
     public function testRestore(): void
     {
         $mock = $this->createMock(MysqlDataProvider::class);
-        $expected = (object)['d'];
+        $expected = (object)['id' => '123'];
         $mock->expects($this->once())
             ->method('restore')
             ->with('a','b','c')
