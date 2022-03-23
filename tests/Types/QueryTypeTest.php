@@ -114,4 +114,19 @@ class QueryTypeTest extends TestCase
         self::assertSame($object, $result);
     }
 
+    public function testResolveDiagram(): void
+    {
+        $this->provideJwt();
+        $query = new QueryType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = '__classDiagram';
+        $result = $closure([], [], [], $info);
+        $expected = '```mermaidNEWLINEclassDiagramNEWLINE    class DummyModel{NEWLINE        STRING last_nameNEWLINE        DATE dateNEWLINE        DATE_TIME date_timeNEWLINE        TIME timeNEWLINE        FLOAT floatNEWLINE        ENUM enum!NEWLINE        STRING uniqueNEWLINE        COUNTRY_CODE countryNEWLINE        TIMEZONE_OFFSET timezoneNEWLINE        LOCALE_CODE localeNEWLINE        CURRENCY_CODE currencyNEWLINE        LANGUAGE_CODE languageNEWLINE        DECIMAL decimalNEWLINE        BOOLEAN boolNEWLINE        FILE fileNEWLINE        BELONGS_TO(DummyModel) belongs_toNEWLINE        BELONGS_TO(DummyModel) belongs_to2NEWLINE        BELONGS_TO_MANY(DummyModel) belongs_to_manyNEWLINE        HAS_ONE(DummyModel) has_oneNEWLINE    }NEWLINE    DummyModel --|> DummyModel : String pivot_property!
+String pivot_property2
+String pivot_property3NEWLINE    DummyModel --|> DummyModel : NEWLINE    DummyModel --|> DummyModel : String pivot_property
+ENUM pivot_enum!';
+        self::assertSame($expected, $result);
+    }
+
 }

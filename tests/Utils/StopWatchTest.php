@@ -18,4 +18,13 @@ class StopWatchTest extends TestCase
         self::assertArrayHasKey('name', $times);
         self::assertArrayHasKey('name', $percentages);
     }
+
+    public function testStopWatchReset(): void
+    {
+        StopWatch::reset();
+        [$times, $percentages] = StopWatch::get();
+        self::assertEmpty($times);
+        self::assertEmpty($percentages);
+    }
+
 }

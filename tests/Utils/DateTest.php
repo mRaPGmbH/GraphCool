@@ -178,4 +178,10 @@ class DateTest extends TestCase
         self::assertSame('Z', $carbon->format('p'));
     }
 
+    public function testForceUtc(): void
+    {
+        $carbon = Date::parse('2020-01-01 00:00:00', true);
+        self::assertSame('Z', $carbon->format('p'));
+    }
+
 }

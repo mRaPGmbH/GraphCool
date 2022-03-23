@@ -28,6 +28,7 @@ class GraphCool
 {
     /** @var Closure[] */
     protected static array $shutdown = [];
+    protected static Scheduler $scheduler;
 
     public static function run(): void
     {
@@ -130,10 +131,13 @@ class GraphCool
 
     public static function getDebugFlags(): int
     {
-        if (Env::get('APP_ENV') === 'local') {
+        $env = Env::get('APP_ENV');
+        if ($env === 'local' || $env === 'test') {
             return DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
         }
+        // @codeCoverageIgnoreStart
         return 0;
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -143,7 +147,8 @@ class GraphCool
     protected function sendResponse(array $response): void
     {
         header('Content-Type: application/json');
-        if (Env::get('APP_ENV') === 'local') {
+        $env = Env::get('APP_ENV');
+        if ($env === 'local' || $env === 'test') {
             $response['_debugTimings'] = StopWatch::get();
         }
         try {
@@ -175,10 +180,8 @@ class GraphCool
         $scriptName = strtolower(trim(array_shift($args)));
         if ($scriptName === 'scheduler') {
             try {
-                $scheduler = new Scheduler();
-                return $scheduler->run();
+                return static::scheduler()->run();
             } catch (Throwable $e) {
-                //var_dump($e);
                 ErrorHandler::sentryCapture($e);
                 return [];
             }
@@ -222,6 +225,19 @@ class GraphCool
     public static function onShutdown(Closure $closure): void
     {
         static::$shutdown[] = $closure;
+    }
+
+    protected static function scheduler(): Scheduler
+    {
+        if (!isset(static::$scheduler)) {
+            static::$scheduler = new Scheduler();
+        }
+        return static::$scheduler;
+    }
+
+    public static function setScheduler(Scheduler $scheduler): void
+    {
+        static::$scheduler = $scheduler;
     }
 
 }

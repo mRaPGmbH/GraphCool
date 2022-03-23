@@ -163,6 +163,20 @@ class SystemFileProviderTest extends TestCase
         self::assertSame(base64_encode('Hello World!'), $closure());
     }
 
+    public function testRetrieveMissing(): void
+    {
+        $path = $this->dataPath().'/storage/files/DummyModel/43e/0de';
+        $name = 'DummyModel';
+        $id = '43e0deae-de62-4b9c-812d-56a80b90f1b2';
+        $key = 'does-not-exist';
+        mkdir($path, 0777, true);
+
+        $provider = new SystemFileProvider();
+        $result = $provider->retrieve($name, $id, $key, 'test.txt');
+
+        self::assertNull($result);
+    }
+
     public function testDelete(): void
     {
         $path = $this->dataPath().'/storage/files/DummyModel/43e/0de';

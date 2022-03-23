@@ -17,18 +17,18 @@ class Scheduler
 
     public function __construct()
     {
-        $this->config = include(APP_ROOT_PATH.'/config/scheduler.php');
+        $this->config = Config::get('scheduler');
         if (isset($this->config['always']) && !is_array($this->config['always'])) {
-            throw new RuntimeException('Error in ' . APP_ROOT_PATH.'/config/scheduler.php' . ': [\'always\'] is not an array.');
+            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'always\'] is not an array.');
         }
         if (isset($this->config['hourly']) && !is_array($this->config['hourly'])) {
-            throw new RuntimeException('Error in ' . APP_ROOT_PATH.'/config/scheduler.php' . ': [\'hourly\'] is not an array.');
+            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'hourly\'] is not an array.');
         }
         if (isset($this->config['daily']) && !is_array($this->config['daily'])) {
-            throw new RuntimeException('Error in ' . APP_ROOT_PATH.'/config/scheduler.php' . ': [\'daily\'] is not an array.');
+            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'daily\'] is not an array.');
         }
         if (isset($this->config['weekly']) && !is_array($this->config['weekly'])) {
-            throw new RuntimeException('Error in ' . APP_ROOT_PATH.'/config/scheduler.php' . ': [\'weekly\'] is not an array.');
+            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'weekly\'] is not an array.');
         }
     }
 
@@ -38,7 +38,12 @@ class Scheduler
         while ($this->time() < 290) {
             set_time_limit(90);
             $this->loop();
+            if (Env::get('APP_ENV') === 'test') {
+                break;
+            }
+            // @codeCoverageIgnoreStart
             sleep(15);
+            // @codeCoverageIgnoreEnd
         }
         return [
             'success' => true
@@ -50,7 +55,9 @@ class Scheduler
         $start = time();
         $this->runScripts($this->config['always'] ?? []);
         if ($this->time() >= 300) {
+            // @codeCoverageIgnoreStart
             return;
+            // @codeCoverageIgnoreEnd
         }
         // TODO: hourly, daily, weekly?
         while (time() - $start < 15) {
@@ -64,8 +71,10 @@ class Scheduler
     {
         $time = $this->time() - $start;
         if ($time > 60) {
+            // @codeCoverageIgnoreStart
             $e = new RuntimeException('Scheduled script: "' . $script . '" ran for ' . $time . ' seconds.');
             ErrorHandler::sentryCapture($e);
+            // @codeCoverageIgnoreEnd
         }
     }
 

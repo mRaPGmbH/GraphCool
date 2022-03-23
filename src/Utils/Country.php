@@ -332,7 +332,9 @@ class Country
         if (!isset(static::$namesByCountry)) {
             $contents = file_get_contents(__DIR__ . '/country-data.cache');
             if ($contents === false) {
+                // @codeCoverageIgnoreStart
                 throw new RuntimeException('Could not get data from country-data.cache');
+                // @codeCoverageIgnoreEnd
             }
             static::$namesByCountry = unserialize($contents, ['allowed_classes' => []]);
         }
@@ -347,7 +349,9 @@ class Country
         if (!isset(static::$mistypedNamesByCountry)) {
             $contents = file_get_contents(__DIR__ . '/country-data-mistyped.cache');
             if ($contents === false) {
+                // @codeCoverageIgnoreStart
                 throw new RuntimeException('Could not get data from country-data-mistyped.cache');
+                // @codeCoverageIgnoreEnd
             }
             static::$mistypedNamesByCountry = unserialize($contents, ['allowed_classes' => []]);
         }

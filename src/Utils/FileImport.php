@@ -19,6 +19,10 @@ use Mrap\GraphCool\Definition\Relation;
 use RuntimeException;
 use stdClass;
 
+/**
+ * @deprecated
+ * @codeCoverageIgnore
+ */
 class FileImport
 {
 

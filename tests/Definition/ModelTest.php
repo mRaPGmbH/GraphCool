@@ -4,6 +4,7 @@
 namespace Mrap\GraphCool\Tests\Model;
 
 
+use App\Models\DummyModel;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
@@ -73,5 +74,21 @@ class ModelTest extends TestCase
 
         self::assertEquals($originalData, $data);
     }
+
+    public function testGetPropertyNamesForFulltextIndexing(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $fulltext = $model->getPropertyNamesForFulltextIndexing();
+        self::assertEquals(['last_name'], $fulltext);
+   }
+
+    public function testGetEdgePropertyNamesForFulltextIndexing(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $fulltext = $model->getEdgePropertyNamesForFulltextIndexing();
+        self::assertEquals(['pivot_property'], $fulltext);
+   }
 
 }

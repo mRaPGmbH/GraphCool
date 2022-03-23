@@ -36,9 +36,13 @@ class ErrorHandler
      */
     public static function sentryCapture(Throwable $e): void
     {
-        $sentryDsn = Env::get('SENTRY_DSN');
         $environment = Env::get('APP_ENV');
-        if ($sentryDsn !== null && $environment !== 'local' && function_exists("\Sentry\init")) {
+        if ($environment === 'local') {
+            echo print_r($e, true);
+            return;
+        }
+        $sentryDsn = Env::get('SENTRY_DSN');
+        if ($sentryDsn !== null && function_exists("\Sentry\init")) {
             \Sentry\init([
                 'dsn' => $sentryDsn,
                 'environment' => Env::get('APP_ENV'),

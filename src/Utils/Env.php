@@ -12,7 +12,8 @@ class Env
     public static function init(): void
     {
         StopWatch::start('.env');
-        $dotenv = Dotenv::createImmutable(__DIR__ . '/../../../../..');
+        //$dotenv = Dotenv::createImmutable(__DIR__ . '/../../../../..');
+        $dotenv = Dotenv::createImmutable(ClassFinder::rootPath());
         $dotenv->load();
         StopWatch::stop('.env');
     }

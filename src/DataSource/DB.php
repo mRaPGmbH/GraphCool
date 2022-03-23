@@ -28,17 +28,16 @@ class DB
         return $result;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     protected static function get(): DataProvider
     {
         if (!isset(static::$provider)) {
+            // @codeCoverageIgnoreStart
             //$classname = Helper::config('dataProvider');
             //if (!class_exists($classname)) {
             $classname = MysqlDataProvider::class;
             //}
             static::$provider = new $classname();
+            // @codeCoverageIgnoreEnd
         }
         return static::$provider;
     }
