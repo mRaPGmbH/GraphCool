@@ -273,9 +273,7 @@ class Microservice
     protected function getQueryFields(): string
     {
         if (empty($this->fields)) {
-            throw new BadMethodCallException(
-                'Must use Microservice::fields() and set the fields to be queried, before using Microservice::call().'
-            );
+            return '';
         }
         return $this->implodeFieldsRecursive($this->fields);
     }

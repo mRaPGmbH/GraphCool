@@ -97,7 +97,11 @@ class MicroserviceFileProvider implements FileProvider
 
     public function getToken(): string
     {
-        return 'asdf';
+        return Microservice::endpoint('file:query:_Token')
+            ->authorization($_SERVER['HTTP_AUTHORIZATION'])
+            ->paramString('endpoint', 'file')
+            ->paramString('operation', 'CREATE')
+            ->call();
     }
 
     protected function getParamValue(stdClass $file): string
