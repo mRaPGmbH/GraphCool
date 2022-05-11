@@ -160,11 +160,12 @@ class DB
         return $result;
     }
 
-    public static function addJob(string $tenantId, string $worker, ?array $data = null): void
+    public static function addJob(string $tenantId, string $worker, ?array $data = null): string
     {
         StopWatch::start(__METHOD__);
-        static::get()->addJob($tenantId, $worker, $data);
+        $result = static::get()->addJob($tenantId, $worker, $data);
         StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     public static function takeJob(): ?Job
@@ -180,6 +181,22 @@ class DB
         StopWatch::start(__METHOD__);
         static::get()->finishJob($id, $result, $failed);
         StopWatch::stop(__METHOD__);
+    }
+
+    public static function getJob(string $tenantId, string $name, string $id): ?stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->getJob($tenantId, $name, $id);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function findJobs(?string $tenantId, string $name, array $args): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->findJobs($tenantId, $name, $args);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
 

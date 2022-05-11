@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
@@ -14,9 +15,10 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Mutation;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
-use Mrap\GraphCool\Utils\FileUpload;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
@@ -30,7 +32,6 @@ class MutationType extends ObjectType
 
     public function __construct(TypeLoader $typeLoader)
     {
-        $fields = [];
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
             $fields['create' . $name] = $this->create($name, $model, $typeLoader);
@@ -39,8 +40,10 @@ class MutationType extends ObjectType
             $fields['delete' . $name] = $this->delete($name, $typeLoader);
             $fields['restore' . $name] = $this->restore($name, $typeLoader);
             $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
+            $fields['import' . $name . 'sAsync'] = $this->importAsync($name, $typeLoader);
         }
         foreach (ClassFinder::mutations() as $name => $classname) {
+            /** @var Mutation $query */
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
             $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
@@ -186,37 +189,42 @@ class MutationType extends ObjectType
      */
     protected function import(string $name, TypeLoader $typeLoader): array
     {
+        return [
+            'type' => $typeLoader->load('_ImportSummary'),
+            'description' => 'Import a list of ' . $name . 's from a spreadsheet. If ID\'s are present, ' . $name . 's will be updated - otherwise new ' . $name . 's will be created. To completely replace the existing data set, delete everything before importing.',
+            'args' => $this->importArgs($name, $typeLoader)
+        ];
+    }
+
+    protected function importAsync(string $name, TypeLoader $typeLoader): array
+    {
+        return [
+            'type' => Type::string(),
+            'description' => 'Import a list of ' . $name . 's from a spreadsheet - in the background. Will return the job_id of the background job.',
+            'args' => $this->importArgs($name, $typeLoader)
+        ];
+    }
+
+    protected function importArgs(string $name, TypeLoader $typeLoader): array
+    {
         $args = [
             'file' => $typeLoader->load('_Upload'),
             'data_base64' => Type::string(),
             'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
             '_timezone' => $typeLoader->load('_TimezoneOffset'),
         ];
-
         $model = Model::get($name);
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
-            /*
-            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumn')));
-            }*/
-
             if ($relation->type === Relation::BELONGS_TO_MANY) {
                 $args[$key] = new ListOfType(
                     new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeReducedSelector'))
                 );
             }
         }
-
-
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
-        return [
-            'type' => $typeLoader->load('_ImportSummary'),
-            'description' => 'Import a list of ' . $name . 's from a spreadsheet. If ID\'s are present, ' . $name . 's will be updated - otherwise new ' . $name . 's will be created. To completely replace the existing data set, delete everything before importing.',
-            'args' => $args
-        ];
+        return $args;
     }
 
     /**
@@ -237,25 +245,41 @@ class MutationType extends ObjectType
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
         }
 
-        JwtAuthentication::authenticate();
         if (str_starts_with($info->fieldName, 'create')) {
-            return DB::insert(JwtAuthentication::tenantId(), $info->returnType->toString(), $args);
+            $name = $info->returnType->toString();
+            Authorization::authorize('create', $name);
+            return DB::insert(JwtAuthentication::tenantId(), $name, $args);
         }
         if (str_starts_with($info->fieldName, 'updateMany')) {
-            return DB::updateAll(JwtAuthentication::tenantId(), substr($info->fieldName, 10, -1), $args);
+            $name = substr($info->fieldName, 10, -1);
+            Authorization::authorize('updateMany', $name);
+            return DB::updateAll(JwtAuthentication::tenantId(), $name, $args);
         }
         if (str_starts_with($info->fieldName, 'update')) {
-            return DB::update(JwtAuthentication::tenantId(), $info->returnType->toString(), $args);
+            $name = $info->returnType->toString();
+            Authorization::authorize('update', $name);
+            return DB::update(JwtAuthentication::tenantId(), $name, $args);
         }
         if (str_starts_with($info->fieldName, 'delete')) {
+            $name = $info->returnType->toString();
+            Authorization::authorize('delete', $name);
             return DB::delete(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'restore')) {
+            $name = $info->returnType->toString();
+            Authorization::authorize('restore', $name);
             return DB::restore(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
         }
         if (str_starts_with($info->fieldName, 'import')) {
-            //return File::import(JwtAuthentication::tenantId(), substr($info->fieldName, 6, -1), $args); // $rootValue['index'] ?? 0
-            return $this->resolveImport(substr($info->fieldName, 6, -1), $args, $rootValue['index'] ?? 0);
+            if (str_ends_with($info->fieldName, 'Async')) {
+                $name = substr($info->fieldName, 6, -6);
+                Authorization::authorize('import', $name);
+                return $this->resolveImportAsync($name, $args);
+            } else {
+                $name = substr($info->fieldName, 6, -1);
+                Authorization::authorize('import', $name);
+                return $this->resolveImport($name, $args);
+            }
         }
         throw new RuntimeException(print_r($info->fieldName, true));
     }
@@ -263,12 +287,13 @@ class MutationType extends ObjectType
     /**
      * @param string $name
      * @param mixed[] $args
-     * @param int $index
      * @return stdClass
+     * @throws Error
+     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      */
-    protected function resolveImport(string $name, array $args, int $index): stdClass
+    protected function resolveImport(string $name, array $args): stdClass
     {
-        [$create, $update, $errors] = File::read($name, $args, $index);
+        [$create, $update, $errors] = File::read($name, $args);
         $inserted_ids = [];
         foreach ($create as $data) {
             $inserted_ids[] = DB::insert(JwtAuthentication::tenantId(), $name, $data)->id;
@@ -294,5 +319,26 @@ class MutationType extends ObjectType
         ];
     }
 
+    /**
+     * @param string $name
+     * @param mixed[] $args
+     * @return string
+     */
+    protected function resolveImportAsync(string $name, array $args): string
+    {
+        if (!isset($args['data_base64']) || empty($args['data_base64'])) {
+            if (($args['file']['tmp_name'] ?? null) === null) {
+                throw new Error('Neither data_base64 nor file received.');
+            }
+            $data = file_get_contents($args['file']['tmp_name']);
+            $args['data_base64'] = base64_encode($data);
+            unset($args['file']);
+        }
+        $data = [
+            'name' => $name,
+            'args' => $args,
+        ];
+        return DB::addJob(JwtAuthentication::tenantId(), 'importer', $data);
+    }
 
 }

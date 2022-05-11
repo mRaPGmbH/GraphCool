@@ -14,6 +14,9 @@ class PaginatorType extends ObjectType
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $typeName = substr($name, 1, -9);
+        if (str_ends_with($typeName, '_Job')) {
+            $typeName = '_'. substr($typeName, 0, -4) . 'Job';
+        }
         $config = [
             'name' => $name,
             'description' => 'A paginated list of ' . $typeName . ' items.',

@@ -13,8 +13,10 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
+use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\PermissionEnumType;
 use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
@@ -37,6 +39,7 @@ use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
+use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
@@ -80,6 +83,8 @@ class TypeLoader
         self::register('_RelationUpdateMode', RelationUpdateModeEnum::class);
         self::register('_Upload', Upload::class);
         self::register('_File', FileType::class);
+        self::register('_Job_Column', JobColumnEnumType::class);
+        self::register('_Permission', PermissionEnumType::class);
     }
 
     public static function register(string $name, string $classname): void
@@ -197,7 +202,9 @@ class TypeLoader
         if (str_ends_with($name, 'Input')) {
             return new ModelInputType($name, $this);
         }
-
+        if (str_ends_with($name, 'Job') && $name !== '_Job') {
+            return new JobType($name, $this);
+        }
         throw new RuntimeException('unhandled createSpecial: ' . $name);
     }
 

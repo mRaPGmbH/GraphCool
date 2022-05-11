@@ -18,7 +18,9 @@ use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
+use Mrap\GraphCool\Utils\Exporter;
 use Mrap\GraphCool\Utils\FileUpload;
+use Mrap\GraphCool\Utils\Importer;
 use Mrap\GraphCool\Utils\Scheduler;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
@@ -29,6 +31,8 @@ class GraphCool
     /** @var Closure[] */
     protected static array $shutdown = [];
     protected static Scheduler $scheduler;
+    protected static Importer $importer;
+    protected static Exporter $exporter;
 
     public static function run(): void
     {
@@ -186,19 +190,34 @@ class GraphCool
                 return [];
             }
         }
+        if ($scriptName === 'importer') {
+            try {
+                return static::importer()->run(array_shift($args));
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
+        if ($scriptName === 'exporter') {
+            try {
+                return static::exporter()->run(array_shift($args));
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
                 try {
                     $script = new $classname();
-                    if ($script instanceof Script) {
-                        $script->run($args);
-                        return [
-                            'success' => true,
-                            'log' => $script->getLog()
-                        ];
-                    } else {
+                    if (!$script instanceof Script) {
                         throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)');
                     }
+                    $script->run($args);
+                    return [
+                        'success' => true,
+                        'log' => $script->getLog()
+                    ];
                 } catch (Throwable $e) {
                     //var_dump($e);
                     ErrorHandler::sentryCapture($e);
@@ -238,6 +257,32 @@ class GraphCool
     public static function setScheduler(Scheduler $scheduler): void
     {
         static::$scheduler = $scheduler;
+    }
+
+    protected static function importer(): Importer
+    {
+        if (!isset(static::$importer)) {
+            static::$importer = new Importer();
+        }
+        return static::$importer;
+    }
+
+    public static function setImporter(Importer $importer): void
+    {
+        static::$importer = $importer;
+    }
+
+    protected static function exporter(): Exporter
+    {
+        if (!isset(static::$exporter)) {
+            static::$exporter = new Exporter();
+        }
+        return static::$exporter;
+    }
+
+    public static function setExporter(Exporter $exporter): void
+    {
+        static::$exporter = $exporter;
     }
 
 }

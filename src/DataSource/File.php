@@ -56,9 +56,9 @@ class File
      * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      * @throws \GraphQL\Error\Error
      */
-    public static function read(string $name, array $args, int $index): array
+    public static function read(string $name, array $args): array
     {
-        return self::getImporter()->import($name, $args, $index);
+        return self::getImporter()->import($name, $args);
     }
 
     /**
@@ -100,6 +100,11 @@ class File
     public static function restore(string $name, string $id, string $key, string $value): void
     {
         static::getFileProvider()->restore($name, $id, $key, $value);
+    }
+
+    public static function getToken(): string
+    {
+        return static::getFileProvider()->getToken();
     }
 
     /**

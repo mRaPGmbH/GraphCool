@@ -95,6 +95,11 @@ class MicroserviceFileProvider implements FileProvider
             ->call();
     }
 
+    public function getToken(): string
+    {
+        return 'asdf';
+    }
+
     protected function getParamValue(stdClass $file): string
     {
         return '{filename: "'.str_replace('"', '', $file->filename).'" data_base64: "'.$file->data_base64.'"}';

@@ -66,10 +66,13 @@ interface DataProvider
 
     public function increment(string $tenantId, string $key, int $min = 0): int;
 
-    public function addJob(string $tenantId, string $worker, ?array $data = null): void;
+    public function addJob(string $tenantId, string $worker, ?array $data = null): string;
 
     public function takeJob(): ?Job;
 
     public function finishJob(string $id, ?array $result = null, bool $failed = false): void;
 
+    public function getJob(?string $tenantId, string $name, string $id): ?stdClass;
+
+    public function findJobs(?string $tenantId, string $name, array $args): stdClass;
 }

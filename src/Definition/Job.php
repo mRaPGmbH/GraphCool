@@ -8,6 +8,7 @@ class Job
     const RUNNING = 'RUNNING';
     const FINISHED = 'FINISHED';
     const FAILED = 'FAILED';
+
     const ALWAYS = 'ALWAYS';
     const HOURLY = 'HOURLY';
     const DAILY = 'DAILY';
@@ -19,5 +20,15 @@ class Job
     public string $status;
     public ?array $data;
     public ?array $result;
+
+    public static function allStatuses(): array
+    {
+        return [
+            self::NEW,
+            self::RUNNING,
+            self::FINISHED,
+            self::FAILED
+        ];
+    }
 
 }

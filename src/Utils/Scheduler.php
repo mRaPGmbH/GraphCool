@@ -115,7 +115,7 @@ class Scheduler
                 'error' => $e->getMessage()
             ];
         }
-        DB::finishJob($job->id, $result, !$result['success']);
+        DB::finishJob($job->id, $result, !($result['success'] ?? false));
 
         $this->checkTime($start, $job->worker);
         return true;
