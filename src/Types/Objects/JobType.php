@@ -37,5 +37,4 @@ class JobType extends ObjectType
         };
     }
 
-
 }
