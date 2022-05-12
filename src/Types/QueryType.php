@@ -347,6 +347,4 @@ class QueryType extends ObjectType
         ];
     }
 
-
-
 }
