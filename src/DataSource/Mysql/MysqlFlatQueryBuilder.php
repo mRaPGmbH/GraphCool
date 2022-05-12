@@ -297,6 +297,4 @@ class MysqlFlatQueryBuilder
         return '(' . implode(',', $params) . ')';
     }
 
-
-
 }
