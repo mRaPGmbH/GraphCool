@@ -142,5 +142,4 @@ class SchedulerTest extends TestCase
         self::assertEquals(['success'=>true], $result);
     }
 
-
 }
