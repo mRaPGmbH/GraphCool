@@ -8,6 +8,8 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\GraphCool;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\Scheduler;
+use RuntimeException;
 
 class GraphCoolTest extends TestCase
 {
@@ -78,13 +80,14 @@ class GraphCoolTest extends TestCase
         GraphCool::run();
     }
 
-    public function testDebugFlags(): void
+    public function xtestDebugFlags(): void
     {
         $backup = getenv('APP_ENV');
         putenv('APP_ENV=production');
         $this->expectOutputRegex('/Syntax Error: Unexpected \<EOF\>/i');
         GraphCool::run();
         putenv('APP_ENV='.$backup);
+        // this sets APP_ENV to empty string - but $backup is actually false, since the variable does not exist.
     }
 
     public function testShutDown(): void
@@ -111,16 +114,17 @@ class GraphCoolTest extends TestCase
     {
         require_once($this->dataPath().'/app/Scripts/DummyScript.php');
         ClassFinder::setRootPath($this->dataPath());
-        $this->expectOutputString('test');
+        $this->expectOutputString('test log' . PHP_EOL . 'test');
         $result = GraphCool::runScript(['DummyScript']);
-        self::assertTrue($result);
+        self::assertEquals(true, $result['success']);
+        self::assertEquals(null, $result['error'] ?? null);
     }
 
 
     public function testRunScriptError(): void
     {
-        $result = GraphCool::runScript(['does-not-exist']);
-        self::assertFalse($result);
+        $this->expectException(RuntimeException::class);
+        GraphCool::runScript(['does-not-exist']);
     }
 
     public function testRunScriptException(): void
@@ -128,7 +132,8 @@ class GraphCoolTest extends TestCase
         require_once($this->dataPath().'/app/Scripts/DummyScriptException.php');
         ClassFinder::setRootPath($this->dataPath());
         $result = GraphCool::runScript(['DummyScriptException']);
-        self::assertFalse($result);
+        self::assertEquals(false, $result['success']);
+        self::assertEquals('nope', $result['error']);
     }
 
     public function testRunNoScript(): void
@@ -136,14 +141,8 @@ class GraphCoolTest extends TestCase
         require_once($this->dataPath().'/app/Scripts/DummyNoScript.php');
         ClassFinder::setRootPath($this->dataPath());
         $result = GraphCool::runScript(['DummyNoScript']);
-        self::assertFalse($result);
-    }
-
-    public function xtestFileUpload(): void
-    {
-        $_REQUEST['map'] = '';
-
-        unset($_REQUEST['map']);
+        self::assertFalse($result['success']);
+        self::assertArrayHasKey('error', $result);
     }
 
     public function testFileUploadJsonError(): void
@@ -155,5 +154,21 @@ class GraphCoolTest extends TestCase
         unset($_REQUEST['map']);
     }
 
+    public function testRunScheduler(): void
+    {
+        $result = GraphCool::runScript(['scheduler']);
+        self::assertTrue($result['success']);
+    }
+
+    public function testRunScriptSchedulerException(): void
+    {
+        $scheduler = $this->createMock(Scheduler::class);
+        $scheduler->expects($this->once())
+            ->method('run')
+            ->willThrowException(new RuntimeException('test'));
+        GraphCool::setScheduler($scheduler);
+        $result = GraphCool::runScript(['scheduler']);
+        self::assertEquals([], $result);
+    }
 
 }

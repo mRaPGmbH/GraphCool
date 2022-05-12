@@ -31,12 +31,11 @@ class FileImport2
     /**
      * @param string $name
      * @param mixed[] $args
-     * @param int $index
      * @return array[]
      * @throws Error
      * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      */
-    public function import(string $name, array $args, int $index): array
+    public function import(string $name, array $args): array
     {
         $model = Model::get($name);
 
@@ -44,7 +43,7 @@ class FileImport2
         $edgeColumns = $this->getEdgeColumns($model, $args);
         $input = $args['data_base64'] ?? $args['file'] ?? null;
 
-        $reader = $this->getReader($input, $index);
+        $reader = $this->getReader($input);
 
         $sheets = $reader->getSheetIterator();
         if (iterator_count($sheets) > 1) {
@@ -112,7 +111,7 @@ class FileImport2
         return $edgeColumns;
     }
 
-    protected function getReader(mixed $input, int $index): ReaderInterface
+    protected function getReader(mixed $input): ReaderInterface
     {
         if (is_array($input)) {
             $file = $input['tmp_name'] ?? null;
@@ -332,17 +331,6 @@ class FileImport2
         }
         return $data;
     }
-
-    /*
-    protected function getValueString(Cell $cell): string
-    {
-        $value = $cell->getValue() ?? '';
-        if ($value instanceof DateTime) {
-            $format = $cell->getStyle()->getFormat();
-            $value = $format;
-        }
-        return $value;
-    }*/
 
     protected function convertField(Field $field, mixed $value): float|int|string|null
     {

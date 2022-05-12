@@ -18,7 +18,10 @@ use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
+use Mrap\GraphCool\Utils\Exporter;
 use Mrap\GraphCool\Utils\FileUpload;
+use Mrap\GraphCool\Utils\Importer;
+use Mrap\GraphCool\Utils\Scheduler;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use Throwable;
@@ -27,6 +30,9 @@ class GraphCool
 {
     /** @var Closure[] */
     protected static array $shutdown = [];
+    protected static Scheduler $scheduler;
+    protected static Importer $importer;
+    protected static Exporter $exporter;
 
     public static function run(): void
     {
@@ -129,10 +135,13 @@ class GraphCool
 
     public static function getDebugFlags(): int
     {
-        if (Env::get('APP_ENV') === 'local') {
+        $env = Env::get('APP_ENV');
+        if ($env === 'local' || $env === 'test') {
             return DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE;
         }
+        // @codeCoverageIgnoreStart
         return 0;
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -142,7 +151,8 @@ class GraphCool
     protected function sendResponse(array $response): void
     {
         header('Content-Type: application/json');
-        if (Env::get('APP_ENV') === 'local') {
+        $env = Env::get('APP_ENV');
+        if ($env === 'local' || $env === 'test') {
             $response['_debugTimings'] = StopWatch::get();
         }
         try {
@@ -166,31 +176,63 @@ class GraphCool
 
     /**
      * @param mixed[] $args
-     * @return bool
+     * @return array
      */
-    public static function runScript(array $args): bool
+    public static function runScript(array $args): array
     {
         Env::init();
         $scriptName = strtolower(trim(array_shift($args)));
+        if ($scriptName === 'scheduler') {
+            try {
+                return static::scheduler()->run();
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
+        if ($scriptName === 'importer') {
+            try {
+                return static::importer()->run(array_shift($args));
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
+        if ($scriptName === 'exporter') {
+            try {
+                return static::exporter()->run(array_shift($args));
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+                return [];
+            }
+        }
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
-                $script = new $classname();
-                if ($script instanceof Script) {
-                    try {
-                        $script->run($args);
-                        return true;
-                    } catch (Throwable $e) {
-                        ErrorHandler::sentryCapture($e);
+                try {
+                    $script = new $classname();
+                    if (!$script instanceof Script) {
+                        throw new RuntimeException($classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)');
                     }
-                } else {
-                    $e = new RuntimeException(
-                        $classname . ' is not a script class. (Must extend Mrap\GraphCool\Definition\Script)'
-                    );
+                    $script->run($args);
+                    return [
+                        'success' => true,
+                        'log' => $script->getLog()
+                    ];
+                } catch (Throwable $e) {
+                    //var_dump($e);
                     ErrorHandler::sentryCapture($e);
+                    $result = [
+                        'success' => false,
+                        'error' => $e->getMessage()
+                    ];
+                    if (isset($script) && method_exists($script, 'getLog')) {
+                        $result['log'] = $script->getLog();
+                    }
+                    return $result;
                 }
             }
         }
-        return false;
+        throw new RuntimeException('Script ' . $scriptName . ' not found.');
     }
 
     public static function migrate(): void
@@ -202,6 +244,45 @@ class GraphCool
     public static function onShutdown(Closure $closure): void
     {
         static::$shutdown[] = $closure;
+    }
+
+    protected static function scheduler(): Scheduler
+    {
+        if (!isset(static::$scheduler)) {
+            static::$scheduler = new Scheduler();
+        }
+        return static::$scheduler;
+    }
+
+    public static function setScheduler(Scheduler $scheduler): void
+    {
+        static::$scheduler = $scheduler;
+    }
+
+    protected static function importer(): Importer
+    {
+        if (!isset(static::$importer)) {
+            static::$importer = new Importer();
+        }
+        return static::$importer;
+    }
+
+    public static function setImporter(Importer $importer): void
+    {
+        static::$importer = $importer;
+    }
+
+    protected static function exporter(): Exporter
+    {
+        if (!isset(static::$exporter)) {
+            static::$exporter = new Exporter();
+        }
+        return static::$exporter;
+    }
+
+    public static function setExporter(Exporter $exporter): void
+    {
+        static::$exporter = $exporter;
     }
 
 }

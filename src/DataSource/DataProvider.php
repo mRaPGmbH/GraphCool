@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource;
 
+use Mrap\GraphCool\Definition\Job;
 use stdClass;
 
 interface DataProvider
@@ -64,4 +65,14 @@ interface DataProvider
     public function getCount(?string $tenantId, string $name): int;
 
     public function increment(string $tenantId, string $key, int $min = 0): int;
+
+    public function addJob(string $tenantId, string $worker, ?array $data = null): string;
+
+    public function takeJob(): ?Job;
+
+    public function finishJob(string $id, ?array $result = null, bool $failed = false): void;
+
+    public function getJob(?string $tenantId, string $name, string $id): ?stdClass;
+
+    public function findJobs(?string $tenantId, string $name, array $args): stdClass;
 }

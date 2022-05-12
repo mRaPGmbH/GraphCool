@@ -54,10 +54,10 @@ class MysqlEdgeReaderTest extends TestCase
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturnOnConsecutiveCalls([$tmp],[$property]);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturnOnConsecutiveCalls($expected, null);
+            ->willReturn($expected);
         Mysql::setConnector($mock);
 
         $reader = new MysqlEdgeReader();
@@ -110,10 +110,10 @@ class MysqlEdgeReaderTest extends TestCase
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturnOnConsecutiveCalls([$tmp],[]);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturnOnConsecutiveCalls($expected, null);
+            ->willReturn($expected);
         Mysql::setConnector($mock);
 
         $reader = new MysqlEdgeReader();
@@ -150,10 +150,10 @@ class MysqlEdgeReaderTest extends TestCase
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturnOnConsecutiveCalls([$tmp],[]);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturnOnConsecutiveCalls($expected, null);
+            ->willReturn($expected);
         Mysql::setConnector($mock);
 
         $reader = new MysqlEdgeReader();
@@ -191,10 +191,10 @@ class MysqlEdgeReaderTest extends TestCase
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturnOnConsecutiveCalls([$tmp],[]);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturnOnConsecutiveCalls($edge, null);
+            ->willReturn($edge);
         Mysql::setConnector($mock);
 
         $reader = new MysqlEdgeReader();
@@ -246,10 +246,10 @@ class MysqlEdgeReaderTest extends TestCase
             ->method('fetchAll')
             ->withAnyParameters()
             ->willReturnOnConsecutiveCalls([$tmp],[]);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetch')
             ->withAnyParameters()
-            ->willReturnOnConsecutiveCalls($expected, null);
+            ->willReturn($expected);
         Mysql::setConnector($mock);
 
         $reader = new MysqlEdgeReader();

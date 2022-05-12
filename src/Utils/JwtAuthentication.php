@@ -15,6 +15,7 @@ use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Ramsey\Uuid\Uuid;
 
 class JwtAuthentication
 {
@@ -30,21 +31,21 @@ class JwtAuthentication
 
     public static function authenticate(): void
     {
-        $config = Configuration::forAsymmetricSigner(
-            new Signer\Rsa\Sha256(),
-            InMemory::empty(),
-            LocalFileReference::file(ClassFinder::rootPath() . '/jwtkey-public.pem')
-        );
-
         if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
             throw new Error('Authorization header is missing in request.', null, null, [], null, null, ['category' => 'authorization']);
         }
         if (!str_starts_with($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ')) {
             throw new Error('Authorization header in request does not appear to be a JWT.', null, null, [], null, null, ['category' => 'authorization']);
         }
-
+        $jwt = substr($_SERVER['HTTP_AUTHORIZATION'], 7);
+        $payload = base64_decode(explode('.', $jwt)[1]??'');
+        if (strpos($payload, '\\"iss\\":\\"' . Env::get('APP_NAME') . '\\"') > 0) {
+            $config = static::localConfig();
+        } else {
+            $config = static::centralConfig();
+        }
         try {
-            $token = $config->parser()->parse(substr($_SERVER['HTTP_AUTHORIZATION'], 7));
+            $token = $config->parser()->parse($jwt);
         } catch (InvalidTokenStructure $e) {
             throw new Error($e->getMessage(), null, null, [], null, null, ['category' => 'authorization']);
         } catch (CannotDecodeContent $e) {
@@ -74,6 +75,42 @@ class JwtAuthentication
         static::$claims['tid'] = (string)static::$claims['tid'];
     }
 
+    protected static function centralConfig(): Configuration
+    {
+        return Configuration::forAsymmetricSigner(
+            new Signer\Rsa\Sha256(),
+            InMemory::empty(),
+            InMemory::file(ClassFinder::rootPath() . '/jwtkey-public.pem')
+        );
+    }
+
+    protected static function localConfig(): Configuration
+    {
+        $secret = Env::get('JWT_SECRET');
+        if ($secret === null) {
+            throw new \RuntimeException('JWT_SECRET is missing from .env');
+        }
+        return Configuration::forSymmetricSigner(
+            new Signer\Hmac\Sha256(),
+            InMemory::plainText($secret)
+        );
+    }
+
+    public static function createLocalToken(array $permissions): string
+    {
+        $now   = new DateTimeImmutable();
+        $config = static::localConfig();
+        return $config->builder()
+            ->issuedBy(Env::get('APP_NAME'))
+            ->identifiedBy(Uuid::uuid4()->toString())
+            ->expiresAt($now->modify('+1 hour'))
+            ->withClaim('tid', JwtAuthentication::tenantId())
+            ->withClaim('perm', Permissions::createLocalCode($permissions))
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+    }
+
+
     public static function tenantId(): ?string
     {
         return static::$claims['tid'] ?? null;
@@ -84,5 +121,9 @@ class JwtAuthentication
         static::$claims['tid'] = $id;
     }
 
+    public static function getClaim(string $key): mixed
+    {
+        return static::$claims[$key] ?? null;
+    }
 
 }

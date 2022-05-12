@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
+use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 
@@ -27,17 +28,16 @@ class DB
         return $result;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     protected static function get(): DataProvider
     {
         if (!isset(static::$provider)) {
+            // @codeCoverageIgnoreStart
             //$classname = Helper::config('dataProvider');
             //if (!class_exists($classname)) {
             $classname = MysqlDataProvider::class;
             //}
             static::$provider = new $classname();
+            // @codeCoverageIgnoreEnd
         }
         return static::$provider;
     }
@@ -156,6 +156,45 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->increment($tenantId, $key, $min);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function addJob(string $tenantId, string $worker, ?array $data = null): string
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->addJob($tenantId, $worker, $data);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function takeJob(): ?Job
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->takeJob();
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function finishJob(string $id, ?array $result = null, bool $failed = false): void
+    {
+        StopWatch::start(__METHOD__);
+        static::get()->finishJob($id, $result, $failed);
+        StopWatch::stop(__METHOD__);
+    }
+
+    public static function getJob(string $tenantId, string $name, string $id): ?stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->getJob($tenantId, $name, $id);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function findJobs(?string $tenantId, string $name, array $args): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->findJobs($tenantId, $name, $args);
         StopWatch::stop(__METHOD__);
         return $result;
     }

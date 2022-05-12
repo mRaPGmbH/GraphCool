@@ -38,4 +38,10 @@ class StopWatch
         return [self::$times, $percentages];
     }
 
+    public static function reset(): void
+    {
+        self::$starts = [];
+        self::$times = [];
+    }
+
 }

@@ -13,4 +13,5 @@ interface FileProvider
     public function delete(string $name, string $id, string $key, string $value): void;
     public function softDelete(string $name, string $id, string $key, string $value): void;
     public function restore(string $name, string $id, string $key, string $value): void;
+    public function getToken(): string;
 }

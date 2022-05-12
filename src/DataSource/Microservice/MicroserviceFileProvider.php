@@ -95,6 +95,15 @@ class MicroserviceFileProvider implements FileProvider
             ->call();
     }
 
+    public function getToken(): string
+    {
+        return Microservice::endpoint('file:query:_Token')
+            ->authorization($_SERVER['HTTP_AUTHORIZATION'])
+            ->paramString('endpoint', 'file')
+            ->paramString('operation', 'CREATE')
+            ->call();
+    }
+
     protected function getParamValue(stdClass $file): string
     {
         return '{filename: "'.str_replace('"', '', $file->filename).'" data_base64: "'.$file->data_base64.'"}';

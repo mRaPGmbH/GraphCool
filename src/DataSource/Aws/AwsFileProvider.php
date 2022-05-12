@@ -51,10 +51,16 @@ class AwsFileProvider implements FileProvider
         ]);
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function softDelete(string $name, string $id, string $key, string $value): void
     {
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function restore(string $name, string $id, string $key, string $value): void
     {
     }

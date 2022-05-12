@@ -12,7 +12,7 @@ class DummyModel extends Model
     public function __construct()
     {
         parent::__construct();
-        $this->last_name = Field::string()->nullable();
+        $this->last_name = Field::string()->nullable()->fulltextIndex();
         $this->date = Field::date()->nullable();
         $this->date_time = Field::dateTime()->nullable();
         $this->time = Field::time()->nullable();
@@ -39,7 +39,7 @@ class DummyModel extends Model
         $this->belongs_to->pivot_property3 = Field::string()->nullable();
         $this->belongs_to2 = Relation::belongsTo(__CLASS__);
         $this->belongs_to_many = Relation::belongsToMany(__CLASS__);
-        $this->belongs_to_many->pivot_property = Field::string()->nullable();
+        $this->belongs_to_many->pivot_property = Field::string()->nullable()->fulltextIndex();
         $this->belongs_to_many->pivot_enum = Field::enum(['X','Y','Z']);
         $this->has_one = Relation::hasOne(__CLASS__)->nullable();
     }
