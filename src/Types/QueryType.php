@@ -40,7 +40,7 @@ class QueryType extends ObjectType
             return $this->getDiagram();
         };
         $this->customResolvers['_Token'] = function ($rootValue, $args, $context, $info) {
-            $name = $args['endpoint'];
+            $name = strtolower($args['endpoint']);
             $operation = $args['operation'];
             Authorization::authorize($operation, $name);
             return JwtAuthentication::createLocalToken([$name => [$operation]]);
@@ -79,7 +79,7 @@ class QueryType extends ObjectType
             'type' => Type::nonNull(Type::string()),
             'description' => 'Get a single use JWT for a specific endpoint of this service.',
             'args' => [
-                'endpoint' => Type::nonNull(Type::string()),
+                'endpoint' => $typeLoader->load('_Entity'),
                 'operation' => $typeLoader->load('_Permission'),
             ]
         ];

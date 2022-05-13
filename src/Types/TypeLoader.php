@@ -13,6 +13,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
+use Mrap\GraphCool\Types\Enums\EntityEnumType;
 use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
@@ -85,6 +86,7 @@ class TypeLoader
         self::register('_File', FileType::class);
         self::register('_Job_Column', JobColumnEnumType::class);
         self::register('_Permission', PermissionEnumType::class);
+        self::register('_Entity', EntityEnumType::class);
     }
 
     public static function register(string $name, string $classname): void
