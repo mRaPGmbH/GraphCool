@@ -39,7 +39,7 @@ class JwtAuthentication
         }
         $jwt = substr($_SERVER['HTTP_AUTHORIZATION'], 7);
         $payload = base64_decode(explode('.', $jwt)[1]??'');
-        if (strpos($payload, '\\"iss\\":\\"' . Env::get('APP_NAME') . '\\"') > 0) {
+        if (strpos($payload, '"iss":"' . Env::get('APP_NAME') . '"') > 0) {
             $config = static::localConfig();
         } else {
             $config = static::centralConfig();

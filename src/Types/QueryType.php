@@ -40,7 +40,10 @@ class QueryType extends ObjectType
             return $this->getDiagram();
         };
         $this->customResolvers['_Token'] = function ($rootValue, $args, $context, $info) {
-            return JwtAuthentication::createLocalToken([$args['endpoint'] => [$args['operation']]]);
+            $name = $args['endpoint'];
+            $operation = $args['operation'];
+            Authorization::authorize($operation, $name);
+            return JwtAuthentication::createLocalToken([$name => [$operation]]);
         };
 
         foreach (ClassFinder::models() as $name => $classname) {
