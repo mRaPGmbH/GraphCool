@@ -95,4 +95,9 @@ class SystemFileProvider implements FileProvider
         }
         $this->path = $path;
     }
+
+    public function getToken(): string
+    {
+        return '';
+    }
 }

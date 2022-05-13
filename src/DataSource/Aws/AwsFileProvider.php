@@ -111,4 +111,10 @@ class AwsFileProvider implements FileProvider
     {
         return Env::get('AWS_BUCKET_NAME', 'GraphCool-Uploaded-Files');
     }
+
+    public function getToken(): string
+    {
+        return '';
+    }
+
 }
