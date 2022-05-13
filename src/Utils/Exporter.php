@@ -26,7 +26,13 @@ class Exporter
             $args,
             $type
         );
-        $id = File::store($name, 'export', $type , get_object_vars($file));
-        return ['file_id' => $id];
+        $data = File::store($name, 'export', $type , get_object_vars($file));
+        return [
+            'success' => true,
+            'filename' => $data->filename,
+            'mime_type' => $data->mime_type,
+            'url' => $data->url,
+            'filesize' => $data->filesize
+        ];
     }
 }
