@@ -16,8 +16,6 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
-use Mrap\GraphCool\Utils\JwtAuthentication;
-use PhpParser\Node\Expr\AssignOp\Mod;
 use Ramsey\Uuid\Uuid;
 use stdClass;
 
@@ -124,7 +122,7 @@ class MysqlDataProvider implements DataProvider
         return MysqlConverter::convertDatabaseTypeToOutput($model->$key, $property);
     }
 
-    public function getSum(?string $tenantId, string $name, string $key): float|int
+    public function getSum(?string $tenantId, string $name, string $key): float|bool|int|string
     {
         $model = Model::get($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
@@ -413,7 +411,7 @@ class MysqlDataProvider implements DataProvider
         if (isset($args['where'])) {
             $builder->where(MysqlConverter::convertWhereValues($this->jobModel(), $args['where']));
         }
-        $builder->orderBy($args['orderBy']);
+        $builder->orderBy($args['orderBy'] ?? []);
         $builder->limit($limit, $offset);
 
         $jobs = [];

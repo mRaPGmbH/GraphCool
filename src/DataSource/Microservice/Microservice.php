@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mrap\GraphCool\DataSource\Microservice;
 
-use BadMethodCallException;
 use GraphQL\Error\Error;
 use GuzzleHttp\Client;
 use Mrap\GraphCool\Utils\Env;
@@ -35,6 +36,7 @@ class Microservice
     protected Client $client;
     protected bool $isRaw = false;
     protected int $timeout = 2;
+    protected static ?Microservice $inject;
 
     protected function __construct(string $endpoint, Client $client = null)
     {
@@ -48,7 +50,17 @@ class Microservice
 
     public static function endpoint(string $endpoint, Client $client = null): Microservice
     {
+        if (isset(static::$inject)) {
+            $microservice = static::$inject;
+            static::$inject = null;
+            return $microservice;
+        }
         return new Microservice($endpoint, $client);
+    }
+
+    public static function inject(Microservice $microservice)
+    {
+        static::$inject = $microservice;
     }
 
     public function rawQuery(string $gql, ?array $variables = null): Microservice
@@ -190,7 +202,7 @@ class Microservice
         if ($response->getStatusCode() !== 200) {
             throw new RuntimeException('Got response status code ' . $response->getStatusCode() . ' from ' . $this->endpoint. ' Response was: ' . $response->getBody());
         }
-        return $this->decodeBody($response->getBody());
+        return $this->decodeBody((string)$response->getBody());
     }
 
     protected function getClient(): Client
@@ -203,6 +215,9 @@ class Microservice
         return $this->getBaseUrl() . '/' . $this->getServiceName() . '/graphql';
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     protected function getBaseUrl(): string
     {
         return match(Env::get('APP_ENV')) {
@@ -243,7 +258,9 @@ class Microservice
     protected function buildQuery(): void
     {
         if (!empty($this->query)) {
+            // @codeCoverageIgnoreStart
             return;
+            // @codeCoverageIgnoreEnd
         }
         $this->query = $this->getQueryType() . '{' . $this->getQueryName() . $this->getQueryParams(
             ) . $this->getQueryFields() . '}';

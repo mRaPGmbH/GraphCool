@@ -16,7 +16,7 @@ class Exporter
         $name = $job->data['name'];
         $args = $job->data['args'];
         $jwt = $job->data['jwt'];
-        $type = $args['type'] ?? 'xlsx';
+        $type = $args['type'] ?? 'csv';
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $jwt;
 

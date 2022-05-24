@@ -170,6 +170,46 @@ class MysqlEdgeReaderTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
+    public function testBelongsToWithNonTrashedEdgesOfAnyNode()
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $tmp = new stdClass();
+        $tmp->parent_id = 'parent';
+        $tmp->child_id = 'child';
+
+        $expected = new stdClass();
+        $expected->id = 'id123123';
+        $expected->created_at = '2021-08-30';
+        $expected->updated_at = null;
+        $expected->deleted_at = null;
+        $expected->parent_id = 'parent';
+        $expected->child_id = 'child';
+
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->exactly(2))
+            ->method('fetchAll')
+            ->withAnyParameters()
+            ->willReturnOnConsecutiveCalls([$tmp],[]);
+        $mock->expects($this->exactly(1))
+            ->method('fetch')
+            ->withAnyParameters()
+            ->willReturn($expected);
+        Mysql::setConnector($mock);
+
+        $reader = new MysqlEdgeReader();
+        $node = new stdClass();
+        $node->id = 'asdf123123';
+        $node->tenant_id = 'hc123';
+
+        $node = $reader->loadEdges($node, 'DummyModel');
+        $closure = $node->belongs_to;
+
+        $args['result'] = 'NONTRASHED_EDGES_OF_ANY_NODES';
+        $result = $closure($args);
+
+        self::assertEquals($expected, $result);
+    }
+
 
     public function testBelongsToMany()
     {

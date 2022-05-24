@@ -21,7 +21,9 @@ class MysqlNodeReader
     ): ?stdClass {
         $node = $this->fetchNode($tenantId, $id, $name, $resultType);
         if ($node === null) {
+            // @codeCoverageIgnoreStart
             return null;
+            // @codeCoverageIgnoreEnd
         }
         if ($node->model !== $name) {
             throw new RuntimeException(
@@ -61,7 +63,9 @@ class MysqlNodeReader
 
         $node = Mysql::fetch($sql, $params);
         if ($node === null) {
+            // @codeCoverageIgnoreStart
             return null;
+            // @codeCoverageIgnoreEnd
         }
 
         $dates = ['updated_at', 'created_at', 'deleted_at'];

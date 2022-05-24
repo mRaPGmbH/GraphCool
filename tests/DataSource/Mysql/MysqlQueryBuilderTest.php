@@ -4,10 +4,15 @@ namespace Mrap\GraphCool\Tests\DataSource\Mysql;
 
 use App\Models\DummyModel;
 use GraphQL\Error\Error;
+use Mrap\GraphCool\DataSource\FullTextIndex;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
+use Mrap\GraphCool\DataSource\Mysql\MysqlFullTextIndexProvider;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Tests\TestCase;
+use PDO;
 use RuntimeException;
 
 class MysqlQueryBuilderTest extends TestCase
@@ -180,6 +185,18 @@ class MysqlQueryBuilderTest extends TestCase
         self::assertSame([':p0' => 'DummyModel',':p1' => 'last_name'], $params);
     }
 
+    public function testSelectSum(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->selectSum('created_at','A')->selectSum('last_name', 'B', 'value_string');
+        $query = trim($builder->toSql());
+        self::assertSame('SELECT sum(`node_last_name`.`value_string`) AS `B`, sum(`node`.`created_at`) AS `A` FROM `node` LEFT JOIN `node_property` AS `node_last_name` ON (`node_last_name`.`node_id` = `node`.`id` AND `node_last_name`.`property` = :p1 AND `node_last_name`.`deleted_at` IS NULL) WHERE `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        $params = $builder->getParameters();
+        self::assertSame([':p0' => 'DummyModel',':p1' => 'last_name'], $params);
+    }
+
     public function testSelectMaxError(): void
     {
         $this->expectException(RuntimeException::class);
@@ -188,6 +205,16 @@ class MysqlQueryBuilderTest extends TestCase
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $builder->update(['last_name' => 'Huber']);
         $builder->selectMax('last_name', 'A');
+    }
+
+    public function testSelectSumError(): void
+    {
+        $this->expectException(RuntimeException::class);
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->update(['last_name' => 'Huber']);
+        $builder->selectSum('last_name', 'A');
     }
 
     public function testOrderBy(): void
@@ -290,6 +317,52 @@ class MysqlQueryBuilderTest extends TestCase
             ':p7' => 'date',
         ];
         self::assertSame($expected, $params);
+    }
+
+    public function testFullTextSearch(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $mock = $this->createMock(MysqlFullTextIndexProvider::class);
+        $mock->expects($this->once())
+            ->method('search')
+            ->with('1', 'searchword')
+            ->willReturn(['found-id']);
+        FullTextIndex::setProvider($mock);
+
+        $pdo = $this->createMock(PDO::class);
+        $pdo->expects($this->once())
+            ->method('quote')
+            ->with('found-id')
+            ->willReturn('\'found-id\'');
+        $connector = $this->createMock(MysqlConnector::class);
+        $connector->expects($this->once())
+            ->method('pdo')
+            ->willReturn($pdo);
+        Mysql::setConnector($connector);
+
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->tenant('1');
+        $builder->where(['fulltextSearch' => 'searchword']);
+        $query = trim($builder->toSql());
+        $expectedSql = 'SELECT * FROM `node`  WHERE `node`.`id` IN (\'found-id\') AND `node`.`model` = :p0 AND `node`.`tenant_id` = :p1 AND `node`.`deleted_at` IS NULL';
+        self::assertSame($expectedSql, $query);
+        $params = $builder->getParameters();
+        $expected = [
+            ':p0' => 'DummyModel',
+            ':p1' => '1',
+        ];
+        self::assertSame($expected, $params);
+    }
+
+    public function testFullTextSearchError(): void
+    {
+        $this->expectException(RuntimeException::class);
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->where(['fulltextSearch' => 'test']);
     }
 
     public function testWhereInError(): void
@@ -458,6 +531,28 @@ class MysqlQueryBuilderTest extends TestCase
             ':p5' => '%2.5%',
             ':p6' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
             ':p7' => '7bead738-fc30-4d11-87ee-74178abbc9fb',
+        ];
+        self::assertSame($expected, $params);
+    }
+
+    public function testSearchLoosely(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $model = new DummyModel();
+        $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
+        $builder->searchLoosely('test  2 2.5 7bead738-fc30-4d11-87ee-74178abbc9fb');
+        $expectedSql = 'SELECT * FROM `node`  WHERE `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ((`value_float` > 1.5 AND `value_float` < 2.5) OR `value_int` LIKE :p2 OR `value_string` LIKE :p3) AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE ((`value_float` > 2 AND `value_float` < 3) OR `value_int` LIKE :p4 OR `value_string` LIKE :p5) AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE (`value_string` LIKE :p1) AND `deleted_at` IS NULL) AND `node`.`id` IN (SELECT `node_id` FROM `node_property` WHERE (`value_string` LIKE :p6) AND `deleted_at` IS NULL) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL';
+        $query = trim($builder->toSql());
+        self::assertSame($expectedSql, $query);
+        $params = $builder->getParameters();
+        $expected = [
+            ':p0' => 'DummyModel',
+            ':p1' => '%test%',
+            ':p2' => '%2%',
+            ':p3' => '%2%',
+            ':p4' => '%2.5%',
+            ':p5' => '%2.5%',
+            ':p6' => '%7bead738-fc30-4d11-87ee-74178abbc9fb%',
         ];
         self::assertSame($expected, $params);
     }

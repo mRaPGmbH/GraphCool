@@ -13,14 +13,13 @@ class FullTextIndex
         static::$provider = $provider;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     protected static function get(): FullTextIndexProvider
     {
         if (!isset(static::$provider)) {
+            // @codeCoverageIgnoreStart
             $classname = MysqlFullTextIndexProvider::class;
             static::$provider = new $classname();
+            // @codeCoverageIgnoreEnd
         }
         return static::$provider;
     }

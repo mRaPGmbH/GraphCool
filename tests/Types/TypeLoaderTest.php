@@ -26,6 +26,7 @@ use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
+use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorType;
 use Mrap\GraphCool\Types\TypeLoader;
@@ -262,6 +263,13 @@ class TypeLoaderTest extends TestCase
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_ImportSummary')();
         self::assertInstanceOf(ImportSummaryType::class, $result);
+    }
+
+    public function testCreateImportJob(): void
+    {
+        $typeLoader = new TypeLoader();
+        $result = $typeLoader->load('_ImportJob')();
+        self::assertInstanceOf(JobType::class, $result);
     }
 
 

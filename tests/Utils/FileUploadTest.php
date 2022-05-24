@@ -27,5 +27,31 @@ class FileUploadTest extends TestCase
         }
     }
 
+    public function testParse(): void
+    {
+        $map = '[["0.variables.file"]]';
+        $file = tempnam(sys_get_temp_dir(), 'import');
+        $_FILES[0] = ['tmp_name' => $file];
+        $request = [];
+        $result = FileUpload::parse($request, $map);
+
+        $expected = [[
+            'variables' => [
+                'file' => [
+                    'tmp_name' => $file
+                ]
+            ]
+        ]];
+        self::assertEquals($expected, $result);
+    }
+
+    public function testParseError(): void
+    {
+        $this->expectException(Error::class);
+        $map = '[["0.variables.file"]]';
+        $request = [];
+        FileUpload::parse($request, $map);
+    }
+
 
 }

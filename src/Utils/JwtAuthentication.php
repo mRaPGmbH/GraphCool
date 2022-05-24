@@ -11,7 +11,6 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
@@ -88,7 +87,9 @@ class JwtAuthentication
     {
         $secret = Env::get('JWT_SECRET');
         if ($secret === null) {
+            // @codeCoverageIgnoreStart
             throw new \RuntimeException('JWT_SECRET is missing from .env');
+            // @codeCoverageIgnoreEnd
         }
         return Configuration::forSymmetricSigner(
             new Signer\Hmac\Sha256(),
@@ -96,15 +97,15 @@ class JwtAuthentication
         );
     }
 
-    public static function createLocalToken(array $permissions): string
+    public static function createLocalToken(array $permissions, string $tenantId): string
     {
-        $now   = new DateTimeImmutable();
+        $now = new DateTimeImmutable();
         $config = static::localConfig();
         return $config->builder()
             ->issuedBy(Env::get('APP_NAME'))
             ->identifiedBy(Uuid::uuid4()->toString())
             ->expiresAt($now->modify('+1 hour'))
-            ->withClaim('tid', JwtAuthentication::tenantId())
+            ->withClaim('tid', $tenantId)
             ->withClaim('perm', Permissions::createLocalCode($permissions))
             ->getToken($config->signer(), $config->signingKey())
             ->toString();

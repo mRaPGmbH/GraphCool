@@ -129,7 +129,9 @@ class MysqlConnector
         $statement->execute($params);
         $result = $statement->fetchAll(PDO::FETCH_OBJ);
         if ($result === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('PDOStatement::FetchAll failed.');
+            // @codeCoverageIgnoreEnd
         }
         return $result;
     }

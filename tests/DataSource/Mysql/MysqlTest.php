@@ -9,6 +9,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlEdgeWriter;
 use Mrap\GraphCool\DataSource\Mysql\MysqlNodeReader;
 use Mrap\GraphCool\DataSource\Mysql\MysqlNodeWriter;
 use Mrap\GraphCool\Tests\TestCase;
+use PDO;
 
 class MysqlTest extends TestCase
 {
@@ -72,6 +73,31 @@ class MysqlTest extends TestCase
         $result = Mysql::fetchColumn('a', [], 3);
         self::assertSame('b', $result);
     }
+
+    public function testIncrement(): void
+    {
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->once())
+            ->method('increment')
+            ->with('1','key', 0)
+            ->willReturn(123);
+        Mysql::setConnector($mock);
+        $result = Mysql::increment('1','key', 0);
+        self::assertSame(123, $result);
+    }
+
+    public function testgetPdo(): void
+    {
+        $pdo = $this->createMock(PDO::class);
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->once())
+            ->method('pdo')
+            ->willReturn($pdo);
+        Mysql::setConnector($mock);
+        $result = Mysql::getPdo();
+        self::assertSame($pdo, $result);
+    }
+
 
     public function testWaitForConnection(): void
     {

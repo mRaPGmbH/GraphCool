@@ -32,10 +32,10 @@ class FileTest extends TestCase
         $expected = ['e'];
         $mock->expects($this->once())
             ->method('import')
-            ->with('a',['b'],0)
+            ->with('a',['b'])
             ->willReturn($expected);
         File::setImporter($mock);
-        $result = File::read('a',['b'],0);
+        $result = File::read('a',['b']);
         self::assertSame($expected, $result);
     }
 
@@ -98,6 +98,36 @@ class FileTest extends TestCase
 
         File::setFileProvider($mock);
         File::delete($name, $id, $key, 'test.txt');
+    }
+
+    public function testSoftDelete(): void
+    {
+        $name = 'DummyModel';
+        $id = '43e0deae-de62-4b9c-812d-56a80b90f1b2';
+        $key = 'file';
+
+        $mock = $this->createMock(SystemFileProvider::class);
+        $mock->expects($this->once())
+            ->method('softDelete')
+            ->with($name, $id, $key);
+
+        File::setFileProvider($mock);
+        File::softDelete($name, $id, $key, 'test.txt');
+    }
+
+    public function testRestore(): void
+    {
+        $name = 'DummyModel';
+        $id = '43e0deae-de62-4b9c-812d-56a80b90f1b2';
+        $key = 'file';
+
+        $mock = $this->createMock(SystemFileProvider::class);
+        $mock->expects($this->once())
+            ->method('restore')
+            ->with($name, $id, $key);
+
+        File::setFileProvider($mock);
+        File::restore($name, $id, $key, 'test.txt');
     }
 
 }

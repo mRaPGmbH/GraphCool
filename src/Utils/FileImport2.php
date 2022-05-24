@@ -18,8 +18,6 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
-use Mrap\GraphCool\Types\Scalars\DateTime;
-use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use RuntimeException;
 
@@ -118,7 +116,9 @@ class FileImport2
         } elseif (is_string($input)) {
             $file = tempnam(sys_get_temp_dir(), 'import');
             if ($file === false) {
+                // @codeCoverageIgnoreStart
                 throw new RuntimeException('Could not save temporary file for import.');
+                // @codeCoverageIgnoreEnd
             }
             $data = base64_decode($input, true);
             if ($data === false) {
@@ -132,7 +132,9 @@ class FileImport2
 
         $mimeType = mime_content_type($file);
         if ($mimeType === false) {
+            // @codeCoverageIgnoreStart
             throw new Error('Could not import file: MimeType could not be detected.');
+            // @codeCoverageIgnoreEnd
         }
         $reader = $this->getReaderObject($mimeType);
         if ($reader === null) {
@@ -145,24 +147,6 @@ class FileImport2
         $reader->open($file);
         $this->file = $file;
         return $reader;
-    }
-
-    /**
-     * @param array[] $map
-     * @param int $index
-     * @return int|null
-     */
-    protected function findInMap(array $map, int $index): ?int
-    {
-        $key = 'variables.file';
-        foreach ($map as $fileNumber => $variableNames) {
-            foreach ($variableNames as $variableName) {
-                if ($variableName === $key || $variableName === $index . '.' . $key) {
-                    return $fileNumber;
-                }
-            }
-        }
-        return null;
     }
 
     protected function getReaderObject(string $mimeType): ?ReaderInterface
@@ -179,11 +163,15 @@ class FileImport2
     {
         $handle = fopen($file, 'rb');
         if ($handle === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('CSV separator detection failed to open file ' . $file);
+            // @codeCoverageIgnoreEnd
         }
         $sample = fread($handle, 100);
         if ($sample === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('CSV separator detection failed to read sample from file ' . $file);
+            // @codeCoverageIgnoreEnd
         }
         fclose($handle);
         if (strlen(str_replace(';', '', $sample)) < strlen(str_replace(',', '', $sample))) {
@@ -238,12 +226,6 @@ class FileImport2
                                 'relatedId' => $edge['id'],
                                 'edgeProperty' => $property,
                             ];
-                            /*
-                            $edgeMapping[$key] = [
-                                'nodeProperty' => $relationName,
-                                'relatedId' => $edge['id'],
-                                'edgeProperty' => $property,
-                            ];*/
                         }
                     }
                 }
@@ -368,7 +350,9 @@ class FileImport2
                 throw new Error('Invalid value: ' . $value);
             default:
                 if ($value instanceof \DateTime) {
+                    // @codeCoverageIgnoreStart
                     throw new Error('Importing date columns into text fields is not supported.');
+                    // @codeCoverageIgnoreEnd
                 }
                 return trim((string)$value);
         }
@@ -446,7 +430,9 @@ class FileImport2
                 ];
             }
             if ($cell === null) {
+                // @codeCoverageIgnoreStart
                 $value = null;
+                // @codeCoverageIgnoreEnd
             } else {
                 $value = $cell->getValue();
             }

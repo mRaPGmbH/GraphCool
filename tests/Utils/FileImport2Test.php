@@ -417,14 +417,16 @@ class FileImport2Test extends TestCase
         $import->import('DummyModel', ['columns'=>[]], 0);
     }
 
-    public function xtestImportFileExcel(): void
+    public function testImportFileExcel(): void
     {
-        $_REQUEST['map'] = '[["0.variables.file"]]';
         $file = tempnam(sys_get_temp_dir(), 'import');
         copy($this->dataPath().'/import.xlsx', $file);
-        $_FILES[0] = ['tmp_name' => $file];
+
         $import = new FileImport2();
-        [$inserts, $updates, $errors] = $import->import('DummyModel', ['columns'=>[['column' => 'last_name', 'label' => 'Familienname']]], 0);
+        [$inserts, $updates, $errors] = $import->import('DummyModel', [
+            'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
+            'file' => ['tmp_name' => $file]
+        ]);
         self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
@@ -434,39 +436,55 @@ class FileImport2Test extends TestCase
     public function testImportFileExcelError(): void
     {
         $this->expectException(Error::class);
-        $_REQUEST['map'] = '[["0.variables.file"]]';
         $file = tempnam(sys_get_temp_dir(), 'import');
         copy($this->dataPath().'/import2.xlsx', $file);
-        $_FILES[0] = ['tmp_name' => $file];
+
         $import = new FileImport2();
-        $import->import('DummyModel', ['columns'=>[['column' => 'last_name', 'label' => 'Familienname']]], 0);
+        $import->import('DummyModel', [
+            'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
+            'file' => ['tmp_name' => $file]
+        ]);
     }
 
     public function testImportFileUnknownError(): void
     {
         $this->expectException(Error::class);
-        $_REQUEST['map'] = '[["0.variables.file"]]';
         $file = tempnam(sys_get_temp_dir(), 'import');
         copy($this->dataPath().'/test.pdf', $file);
-        $_FILES[0] = ['tmp_name' => $file];
+
         $import = new FileImport2();
-        $import->import('DummyModel', ['columns'=>[['column' => 'last_name', 'label' => 'Familienname']]], 0);
+        $import->import('DummyModel', [
+            'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
+            'file' => ['tmp_name' => $file]
+        ]);
     }
 
-    public function xtestImportFileOds(): void
+    public function testImportFileOds(): void
     {
-        $_REQUEST['map'] = '[["0.variables.file"]]';
         $file = tempnam(sys_get_temp_dir(), 'import');
         copy($this->dataPath().'/import.ods', $file);
-        $_FILES[0] = ['tmp_name' => $file];
+
         $import = new FileImport2();
-        [$inserts, $updates, $errors] = $import->import('DummyModel', ['columns'=>[['column' => 'last_name', 'label' => 'Familienname']]], 0);
+        [$inserts, $updates, $errors] = $import->import('DummyModel', [
+            'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
+            'file' => ['tmp_name' => $file]
+        ]);
+
         self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
         self::assertFalse(file_exists($file), 'Temporary file should get deleted');
     }
 
+    public function testBase64Error(): void
+    {
+        $this->expectException(Error::class);
+        $import = new FileImport2();
+        $import->import('DummyModel', [
+            'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
+            'file' => 'not-valid-base64-data'
+        ]);
+    }
 
     protected function getImportResult(array $data, array $columns, array $edgeColumns = [], bool $excelCsv = false): array
     {

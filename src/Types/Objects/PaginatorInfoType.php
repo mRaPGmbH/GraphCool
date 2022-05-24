@@ -42,7 +42,7 @@ class PaginatorInfoType extends ObjectType
         }
         $paginatorInfo->hasMorePages = $total > $page * $limit;
         $paginatorInfo->lastItem = $total;
-        $paginatorInfo->lastPage = ceil($total / $limit);
+        $paginatorInfo->lastPage = (int)ceil($total / $limit);
         if ($paginatorInfo->lastPage < 1) {
             $paginatorInfo->lastPage = 1;
         }

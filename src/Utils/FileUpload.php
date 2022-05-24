@@ -37,25 +37,6 @@ class FileUpload
         return $request;
     }
 
-    public static function getData(array $input): string
-    {
-        $base64 = $input['data_base64'] ?? null;
-        if ($base64 !== null) {
-            $data = base64_decode($base64);
-        } else {
-            $tmpFile = $input['file']['tmp_name'] ?? null;
-            if ($tmpFile === null) {
-                $data = false;
-            } else {
-                $data = file_get_contents($tmpFile);
-            }
-        }
-        if ($data === false || $data === '') {
-            throw new Error('Uploaded file could not be read.');
-        }
-        return $data;
-    }
-
     public static function getMimetype(?string $data): string
     {
         if (empty($data)) {
@@ -63,7 +44,9 @@ class FileUpload
         }
         $file = tempnam(sys_get_temp_dir(), 'file');
         if ($file === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('Could not save temporary file.');
+            // @codeCoverageIgnoreEnd
         }
         file_put_contents($file, $data);
         $mimeType = mime_content_type($file);
@@ -80,7 +63,9 @@ class FileUpload
         if ($base64 !== null) {
             $file = tempnam(sys_get_temp_dir(), 'file');
             if ($file == false) {
+                // @codeCoverageIgnoreStart
                 throw new RuntimeException('Could not save temporary file.');
+                // @codeCoverageIgnoreEnd
             }
             file_put_contents($file, base64_decode($base64));
         } else {
@@ -92,7 +77,9 @@ class FileUpload
         }
         $size = filesize($file);
         if ($size === 0) {
+            // @codeCoverageIgnoreStart
             throw new Error('Received empty file.');
+            // @codeCoverageIgnoreEnd
         }
         return (object)[
             'filename' => $input['filename'],

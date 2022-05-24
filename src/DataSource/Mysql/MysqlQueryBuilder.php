@@ -213,7 +213,7 @@ class MysqlQueryBuilder
     public function selectMax(string $field, string $alias, string $valueType = 'value_int'): MysqlQueryBuilder
     {
         if ($this->mode !== null && $this->mode !== 'SELECT') {
-            throw new RuntimeException('Cannot do UPDATE on a query that\'s already set to ' . $this->mode);
+            throw new RuntimeException('Cannot do SELECT on a query that\'s already set to ' . $this->mode);
         }
         $this->mode = 'SELECT';
         if (in_array($field, $this->getBaseColumns())) {
@@ -228,7 +228,7 @@ class MysqlQueryBuilder
     public function selectSum(string $field, string $alias, string $valueType = 'value_int'): MysqlQueryBuilder
     {
         if ($this->mode !== null && $this->mode !== 'SELECT') {
-            throw new RuntimeException('Cannot do UPDATE on a query that\'s already set to ' . $this->mode);
+            throw new RuntimeException('Cannot do SELECT on a query that\'s already set to ' . $this->mode);
         }
         $this->mode = 'SELECT';
         if (in_array($field, $this->getBaseColumns())) {

@@ -26,9 +26,6 @@ class Importer
             $updated_ids[] = DB::update($job->tenantId, $name, $data)->id;
         }
         $affected_ids = array_merge($inserted_ids, $updated_ids);
-        foreach ($affected_ids as $id) {
-            FullTextIndex::index($job->tenantId, $name, $id);
-        }
         return [
             'success' => true,
             'inserted_rows' => count($inserted_ids),

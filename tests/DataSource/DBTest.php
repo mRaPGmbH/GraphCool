@@ -120,5 +120,40 @@ class DBTest extends TestCase
         DB::migrate();
     }
 
+    public function testGetSum(): void
+    {
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $mock->expects($this->once())
+            ->method('getSum')
+            ->with('1', 'DummyModel', 'key')
+            ->willReturn(123);
+        DB::setProvider($mock);
+        $result = DB::getSum('1', 'DummyModel', 'key');
+        self::assertSame(123, $result);
+    }
+
+    public function testGetCount(): void
+    {
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $mock->expects($this->once())
+            ->method('getCount')
+            ->with('1', 'DummyModel')
+            ->willReturn(123);
+        DB::setProvider($mock);
+        $result = DB::getCount('1', 'DummyModel');
+        self::assertSame(123, $result);
+    }
+
+    public function testIncrement(): void
+    {
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $mock->expects($this->once())
+            ->method('increment')
+            ->with('1', 'key', 0)
+            ->willReturn(123);
+        DB::setProvider($mock);
+        $result = DB::increment('1', 'key', 0);
+        self::assertSame(123, $result);
+    }
 
 }

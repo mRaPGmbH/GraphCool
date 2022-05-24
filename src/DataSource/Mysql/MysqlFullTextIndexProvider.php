@@ -64,6 +64,9 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         return $result;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     protected function prepareSearchPart(string $part): string
     {
         $part = str_replace('\'', '\\\'', $part);

@@ -168,7 +168,9 @@ class MysqlFlatQueryBuilder
             sort($this->where); // sort to optimize statement re-use
             $this->sql = 'FROM `' . $this->table . '` ';
             //$this->sql .= implode(' ', $this->joins);
-            $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
+            if (count($this->where) > 0) {
+                $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
+            }
         }
         return $this->sql;
     }
@@ -268,7 +270,7 @@ class MysqlFlatQueryBuilder
                     throw new Error($where['operator'] . ' requires the value to be an array.');
                 }
                 if (count($where['value']) === 0) {
-                    return '0=1'; // TODO: throw error. this is now only rigged to not find anything, because Kassa can't handle Errors
+                    throw new Error($where['operator'] . ' requires at least one value');
                 }
                 $sql .= ' ' . $this->parameterArray($where['value']);
             } elseif ($where['operator'] === 'BETWEEN' || $where['operator'] === 'NOT BETWEEN') {

@@ -3,6 +3,7 @@
 namespace Types;
 
 
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
@@ -124,7 +125,7 @@ class MutationTypeTest extends TestCase
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'deleteClassname';
         $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->once())
+        $info->returnType->expects($this->atLeast(1))
             ->method('toString')
             ->willReturn('classname');
 
@@ -151,7 +152,7 @@ class MutationTypeTest extends TestCase
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'restoreClassname';
         $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->once())
+        $info->returnType->expects($this->atLeast(1))
             ->method('toString')
             ->willReturn('classname');
 
@@ -195,7 +196,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('import')
-            ->with('Classname', [], 0)
+            ->with('Classname', [])
             ->willReturn($return);
 
         File::setImporter($mock);
@@ -228,7 +229,7 @@ class MutationTypeTest extends TestCase
         ];
         $mock->expects($this->once())
             ->method('import')
-            ->with('Classname', [], 0)
+            ->with('Classname', [])
             ->willReturn($return);
 
         File::setImporter($mock);
@@ -253,6 +254,44 @@ class MutationTypeTest extends TestCase
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'not-a-known-mutation';
+
+        $closure([], [], [], $info);
+    }
+
+    public function testResolveImportAsync(): void
+    {
+        $this->provideJwt();
+        $query = new MutationType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = 'importClassnamesAsync';
+        $info->returnType = $this->createMock(Type::class);
+
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $mock->expects($this->once())
+            ->method('addJob')
+            ->withAnyParameters()
+            ->willReturn('test-id-1234');
+        DB::setProvider($mock);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'test');
+        file_put_contents($tmp, 'Hello World!');
+
+        $result = $closure([], ['file'=> ['tmp_name' => $tmp]], [], $info);
+
+        self::assertEquals('test-id-1234', $result);
+    }
+
+    public function testResolveImportAsyncError(): void
+    {
+        $this->expectException(Error::class);
+
+        $this->provideJwt();
+        $query = new MutationType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = 'importClassnamesAsync';
+        $info->returnType = $this->createMock(Type::class);
 
         $closure([], [], [], $info);
     }

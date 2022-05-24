@@ -60,7 +60,7 @@ interface DataProvider
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string;
 
-    public function getSum(?string $tenantId, string $name, string $key): float|int;
+    public function getSum(?string $tenantId, string $name, string $key): float|bool|int|string;
 
     public function getCount(?string $tenantId, string $name): int;
 

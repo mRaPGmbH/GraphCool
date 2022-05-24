@@ -17,4 +17,10 @@ class PaginatorTypeTest extends TestCase
         $object = new PaginatorType('_DummyModelPaginator', new TypeLoader());
         self::assertInstanceOf(ObjectType::class, $object);
     }
+
+    public function testConstructorJob(): void
+    {
+        $object = new PaginatorType('_Import_JobPaginator', new TypeLoader());
+        self::assertInstanceOf(ObjectType::class, $object);
+    }
 }

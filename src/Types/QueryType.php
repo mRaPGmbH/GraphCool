@@ -43,7 +43,7 @@ class QueryType extends ObjectType
             $name = strtolower($args['endpoint']);
             $operation = $args['operation'];
             Authorization::authorize($operation, $name);
-            return JwtAuthentication::createLocalToken([$name => [$operation]]);
+            return JwtAuthentication::createLocalToken([$name => [$operation]], JwtAuthentication::tenantId());
         };
 
         foreach (ClassFinder::models() as $name => $classname) {
@@ -226,7 +226,8 @@ class QueryType extends ObjectType
                 $name = substr($info->returnType->name,1,-13) . 'Job';
                 Authorization::authorize('find', $name);
                 return DB::findJobs(JwtAuthentication::tenantId(), $this->getWorkerForJob($name), $args);
-            } elseif (str_ends_with($info->returnType->name, 'Paginator')) {
+            }
+            if (str_ends_with($info->returnType->name, 'Paginator')) {
                 $name = substr($info->returnType->name, 1, -9);
                 Authorization::authorize('find', $name);
                 return DB::findAll(JwtAuthentication::tenantId(), $name , $args);

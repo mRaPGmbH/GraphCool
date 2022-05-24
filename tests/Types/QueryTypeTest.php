@@ -37,6 +37,7 @@ class QueryTypeTest extends TestCase
             ->method('toString')
             ->willReturn('classname');
         $info->returnType->name = 'name';
+        $info->fieldName = 'test';
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -71,10 +72,7 @@ class QueryTypeTest extends TestCase
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->once())
-            ->method('toString')
-            ->willReturn('_classnamePaginator');
-        $info->returnType->name = 'namePaginator';
+        $info->returnType->name = '_classnamePaginator';
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -127,6 +125,91 @@ String pivot_property2
 String pivot_property3NEWLINE    DummyModel --|> DummyModel : NEWLINE    DummyModel --|> DummyModel : String pivot_property
 ENUM pivot_enum!';
         self::assertSame($expected, $result);
+    }
+
+    public function testResolveToken(): void
+    {
+        $this->provideJwt();
+        $query = new QueryType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = '_Token';
+
+        $jwt = $closure([], ['endpoint' => 'customer', 'operation' => 'read'], [], $info);
+
+        $payload = json_decode(base64_decode(explode('.', $jwt)[1]??''));
+
+        self::assertSame('crm', $payload->iss);
+        self::assertSame('1', $payload->tid);
+        self::assertSame('crm:customer.1', $payload->perm);
+    }
+
+    public function testResolveJobPaginator(): void
+    {
+        $this->provideJwt();
+        $query = new QueryType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->returnType = $this->createMock(Type::class);
+        $info->returnType->name = '_Import_JobPaginator';
+
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $object = (object) ['id'=>123, 'last_name'=>'test'];
+        $mock->expects($this->once())
+            ->method('findJobs')
+            ->withAnyParameters()
+            ->willReturn($object);
+        DB::setProvider($mock);
+
+        $result = $closure([], [], [], $info);
+
+        self::assertSame($object, $result);
+    }
+
+    public function testResolveExportAsync(): void
+    {
+        $this->provideJwt();
+        $query = new QueryType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = 'exportDummyModelsAsync';
+        $info->returnType = $this->createMock(Type::class);
+        $info->returnType->name = '_FileExport';
+
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $mock->expects($this->once())
+            ->method('addJob')
+            ->withAnyParameters()
+            ->willReturn('test-job-id');
+        DB::setProvider($mock);
+
+        $result = $closure([], [], [], $info);
+
+        self::assertSame('test-job-id', $result);
+
+    }
+
+    public function testResolveExportJob(): void
+    {
+        $this->provideJwt();
+        $query = new QueryType(new TypeLoader());
+        $closure = $query->resolveFieldFn;
+        $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = '_ImportJob';
+        $info->returnType = $this->createMock(Type::class);
+        $info->returnType->name = '_ImportSummary';
+
+        $mock = $this->createMock(MysqlDataProvider::class);
+        $object = (object) ['id'=>123, 'last_name'=>'test'];
+        $mock->expects($this->once())
+            ->method('getJob')
+            ->withAnyParameters()
+            ->willReturn($object);
+        DB::setProvider($mock);
+
+        $result = $closure([], ['id' => '123'], [], $info);
+
+        self::assertSame($object, $result);
     }
 
 }

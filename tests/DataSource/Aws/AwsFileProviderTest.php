@@ -181,4 +181,11 @@ class AwsFileProviderTest extends TestCase
         $provider->delete($name, $id, $key, 'test.txt');
     }
 
+    public function testGetToken(): void
+    {
+        $provider = new AwsFileProvider();
+        $token = $provider->getToken();
+        self::assertEquals('', $token);
+    }
+
 }

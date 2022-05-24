@@ -54,7 +54,9 @@ class FileExport
 
         $file = tempnam(sys_get_temp_dir(), 'export');
         if ($file === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('Export failed to open temp file.');
+            // @codeCoverageIgnoreEnd
         }
         $writer->openToFile($file);
         $writer->addRow(WriterEntityFactory::createRow($this->getHeaders($model, $args)));
@@ -71,7 +73,9 @@ class FileExport
         $result->mime_type = $this->getMimeType($type);
         $contents = file_get_contents($file);
         if ($contents === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException('Export failed to get contents from file ' . $file);
+            // @codeCoverageIgnoreEnd
         }
         $result->data_base64 = base64_encode($contents);
         unlink($file);
@@ -150,9 +154,6 @@ class FileExport
                 $ids = [];
                 foreach ($args[$key] as $related) {
                     $ids[] = $related['id'];
-                }
-                if (count($ids) === 0) {
-                    continue;
                 }
                 $closure = $row->$key;
                 $data = $closure(['where' => [['column' => 'id', 'operator' => 'IN', 'value' => $ids]]]);

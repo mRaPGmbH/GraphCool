@@ -192,5 +192,12 @@ class SystemFileProviderTest extends TestCase
         self::assertFileDoesNotExist($path . '/' . $name . '.' . $id . '.' . $key);
     }
 
+    public function testGetToken(): void
+    {
+        $provider = new SystemFileProvider();
+        $token = $provider->getToken();
+        self::assertEquals('', $token);
+    }
+
 
 }

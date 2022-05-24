@@ -6,8 +6,11 @@ namespace Mrap\GraphCool\Tests;
 
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
+use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\GraphCool;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\Exporter;
+use Mrap\GraphCool\Utils\Importer;
 use Mrap\GraphCool\Utils\Scheduler;
 use RuntimeException;
 
@@ -168,6 +171,66 @@ class GraphCoolTest extends TestCase
             ->willThrowException(new RuntimeException('test'));
         GraphCool::setScheduler($scheduler);
         $result = GraphCool::runScript(['scheduler']);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptImporterEmptyJob(): void
+    {
+        $result = GraphCool::runScript(['importer', $this->createMock(Job::class)]);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptImporter(): void
+    {
+        $mock = $this->createMock(Importer::class);
+        $mock->expects($this->once())
+            ->method('run')
+            ->withAnyParameters()
+            ->willReturn([]);
+        GraphCool::setImporter($mock);
+        $result = GraphCool::runScript(['importer', $this->createMock(Job::class)]);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptImporterException(): void
+    {
+        $mock = $this->createMock(Importer::class);
+        $mock->expects($this->once())
+            ->method('run')
+            ->withAnyParameters()
+            ->willThrowException(new RuntimeException());
+        GraphCool::setImporter($mock);
+        $result = GraphCool::runScript(['importer', $this->createMock(Job::class)]);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptExporterEmptyJob(): void
+    {
+        $result = GraphCool::runScript(['exporter', $this->createMock(Job::class)]);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptExporter(): void
+    {
+        $mock = $this->createMock(Exporter::class);
+        $mock->expects($this->once())
+            ->method('run')
+            ->withAnyParameters()
+            ->willReturn([]);
+        GraphCool::setExporter($mock);
+        $result = GraphCool::runScript(['exporter', $this->createMock(Job::class)]);
+        self::assertEquals([], $result);
+    }
+
+    public function testRunScriptExporterException(): void
+    {
+        $mock = $this->createMock(Exporter::class);
+        $mock->expects($this->once())
+            ->method('run')
+            ->withAnyParameters()
+            ->willThrowException(new RuntimeException());
+        GraphCool::setExporter($mock);
+        $result = GraphCool::runScript(['exporter', $this->createMock(Job::class)]);
         self::assertEquals([], $result);
     }
 

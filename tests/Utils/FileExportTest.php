@@ -123,4 +123,42 @@ class FileExportTest extends TestCase
         self::assertSame($csv, $result->data_base64, 'Generated csv does not match provided data.');
     }
 
+    public function testRelationNoColumns(): void
+    {
+        require_once($this->dataPath().'/app/Models/DummyModel.php');
+
+        $columns = [
+            ['column' => 'id','label' => 'id'],
+        ];
+        $belongsToMany = [[
+            'id' => 125,
+            'columns' => []
+        ]];
+
+        $csv = '77u/aWQKMTIzCjQ1Ngo=';
+        $data = [
+            (object) [
+                'id' => '123',
+                'belongs_to_many' => function(array $args) {
+                    return [
+                        'edges' => []
+                    ];
+                }
+            ],
+            (object) [
+                'id' => '456',
+                'belongs_to_many' => function(array $args) {
+                    return [
+                        'edges' => []
+                    ];
+                }
+            ],
+        ];
+
+        $export = new FileExport();
+        $result = $export->export('DummyModel', $data, ['columns' => $columns, 'belongs_to_many' => $belongsToMany], 'csv');
+
+        self::assertSame($csv, $result->data_base64, 'Generated csv does not match provided data.');
+    }
+
 }
