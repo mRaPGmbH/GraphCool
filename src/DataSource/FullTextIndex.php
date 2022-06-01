@@ -44,5 +44,10 @@ class FullTextIndex
         static::get()->shutdown();
     }
 
+    public static function rebuildIndex(): void
+    {
+        static::get()->rebuildIndex();
+    }
+
 
 }

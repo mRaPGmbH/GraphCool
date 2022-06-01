@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Model;
+namespace Mrap\GraphCool\Tests\Definition;
 
 
 use Mrap\GraphCool\Definition\QuerySettings;

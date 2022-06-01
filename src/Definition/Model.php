@@ -120,12 +120,15 @@ class Model extends stdClass
             if (!$relation instanceof Relation) {
                 continue;
             }
+            if ($relation->type !== 'BELONGS_TO' && $relation->type !== 'BELONGS_TO_MANY') {
+                continue;
+            }
             foreach ($relation as $key => $field) {
                 if (!$field instanceof Field) {
                     continue;
                 }
                 if ($field->fulltextIndex) {
-                    $result[] = $key;
+                    $result[$key] = $relation->name;
                 }
             }
         }

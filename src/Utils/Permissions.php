@@ -11,17 +11,17 @@ namespace Mrap\GraphCool\Utils;
  */
 class Permissions
 {
-    public const READ = 1 << 0; // 0b 000 000 001
-    public const FIND = 1 << 1; // 0b 000 000 010
-    public const EXPORT = 1 << 2; // 0b 000 000 100
+    protected const READ = 1 << 0; // 0b 000 000 001
+    protected const FIND = 1 << 1; // 0b 000 000 010
+    protected const EXPORT = 1 << 2; // 0b 000 000 100
 
-    public const CREATE = 1 << 3; // 0b 000 001 000
-    public const UPDATE = 1 << 4; // 0b 000 010 000
-    public const UPDATE_MANY = 1 << 5; // 0b 000 100 000
+    protected const CREATE = 1 << 3; // 0b 000 001 000
+    protected const UPDATE = 1 << 4; // 0b 000 010 000
+    protected const UPDATE_MANY = 1 << 5; // 0b 000 100 000
 
-    public const DELETE = 1 << 6; // 0b 001 000 000
-    public const RESTORE = 1 << 7; // 0b 010 000 000
-    public const IMPORT = 1 << 8; // 0b 100 000 000
+    protected const DELETE = 1 << 6; // 0b 001 000 000
+    protected const RESTORE = 1 << 7; // 0b 010 000 000
+    protected const IMPORT = 1 << 8; // 0b 100 000 000
 
     public static function check(string $code, string $permission, string $entity, string $service): bool
     {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mrap\GraphCool\Tests\Model;
+namespace Mrap\GraphCool\Tests\Definition;
 
 use App\Scripts\DummyScript;
 use Mrap\GraphCool\Tests\TestCase;

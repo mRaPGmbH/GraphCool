@@ -1,6 +1,6 @@
 <?php
 
-namespace Mrap\GraphCool\Tests\Model;
+namespace Mrap\GraphCool\Tests\Definition;
 
 use Carbon\Carbon;
 use GraphQL\Type\Definition\Type;

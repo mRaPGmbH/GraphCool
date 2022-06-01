@@ -47,7 +47,6 @@ class MutationType extends ObjectType
             $query = new $classname($typeLoader);
             $fields[$query->name] = $query->config;
             $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
-                $query->authenticate();
                 return $query->resolve($rootValue, $args, $context, $info);
             };
         }

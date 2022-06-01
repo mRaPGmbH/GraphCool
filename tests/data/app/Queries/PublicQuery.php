@@ -11,9 +11,12 @@ class PublicQuery extends Query
 
     public function __construct(TypeLoader $typeLoader)
     {
-        $this->noAuthentication();
         $this->name = 'PublicQuery';
         $this->config = [];
+    }
+
+    public function authorize(): void
+    {
     }
 
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed

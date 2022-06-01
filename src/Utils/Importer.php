@@ -6,7 +6,6 @@ namespace Mrap\GraphCool\Utils;
 
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\Definition\Job;
 
 class Importer

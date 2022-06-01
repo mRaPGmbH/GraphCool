@@ -47,13 +47,13 @@ class MysqlConnector
     protected function connect(): void
     {
         $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
-            . ';dbname=' . Env::get('DB_DATABASE');
+            . ';dbname=' . Env::get('DB_DATABASE') . ';charset=utf8';
         try {
             $this->pdo = new PDO(
                 $connection,
                 Env::get('DB_USERNAME'),
                 Env::get('DB_PASSWORD'),
-                [PDO::ATTR_PERSISTENT => true]
+                [PDO::ATTR_PERSISTENT => true, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]
             );
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);

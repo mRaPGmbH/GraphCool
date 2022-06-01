@@ -13,7 +13,6 @@ abstract class Mutation extends \stdClass
     public string $fieldName;
     /** @var mixed[] */
     public array $config;
-    private bool $authenticate = true;
 
     abstract public function __construct(TypeLoader $typeLoader);
 
@@ -26,16 +25,6 @@ abstract class Mutation extends \stdClass
      */
     abstract public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info);
 
-    public function authenticate(): void
-    {
-        if ($this->authenticate) {
-            JwtAuthentication::authenticate();
-        }
-    }
-
-    protected function noAuthentication(): void
-    {
-        $this->authenticate = false;
-    }
+    abstract public function authorize(): void;
 
 }

@@ -18,6 +18,10 @@ class InvalidJsonQuery extends Query
         ];
     }
 
+    public function authorize(): void
+    {
+    }
+
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         return "\xB1\x31";

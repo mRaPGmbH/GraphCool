@@ -4,6 +4,10 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Mrap\GraphCool\DataSource\FullTextIndexProvider;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\ErrorHandler;
+use PHPUnit\Util\Xml\Exception;
+use Throwable;
 
 class MysqlFullTextIndexProvider implements FullTextIndexProvider
 {
@@ -42,46 +46,45 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
 
     public function search(string $tenantId, string $searchString): array
     {
+        $parts = [];
+        $where = [];
+        foreach ($this->split($searchString) as $part) {
+            if (mb_strlen($part) > 3) {
+                $parts[] = '+' . $part . '*';
+            } else {
+                $where[] = '`text` LIKE ' . Mysql::getPdo()->quote('%' . $part . '%');
+            }
+        }
+        if (count($parts) > 0) {
+            $where[] = 'MATCH(`text`) AGAINST(' . Mysql::getPdo()->quote(implode(' ', $parts)) . ' IN BOOLEAN MODE)';
+        }
+        if (count($where) === 0) {
+            return [];
+        }
+
         $result = [];
-        if ($searchString !== null && trim($searchString) !== '') {
-            $parts = [];
-            foreach (explode(' ', $searchString, 10) as $part) {
-                if (empty($part)) {
-                    continue;
-                }
-                //$parts[] = $this->prepareSearchPart($part);
-                $parts[] = '`text` LIKE ' . Mysql::getPdo()->quote('%'.$part.'%');
+        $sql = 'SELECT `node_id` FROM `fulltext` WHERE ' . implode(' AND ', $where);
+        //echo $sql . PHP_EOL;
+        try {
+            foreach (Mysql::getPdo()->query($sql)->fetchAll(\PDO::FETCH_OBJ) as $row) {
+                $result[] = $row->node_id;
             }
-            if (count($parts) > 0) {
-                //$sql = 'SELECT `node_id` FROM `fulltext` WHERE MATCH(`text`) AGAINST(\'' . implode(' ', $parts) . '\' IN BOOLEAN MODE) ';
-                $sql = 'SELECT `node_id` FROM `fulltext` WHERE ' . implode(' AND ', $parts);
-                //echo $sql . PHP_EOL;
-                foreach (Mysql::getPdo()->query($sql)->fetchAll(\PDO::FETCH_OBJ) as $row) {
-                    $result[] = $row->node_id;
-                }
-            }
+        } catch (Throwable $e) {
+            $new = new Exception('Fulltext search SQL failed: ' . $sql, 0, $e);
+            ErrorHandler::sentryCapture($new);
         }
         return $result;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
-    protected function prepareSearchPart(string $part): string
+    protected function split(string $string): array
     {
-        $part = str_replace('\'', '\\\'', $part);
-        if (
-            str_starts_with($part, '++')
-            || str_starts_with($part, '--')
-            || str_starts_with($part, '+-')
-            || str_starts_with($part, '-+')
-        ) {
-            $part = substr($part, 1);
-        }
-        $part = str_replace(['"'], '', $part);
-        return '+\'' . Mysql::getPdo()->quote($part) . '\'*';
+        $forbidden = ['+', '-', '&', '%', '*', '/', ':', ';', '.', ',', '?', '!', '\'', '"', '§', '$', '€', '(', ')',
+            '[', ']', '{', '}', '=', '~', '#', '<', '>', '^', '°', '`', '|', '@'];
+        $string = str_replace($forbidden, ' ', $string);
+        $string =  trim($string);
+        $string = (string)preg_replace('/\s+/', ' ', $string);
+        return explode(' ', $string);
     }
-
 
     protected function updateIndex(string $tenantId, array $models) {
         foreach ($models as $name => $ids) {
@@ -100,7 +103,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                     $sql = $this->getSqlEmpty($tenantId, $name, $ids);
                     Mysql::getPdo()->exec($sql);
                 }
-                $sql = $this->getEdgeSqlSingle($tenantId, $name, $edgeProps);
+                $sql = $this->getEdgeSqlSingle($tenantId, $name, array_keys($edgeProps));
                 $statement = Mysql::getPdo()->prepare($sql);
                 foreach ($ids as $id) {
                     $statement->execute(['id' => $id, 'id2' => $id]);
@@ -188,8 +191,6 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         ';
     }
 
-
-
     protected function quoteArray(array $array): string
     {
         $result = [];
@@ -201,5 +202,90 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         }
         return '(' . implode(',', $result) . ')';
     }
+
+    public function rebuildIndex(): void
+    {
+        $propertySqls = $this->getPropertySqls();
+        foreach ($this->getTenants() as $tenantId) {
+            $sql = 'REPLACE INTO `fulltext` (`node_id`, `tenant_id`, `model`, `text`) 
+                    SELECT 
+                        `n`.`id` AS `node_id`,
+                        `n`.`tenant_id`,
+                        `n`.`model`, ';
+            $where = [
+                '`n`.`tenant_id` = ' . Mysql::getPdo()->quote($tenantId),
+                '`n`.`deleted_at` IS NULL'
+            ];
+            if ($propertySqls['node'] === null) {
+                $sql .= '\'\' as `text` FROM `node` AS `n` WHERE ';
+            } else {
+                $sql .= 'GROUP_CONCAT(COALESCE(`p`.`value_string`, `p`.`value_int`, `p`.`value_float`, \'\') SEPARATOR \' \') AS `text`
+                    FROM `node` AS `n`
+                    LEFT JOIN `node_property` AS `p` ON `p`.`node_id` = `n`.`id` WHERE ';
+                $where[] = '`p`.`deleted_at` IS NULL';
+                $where[] = $propertySqls['node'];
+            }
+            $sql .= implode(' AND ', $where) . ' GROUP BY `n`.`id`';
+            Mysql::getPdo()->exec($sql);
+
+            if ($propertySqls['edge'] !== null) {
+                $sql = 'UPDATE `fulltext` AS `f`
+                    SET `text` = CONCAT(`text`, \' \', COALESCE((
+                        SELECT GROUP_CONCAT(COALESCE(p.value_string, p.value_int, p.value_float, \'\') SEPARATOR \' \')
+                        FROM `edge` AS `e`
+                        LEFT JOIN `edge_property` AS `p` ON (`e`.child_id = `p`.child_id AND `e`.parent_id = `p`.parent_id)
+                        WHERE `e`.`child_id` = `f`.`node_id`
+                        AND p.deleted_at IS NULL
+                        AND e.deleted_at IS NULL
+                        AND ' . $propertySqls['edge'] . '
+                        GROUP BY `e`.`child_id`
+                    ), \'\'))
+                    WHERE `f`.tenant_id = ' . Mysql::getPdo()->quote($tenantId) . '
+                ';
+                Mysql::getPdo()->exec($sql);
+            }
+        }
+    }
+
+    protected function getTenants(): array
+    {
+        $sql = 'SELECT DISTINCT `tenant_id` FROM `node`';
+        $result = [];
+        foreach (Mysql::getPdo()->query($sql)->fetchAll(\PDO::FETCH_OBJ) as $row) {
+            $result[] = $row->tenant_id;
+        }
+        return $result;
+    }
+
+    protected function getPropertySqls(): array
+    {
+        $sqls = [
+            'node' => null,
+            'edge' => null
+        ];
+        $nodeSqls = [];
+        $edgeSqls = [];
+        foreach (ClassFinder::models() as $name => $classname) {
+            $model = Model::get($name);
+            $nodeProps = $model->getPropertyNamesForFulltextIndexing();
+            if (count($nodeProps) > 0) {
+                $nodeSqls[] = '(`p`.`property` IN ' . $this->quoteArray($nodeProps)
+                    . ' AND `n`.`model` = ' . Mysql::getPdo()->quote($name) . ')';
+            }
+            $edgeProps = $model->getEdgePropertyNamesForFulltextIndexing();
+            foreach ($edgeProps as $prop => $subName) {
+                $edgeSqls[] = '(`p`.`property` IN ' . $this->quoteArray(array_keys($edgeProps))
+                    . ' AND `e`.`parent` = ' . Mysql::getPdo()->quote($subName) . ')';
+            }
+        }
+        if (count($nodeSqls) > 0) {
+            $sqls['node'] = '(' . implode(' OR ', $nodeSqls) . ')';
+        }
+        if (count($edgeSqls) > 0) {
+            $sqls['edge'] = '(' . implode(' OR ', $edgeSqls) . ')';
+        }
+        return $sqls;
+    }
+
 
 }

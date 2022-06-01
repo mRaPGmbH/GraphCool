@@ -19,6 +19,10 @@ class ExceptionQuery extends Query
         ];
     }
 
+    public function authorize(): void
+    {
+    }
+
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         throw new RuntimeException('nope');

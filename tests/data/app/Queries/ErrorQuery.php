@@ -19,6 +19,10 @@ class ErrorQuery extends Query
         ];
     }
 
+    public function authorize(): void
+    {
+    }
+
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         throw new Error('nada');

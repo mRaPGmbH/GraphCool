@@ -10,5 +10,6 @@ interface FullTextIndexProvider
     public function delete(string $tenantId, string $model, string $id): void;
     public function shutdown(): void;
     public function search(string $tenantId, string $searchString): array;
+    public function rebuildIndex(): void;
 
 }

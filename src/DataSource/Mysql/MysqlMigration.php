@@ -92,6 +92,18 @@ class MysqlMigration
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         Mysql::executeRaw($sql);
 
+        $sql = 'CREATE TABLE IF NOT EXISTS `fulltext` (
+            `node_id` char(36) NOT NULL,
+            `tenant_id` char(255) NOT NULL,
+            `model` char(255) NOT NULL,
+            `text` longtext NOT NULL,
+            PRIMARY KEY (`node_id`),
+            INDEX `tenant_id_model` (`tenant_id`, `model`),
+            FULLTEXT KEY `text` (`text`),
+            CONSTRAINT `fulltext_ibfk_1` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        Mysql::executeRaw($sql);
+
         $sql = 'SET sql_notes = 1';
         Mysql::executeRaw($sql);
     }

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Mrap\GraphCool\Tests\Model;
+namespace Mrap\GraphCool\Tests\Definition;
 
 
 use App\Models\DummyModel;
@@ -88,7 +88,7 @@ class ModelTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $model = new DummyModel();
         $fulltext = $model->getEdgePropertyNamesForFulltextIndexing();
-        self::assertEquals(['pivot_property'], $fulltext);
+        self::assertEquals(['pivot_property' => 'DummyModel'], $fulltext);
    }
 
 }

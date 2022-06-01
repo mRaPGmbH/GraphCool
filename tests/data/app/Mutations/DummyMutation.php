@@ -15,6 +15,10 @@ class DummyMutation extends Mutation
         $this->config = [];
     }
 
+    public function authorize(): void
+    {
+    }
+
     public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)
     {
         return 'dummy-mutation-resolve';
