@@ -27,15 +27,7 @@ class Authorization
     public static function checkPermissions(string $method, string $model, ?string $permissions): void
     {
         if ($permissions === null || !Permissions::check($permissions, $method, strtolower($model), Env::get('APP_NAME'))) {
-            throw new Error(print_r([
-                'app_name' => Env::get('APP_NAME'),
-                'model' => $model,
-                'method' => $method,
-                'permissions' => $permissions,
-                'header' => $_SERVER['HTTP_AUTHORIZATION'],
-                'claims' => JwtAuthentication::getClaim(null)
-            ], true));
-            //throw new Error('403 Forbidden. JWT does not grant access to ' . Env::get('APP_NAME') . ':' . $model . '.' . $method);
+            throw new Error('403 Forbidden. JWT does not grant access to ' . Env::get('APP_NAME') . ':' . $model . '.' . $method);
         }
     }
 }
