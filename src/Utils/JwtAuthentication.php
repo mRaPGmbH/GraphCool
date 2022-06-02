@@ -122,8 +122,11 @@ class JwtAuthentication
         static::$claims['tid'] = $id;
     }
 
-    public static function getClaim(string $key): mixed
+    public static function getClaim(?string $key): mixed
     {
+        if ($key === null) {
+            return static::$claims;
+        }
         return static::$claims[$key] ?? null;
     }
 
