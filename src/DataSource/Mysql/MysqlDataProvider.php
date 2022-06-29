@@ -75,7 +75,7 @@ class MysqlDataProvider implements DataProvider
             $relatedModel = new $relatedClassname();
             $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where' . ucfirst($key)]);
 
-            $query->whereHas($relatedModel, $relation->name, $relation->type, $relatedWhere);
+            $query->whereHas($tenantId, $relatedModel, $relation->name, $relation->type, $relatedWhere);
         }
 
         match ($resultType) {

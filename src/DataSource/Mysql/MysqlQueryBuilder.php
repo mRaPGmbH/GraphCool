@@ -302,12 +302,13 @@ class MysqlQueryBuilder
      * @param mixed[]|null $where
      * @return $this
      */
-    public function whereHas(Model $model, string $name, string $relationType, ?array $where): MysqlQueryBuilder
+    public function whereHas(string $tenantId, Model $model, string $name, string $relationType, ?array $where): MysqlQueryBuilder
     {
         if ($where === null || count($where) === 0) {
             return $this;
         }
         $query = self::forModel($model, $name, $name)
+            ->tenant($tenantId)
             ->select(['id'])
             ->where($where);
 
