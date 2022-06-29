@@ -14,6 +14,8 @@ use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Enums\EntityEnumType;
+use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
+use Mrap\GraphCool\Types\Enums\HistoryColumnEnumType;
 use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
@@ -38,6 +40,7 @@ use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
+use Mrap\GraphCool\Types\Objects\HistoryType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
@@ -50,7 +53,6 @@ use Mrap\GraphCool\Types\Scalars\DateTime;
 use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
-use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 
 class TypeLoader
@@ -85,6 +87,9 @@ class TypeLoader
         self::register('_Upload', Upload::class);
         self::register('_File', FileType::class);
         self::register('_Job_Column', JobColumnEnumType::class);
+        self::register('_History_Column', HistoryColumnEnumType::class);
+        self::register('_History_ChangeType', HistoryChangeTypeEnumType::class);
+        self::register('_History', HistoryType::class);
         self::register('_Permission', PermissionEnumType::class);
         self::register('_Entity', EntityEnumType::class);
     }
@@ -137,7 +142,7 @@ class TypeLoader
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
-            if ($name === '_ImportSummary' || $name === '_File') {
+            if ($name === '_ImportSummary' || $name === '_File' || $name === '_History') {
                 return new $classname($this);
             }
             return new $classname();

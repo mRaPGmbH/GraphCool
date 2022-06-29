@@ -374,7 +374,7 @@ class MysqlQueryBuilder
             if (isset($where['column'])) {
                 $sqls[] = $this->resolveSingleWhere($where);
             }
-            if (isset($where['fulltextSearch'])) {
+            if (isset($where['fulltextSearch']) && !empty(trim($where['fulltextSearch']))) {
                 $sqls[] = $this->resolveFulltextWhere($where['fulltextSearch']);
             }
             if (isset($where['OR'])) {

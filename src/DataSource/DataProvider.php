@@ -64,7 +64,7 @@ interface DataProvider
 
     public function getCount(?string $tenantId, string $name): int;
 
-    public function increment(string $tenantId, string $key, int $min = 0): int;
+    public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int;
 
     public function addJob(string $tenantId, string $worker, ?array $data = null): string;
 
@@ -75,4 +75,7 @@ interface DataProvider
     public function getJob(?string $tenantId, string $name, string $id): ?stdClass;
 
     public function findJobs(?string $tenantId, string $name, array $args): stdClass;
+
+    public function findHistory(?string $tenantId, array $args): stdClass;
+
 }

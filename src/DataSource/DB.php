@@ -152,10 +152,10 @@ class DB
         StopWatch::stop(__METHOD__);
     }
 
-    public static function increment(string $tenantId, string $key, int $min = 0): int
+    public static function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->increment($tenantId, $key, $min);
+        $result = static::get()->increment($tenantId, $key, $min, $transaction);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -195,6 +195,14 @@ class DB
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->findJobs($tenantId, $name, $args);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function findHistory(?string $tenantId, array $args): stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->findHistory($tenantId, $args);
         StopWatch::stop(__METHOD__);
         return $result;
     }

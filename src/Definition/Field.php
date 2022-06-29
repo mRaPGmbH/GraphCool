@@ -34,6 +34,7 @@ class Field
     public bool $unique = false;
     public bool $uniqueIgnoreTrashed = false;
     public bool $fulltextIndex = false;
+    public bool $history = false;
 
     protected function __construct(string $type)
     {
@@ -178,6 +179,12 @@ class Field
     public function fulltextIndex(): Field
     {
         $this->fulltextIndex = true;
+        return $this;
+    }
+
+    public function history(): Field
+    {
+        $this->history = true;
         return $this;
     }
 

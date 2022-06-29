@@ -47,6 +47,9 @@ class MysqlDataProvider implements DataProvider
         if ($page < 1) {
             throw new Error('Page cannot be less than 1');
         }
+        if ($limit < 1) {
+            throw new Error('First cannot be less than 1');
+        }
         $offset = ($page - 1) * $limit;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
@@ -203,19 +206,27 @@ class MysqlDataProvider implements DataProvider
      */
     public function insert(string $tenantId, string $name, array $data): ?stdClass
     {
-        $model = Model::get($name);
-        $id = Uuid::uuid4()->toString();
-        $data = $this->storeFiles($model, $name, $data, $id);
-        $data = $model->beforeInsert($tenantId, $data);
-        $this->checkUnique($tenantId, $model, $name, $data);
+        Mysql::beginTransaction();
+        try {
+            $model = Model::get($name);
+            $id = Uuid::uuid4()->toString();
+            $data = $this->storeFiles($model, $name, $data, $id);
+            $data = $model->beforeInsert($tenantId, $data);
+            $this->checkUnique($tenantId, $model, $name, $data);
 
-        Mysql::nodeWriter()->insert($tenantId, $name, $id, $data);
+            Mysql::nodeWriter()->insert($tenantId, $name, $id, $data);
 
-        $loaded = $this->load($tenantId, $name, $id);
-        if ($loaded !== null) {
-            $model->afterInsert($loaded);
+            $loaded = $this->load($tenantId, $name, $id);
+            if ($loaded !== null) {
+                $model->afterInsert($loaded);
+                Mysql::history()->recordCreate($loaded, $model->getPropertyNamesForHistory($data));
+            }
+            Mysql::commit();
+            return $loaded;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        return $loaded;
     }
 
     /**
@@ -227,21 +238,45 @@ class MysqlDataProvider implements DataProvider
      */
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
-        $model = Model::get($name);
-        $this->checkIfNodeExists($tenantId, $model, $name, (string)$data['id']);
-        $updates = $data['data'] ?? [];
-        $updates = $this->storeFiles($model, $name, $updates, $data['id']);
-        $updates = $model->beforeUpdate($tenantId, $data['id'], $updates);
-        $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
-        $this->checkNull($model, $updates);
+        Mysql::beginTransaction();
+        try {
+            $model = Model::get($name);
+            $oldNode = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+            if ($oldNode === null) {
+                throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
+            }
+            $updates = $data['data'] ?? [];
+            $updates = $this->storeFiles($model, $name, $updates, $data['id']);
+            $updates = $model->beforeUpdate($tenantId, $data['id'], $updates); // TODO: add $oldNode param?
 
-        Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
+            $history = $model->getPropertyNamesForHistory($updates);
+            foreach ($history as $key => $subProperties) {
+                if (!is_array($subProperties)) {
+                    continue;
+                }
+                if (!array_key_exists($key, $updates)) {
+                    continue;
+                }
+                $closure = $oldNode->$key;
+                $oldNode->$key = $closure([])['edges'] ?? []; // load all edges before modification
+            }
 
-        $loaded = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
-        if ($loaded !== null) {
-            $model->afterUpdate($loaded);
+            $this->checkUnique($tenantId, $model, $name, $updates, $data['id']);
+            $this->checkNull($model, $updates);
+
+            Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
+
+            $loaded = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+            if ($loaded !== null) {
+                $model->afterUpdate($loaded);
+                Mysql::history()->recordUpdate($oldNode, $loaded, $history);
+            }
+            Mysql::commit();
+            return $loaded;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        return $loaded;
     }
 
     /**
@@ -253,50 +288,74 @@ class MysqlDataProvider implements DataProvider
      */
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
-        $model = Model::get($name);
-        $updateData = $data['data'] ?? [];
-        $resultType = $data['result'] ?? ResultType::DEFAULT;
-        $this->checkNull($model, $updateData);
-        $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'] ?? null, $resultType);
-        $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
+        Mysql::beginTransaction();
+        try {
+            $model = Model::get($name);
+            $updateData = $data['data'] ?? [];
+            $resultType = $data['result'] ?? ResultType::DEFAULT;
+            $this->checkNull($model, $updateData);
+            $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'] ?? null, $resultType);
+            $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
 
-        $model->afterBulkUpdate($this->getClosure($tenantId, $name, $ids, $resultType));
-        $result->ids = $ids;
-
-        return $result;
+            $model->afterBulkUpdate($this->getClosure($tenantId, $name, $ids, $resultType));
+            Mysql::history()->recordMassUpdate($tenantId, $ids, $name, $updateData);
+            $result->ids = $ids;
+            Mysql::commit();
+            return $result;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
+        }
     }
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
-        $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
-        if ($node === null) {
-            return null;
+        Mysql::beginTransaction();
+        try {
+            $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
+            if ($node === null) {
+                Mysql::rollBack();
+                return null;
+            }
+            $this->softDeleteFiles($name, $node);
+            Mysql::nodeWriter()->delete($tenantId, $id);
+            $model = Model::get($name);
+            $model->afterDelete($node);
+            Mysql::history()->recordDelete($node, $model->getPropertyNamesForHistory());
+            Mysql::commit();
+            return $node;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        $this->softDeleteFiles($name, $node);
-        Mysql::nodeWriter()->delete($tenantId, $id);
-        $model = Model::get($name);
-        $model->afterDelete($node);
-        return $node;
     }
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
-        $model = Model::get($name);
-        $model->beforeRestore($tenantId, $id);
-        $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
-        if ($node === null) {
-            throw new Error($name . ' with ID ' . $id . ' not found.');
+        Mysql::beginTransaction();
+        try {
+            $model = Model::get($name);
+            $model->beforeRestore($tenantId, $id);
+            $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
+            if ($node === null) {
+                throw new Error($name . ' with ID ' . $id . ' not found.');
+            }
+            $this->restoreFiles($name, $node);
+            Mysql::nodeWriter()->restore($tenantId, $id);
+            $node->deleted_at = null;
+            $model->afterRestore($node);
+            Mysql::history()->recordRestore($node, $model->getPropertyNamesForHistory());
+            Mysql::commit();
+            return $node;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        $this->restoreFiles($name, $node);
-        Mysql::nodeWriter()->restore($tenantId, $id);
-        $node->deleted_at = null;
-        $model->afterRestore($node);
-        return $node;
     }
 
-    public function increment(string $tenantId, string $key, int $min = 0): int
+    public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
-        return Mysql::increment($tenantId, $key, $min);
+        return Mysql::increment($tenantId, $key, $min, $transaction);
     }
 
     protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
@@ -315,19 +374,26 @@ class MysqlDataProvider implements DataProvider
      */
     public function addJob(string $tenantId, string $worker, ?array $data = null): string
     {
-        if ($data !== null) {
-            $data = json_encode($data, JSON_THROW_ON_ERROR);
+        Mysql::beginTransaction();
+        try {
+            if ($data !== null) {
+                $data = json_encode($data, JSON_THROW_ON_ERROR);
+            }
+            $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :status, :data)';
+            $params = [
+                'id' => Uuid::uuid4()->toString(),
+                'tenant_id' => $tenantId,
+                'worker' => $worker,
+                'status' => Job::NEW,
+                'data' => $data
+            ];
+            Mysql::execute($sql, $params);
+            Mysql::commit();
+            return $params['id'];
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :status, :data)';
-        $params = [
-            'id' => Uuid::uuid4()->toString(),
-            'tenant_id' => $tenantId,
-            'worker' => $worker,
-            'status' => Job::NEW,
-            'data' => $data
-        ];
-        Mysql::execute($sql, $params);
-        return $params['id'];
     }
 
     /**
@@ -335,16 +401,23 @@ class MysqlDataProvider implements DataProvider
      */
     public function finishJob(string $id, ?array $result = null, bool $failed = false): void
     {
-        if ($result !== null) {
-             $result = json_encode($result, JSON_THROW_ON_ERROR);
+        Mysql::beginTransaction();
+        try {
+            if ($result !== null) {
+                 $result = json_encode($result, JSON_THROW_ON_ERROR);
+            }
+            $sql = 'UPDATE `job` SET `status` = :status, `result` = :result, finished_at = now() WHERE `id` = :id';
+            $params = [
+                'status' => $failed ? Job::FAILED : Job::FINISHED,
+                'result' => $result,
+                'id' => $id
+            ];
+            Mysql::execute($sql, $params);
+            Mysql::commit();
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        $sql = 'UPDATE `job` SET `status` = :status, `result` = :result, finished_at = now() WHERE `id` = :id';
-        $params = [
-            'status' => $failed ? Job::FAILED : Job::FINISHED,
-            'result' => $result,
-            'id' => $id
-        ];
-        Mysql::execute($sql, $params);
     }
 
     /**
@@ -352,28 +425,36 @@ class MysqlDataProvider implements DataProvider
      */
     public function takeJob(): ?Job
     {
-        $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1';
-        $params = ['status' => Job::NEW];
-        $dto = Mysql::fetch($sql, $params);
+        Mysql::beginTransaction();
+        try {
+            $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1';
+            $params = ['status' => Job::NEW];
+            $dto = Mysql::fetch($sql, $params);
 
-        if ($dto === null) {
-            return null;
-        }
-        $sql = 'UPDATE `job` SET `status` = :status, `started_at` = now() WHERE `id` = :id';
-        $params = ['id' => $dto->id, 'status' => Job::RUNNING];
-        Mysql::execute($sql, $params);
+            if ($dto === null) {
+                Mysql::rollBack();
+                return null;
+            }
+            $sql = 'UPDATE `job` SET `status` = :status, `started_at` = now() WHERE `id` = :id';
+            $params = ['id' => $dto->id, 'status' => Job::RUNNING];
+            Mysql::execute($sql, $params);
 
-        $job = new Job();
-        $job->id = $dto->id;
-        $job->tenantId = $dto->tenant_id;
-        $job->worker = $dto->worker;
-        if ($dto->data === null) {
-            $job->data = null;
-        } else {
-            $job->data = json_decode($dto->data, true, 512, JSON_THROW_ON_ERROR);
+            $job = new Job();
+            $job->id = $dto->id;
+            $job->tenantId = $dto->tenant_id;
+            $job->worker = $dto->worker;
+            if ($dto->data === null) {
+                $job->data = null;
+            } else {
+                $job->data = json_decode($dto->data, true, 512, JSON_THROW_ON_ERROR);
+            }
+            $job->result = null;
+            Mysql::commit();
+            return $job;
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
         }
-        $job->result = null;
-        return $job;
     }
 
     public function getJob(?string $tenantId, string $name, string $id): ?stdClass
@@ -429,6 +510,42 @@ class MysqlDataProvider implements DataProvider
         return $result;
     }
 
+    public function findHistory(?string $tenantId, array $args): stdClass
+    {
+        $limit = $args['first'] ?? 10;
+        $page = $args['page'] ?? 1;
+        if ($page < 1) {
+            throw new Error('Page cannot be less than 1');
+        }
+        $offset = ($page - 1) * $limit;
+
+        $builder = MysqlFlatQueryBuilder::forTable('history');
+        //$builder->where(['column' => 'worker', 'operator' => '=', 'value' => $name]);
+        if ($tenantId !== null) {
+            $builder->tenant($tenantId);
+        }
+        if (isset($args['where'])) {
+            $builder->where(MysqlConverter::convertWhereValues($this->historyModel(), $args['where']));
+        }
+        $builder->orderBy($args['orderBy'] ?? []);
+        $builder->limit($limit, $offset);
+
+        $history = [];
+        foreach (Mysql::fetchAll($builder->toSql(), $builder->getParameters()) as $dto) {
+            if (isset($dto->result)) {
+                $dto->result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
+            }
+            $history[] = $dto;
+        }
+        $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());
+
+        $result = new stdClass();
+        $result->paginatorInfo = PaginatorInfoType::create(count($history), $page, $limit, $total);
+        $result->data = $history;
+        return $result;
+    }
+
+
     protected function jobModel(): Model
     {
         $job = new Model();
@@ -441,6 +558,23 @@ class MysqlDataProvider implements DataProvider
         $job->started_at = Field::dateTime()->nullable();
         $job->finished_at = Field::dateTime()->nullable();
         return $job;
+    }
+
+    protected function historyModel(): Model
+    {
+        $history = new Model();
+        unset($history->updated_at, $history->deleted_at);
+        $history->number = Field::int();
+        $history->node_id = Field::string();
+        $history->model = Field::string();
+        $history->sub = Field::string()->nullable();
+        $history->ip = Field::string()->nullable();
+        $history->user_agent = Field::string()->nullable();
+        $history->change_type = Field::enum(['create', 'update', 'massUpdate', 'delete', 'restore'])->nullable();
+        $history->changes = Field::string();
+        $history->preceding_hash = Field::string()->nullable();
+        $history->hash = Field::string();
+        return $history;
     }
 
     /**

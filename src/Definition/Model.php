@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Definition;
 
 use Closure;
 use GraphQL\Error\Error;
+use GraphQL\Type\Definition\Type;
 use stdClass;
 
 class Model extends stdClass
@@ -113,22 +114,58 @@ class Model extends stdClass
         return $result;
     }
 
-    public function getEdgePropertyNamesForFulltextIndexing(): array
+    protected function getBelongsToRelations(): array
     {
-        $result = [];
-        foreach ($this as $relation) {
+        $edges = [];
+        foreach ($this as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
             if ($relation->type !== 'BELONGS_TO' && $relation->type !== 'BELONGS_TO_MANY') {
                 continue;
             }
+            $edges[$key] = $relation;
+        }
+        return $edges;
+    }
+
+    public function getEdgePropertyNamesForFulltextIndexing(): array
+    {
+        $result = [];
+        foreach ($this->getBelongsToRelations() as $relation) {
             foreach ($relation as $key => $field) {
                 if (!$field instanceof Field) {
                     continue;
                 }
                 if ($field->fulltextIndex) {
-                    $result[$key] = $relation->name;
+                    $result[$key] = $relation->name; // TODO: $key might not be unique!
+                }
+            }
+        }
+        return $result;
+    }
+
+    public function getPropertyNamesForHistory(?array $updates = null): array
+    {
+        $result = [];
+        foreach ($this as $key => $field) {
+            if ($updates !== null && !array_key_exists($key, $updates)) {
+                continue;
+            }
+            if ($field instanceof Field && $field->history) {
+                $result[$key] = $field->type;
+            } elseif ($field instanceof Relation && ($field->type === 'BELONGS_TO' || $field->type === 'BELONGS_TO_MANY')) {
+                $relation = [];
+                if ($field->history) {
+                    $relation['parent_id'] = Type::STRING;
+                }
+                foreach ($field as $rkey => $rfield) {
+                    if ($rfield instanceof Field && $rfield->history) {
+                        $relation[$rkey] = $rfield->type;
+                    }
+                }
+                if (count($relation) > 0) {
+                    $result[$key] = $relation;
                 }
             }
         }

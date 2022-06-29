@@ -29,14 +29,15 @@ class QueryType extends ObjectType
     public function __construct(TypeLoader $typeLoader)
     {
         $fields = [
-            '__classDiagram' => Type::string(),
+            '_classDiagram' => Type::string(),
             '_ImportJob' => $this->job('Import', $typeLoader),
             '_ImportJobs' => $this->jobs('Import', $typeLoader),
             '_ExportJob' => $this->job('Export', $typeLoader),
             '_ExportJobs' => $this->jobs('Export', $typeLoader),
+            '_History' => $this->history($typeLoader),
             '_Token' => $this->token($typeLoader),
         ];
-        $this->customResolvers['__classDiagram'] = function ($rootValue, $args, $context, $info) {
+        $this->customResolvers['_classDiagram'] = function ($rootValue, $args, $context, $info) {
             return $this->getDiagram();
         };
         $this->customResolvers['_Token'] = function ($rootValue, $args, $context, $info) {
@@ -226,6 +227,11 @@ class QueryType extends ObjectType
                 Authorization::authorize('find', $name);
                 return DB::findJobs(JwtAuthentication::tenantId(), $this->getWorkerForJob($name), $args);
             }
+            if ($info->returnType->name === '_History_Paginator') {
+                $name = '_History';
+                Authorization::authorize('find', $name);
+                return DB::findHistory(JwtAuthentication::tenantId(), $args);
+            }
             if (str_ends_with($info->returnType->name, 'Paginator')) {
                 $name = substr($info->returnType->name, 1, -9);
                 Authorization::authorize('find', $name);
@@ -349,5 +355,23 @@ class QueryType extends ObjectType
             'args' => $args
         ];
     }
+
+    protected function history(TypeLoader $typeLoader): array
+    {
+        $args = [
+            'first' => Type::int(),
+            'page' => Type::int(),
+            'where' => $typeLoader->load('_History_WhereConditions'),
+        ];
+        $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_History_OrderByClause')));
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+
+        return [
+            'type' => $typeLoader->load('_History_Paginator'),
+            'description' => 'Get a paginated list of history logs filtered by given where clauses.',
+            'args' => $args
+        ];
+    }
+
 
 }

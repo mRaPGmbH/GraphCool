@@ -81,7 +81,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         $forbidden = ['+', '-', '&', '%', '*', '/', ':', ';', '.', ',', '?', '!', '\'', '"', '§', '$', '€', '(', ')',
             '[', ']', '{', '}', '=', '~', '#', '<', '>', '^', '°', '`', '|', '@'];
         $string = str_replace($forbidden, ' ', $string);
-        $string =  trim($string);
+        $string = trim($string);
         $string = (string)preg_replace('/\s+/', ' ', $string);
         return explode(' ', $string);
     }

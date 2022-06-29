@@ -15,6 +15,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlNodeWriter;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\ResultType;
+use PDO;
 use stdClass;
 
 class MysqlDataProviderTest extends TestCase
@@ -45,20 +46,7 @@ class MysqlDataProviderTest extends TestCase
             ->method('fetch');
         Mysql::setConnector($mock);
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->exactly(3))
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $node = $this->expectLoadNode(3);
 
         $provider = new MysqlDataProvider();
         $expected = (object)[
@@ -71,7 +59,6 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 1
         ];
-        Mysql::setNodeReader($readerMock);
         foreach ([ResultType::DEFAULT, ResultType::WITH_TRASHED, ResultType::ONLY_SOFT_DELETED] as $resultType) {
             $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
             self::assertEquals($expected, $result->paginatorInfo);
@@ -286,6 +273,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testInsert(): void
     {
+        $this->mockTransactions();
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -293,22 +281,8 @@ class MysqlDataProviderTest extends TestCase
             ->method('insert')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
+        $node = $this->expectLoadNode();
 
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
-
-        Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
         $provider = new MysqlDataProvider();
@@ -317,8 +291,26 @@ class MysqlDataProviderTest extends TestCase
         self::assertEquals($node, $result);
     }
 
+    protected function mockTransactions(bool $success = true): void
+    {
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('beginTransaction');
+        if ($success) {
+            $pdoMock->expects($this->once())
+                ->method('commit');
+        } else {
+            $pdoMock->expects($this->once())
+                ->method('rollBack');
+        }
+        $connector = new MysqlConnector();
+        $connector->setPdo($pdoMock);
+        Mysql::setConnector($connector);
+    }
+
     public function testUpdate(): void
     {
+        $this->mockTransactions();
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -326,29 +318,8 @@ class MysqlDataProviderTest extends TestCase
             ->method('update')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
+        $node = $this->expectLoadNode(2);
 
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchColumn')
-            ->withAnyParameters()
-            ->willReturn(1);
-
-        Mysql::setConnector($mock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
         $provider = new MysqlDataProvider();
@@ -359,6 +330,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testUpdateExistsError(): void
     {
+        $this->mockTransactions(false);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -366,16 +338,11 @@ class MysqlDataProviderTest extends TestCase
             ->method('update');
 
         $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->never())
-            ->method('load');
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchColumn')
+        $readerMock->expects($this->once())
+            ->method('load')
             ->withAnyParameters()
-            ->willReturn(0);
+            ->willReturn(null);
 
-        Mysql::setConnector($mock);
         Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
@@ -392,18 +359,15 @@ class MysqlDataProviderTest extends TestCase
         $writerMock->expects($this->never())
             ->method('update');
 
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->never())
-            ->method('load');
+        $this->expectLoadNode();
 
         $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->exactly(2))
+        $mock->expects($this->exactly(1))
             ->method('fetchColumn')
             ->withAnyParameters()
             ->willReturn(1);
 
         Mysql::setConnector($mock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
         $provider = new MysqlDataProvider();
@@ -413,6 +377,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testUpdateNullError(): void
     {
+        $this->mockTransactions(false);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -420,16 +385,9 @@ class MysqlDataProviderTest extends TestCase
             ->method('update');
 
         $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->never())
+        $readerMock->expects($this->once())
             ->method('load');
 
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchColumn')
-            ->withAnyParameters()
-            ->willReturn(1);
-
-        Mysql::setConnector($mock);
         Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
@@ -474,20 +432,7 @@ class MysqlDataProviderTest extends TestCase
             ->method('delete')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $node = $this->expectLoadNode();
 
         $connectorMock = $this->createMock(MysqlConnector::class);
         $connectorMock->expects($this->once())
@@ -496,7 +441,6 @@ class MysqlDataProviderTest extends TestCase
             ->willReturn(null);
 
         Mysql::setNodeWriter($writerMock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setConnector($connectorMock);
 
         $provider = new MysqlDataProvider();
@@ -508,6 +452,7 @@ class MysqlDataProviderTest extends TestCase
     public function testDeleteNull(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
+        $this->mockTransactions(false);
 
         $readerMock = $this->createMock(MysqlNodeReader::class);
         $readerMock->expects($this->once())
@@ -532,20 +477,7 @@ class MysqlDataProviderTest extends TestCase
             ->method('restore')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $node = $this->expectLoadNode();
 
         $connectorMock = $this->createMock(MysqlConnector::class);
         $connectorMock->expects($this->once())
@@ -554,7 +486,6 @@ class MysqlDataProviderTest extends TestCase
             ->willReturn(null);
 
         Mysql::setNodeWriter($writerMock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setConnector($connectorMock);
 
         $provider = new MysqlDataProvider();
@@ -566,6 +497,7 @@ class MysqlDataProviderTest extends TestCase
     public function testRestoreError(): void
     {
         $this->expectException(Error::class);
+        $this->mockTransactions(false);
 
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
@@ -772,33 +704,15 @@ class MysqlDataProviderTest extends TestCase
             ->method('update')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $node = $this->expectLoadNode(2);
 
         $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetchColumn')
-            ->withAnyParameters()
-            ->willReturn(1);
         $mock->expects($this->once())
             ->method('fetch')
             ->withAnyParameters()
             ->willReturn((object)['value_string' => 'old-value']);
 
         Mysql::setConnector($mock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setNodeWriter($writerMock);
 
         $provider = new MysqlDataProvider();
@@ -818,22 +732,7 @@ class MysqlDataProviderTest extends TestCase
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null,
-            'file' => 'test-file'
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
-        Mysql::setNodeReader($readerMock);
+        $this->expectLoadNode(1, true);
 
         $file = (object)[
             'filename' => 'test.txt',
@@ -864,21 +763,7 @@ class MysqlDataProviderTest extends TestCase
             ->method('delete')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null,
-            'file' => 'test-file'
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $this->expectLoadNode(1, true);
 
         $connectorMock = $this->createMock(MysqlConnector::class);
         $connectorMock->expects($this->once())
@@ -887,7 +772,6 @@ class MysqlDataProviderTest extends TestCase
             ->willReturn((object)['value_string' => 'old-value']);
 
         Mysql::setNodeWriter($writerMock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setConnector($connectorMock);
 
         $file = (object)[
@@ -922,21 +806,7 @@ class MysqlDataProviderTest extends TestCase
             ->method('restore')
             ->withAnyParameters();
 
-        $node = (object)[
-            'id' => 'y5',
-            'tenant_id' => 'a12f',
-            'model' => 'DummyModel',
-            'created_at' => '2021-08-30 12:00:00',
-            'updated_at' => null,
-            'deleted_at' => null,
-            'file' => 'test-file'
-        ];
-
-        $readerMock = $this->createMock(MysqlNodeReader::class);
-        $readerMock->expects($this->once())
-            ->method('load')
-            ->withAnyParameters()
-            ->willReturn($node);
+        $this->expectLoadNode(1, true);
 
         $connectorMock = $this->createMock(MysqlConnector::class);
         $connectorMock->expects($this->once())
@@ -945,7 +815,6 @@ class MysqlDataProviderTest extends TestCase
             ->willReturn((object)['value_string' => 'old-value']);
 
         Mysql::setNodeWriter($writerMock);
-        Mysql::setNodeReader($readerMock);
         Mysql::setConnector($connectorMock);
 
         $file = (object)[
@@ -970,6 +839,29 @@ class MysqlDataProviderTest extends TestCase
         self::assertSame('SGVsbG8gV29ybGQh', $result->file->data_base64);
         self::assertSame('test.txt', $result->file->filename);
         self::assertSame('text/plain', $result->file->mimetype);
+    }
+
+    protected function expectLoadNode(int $exactly = 1, bool $includeFile = false): stdClass
+    {
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+        if ($includeFile) {
+            $node->file = 'test-file';
+        }
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->exactly($exactly))
+            ->method('load')
+            ->withAnyParameters()
+            ->willReturn($node);
+        Mysql::setNodeReader($readerMock);
+        return $node;
     }
 
 

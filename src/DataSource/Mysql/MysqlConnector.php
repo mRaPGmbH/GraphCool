@@ -149,9 +149,11 @@ class MysqlConnector
         return $statement->fetchColumn($column);
     }
 
-    public function increment(string $tenantId, string $key, int $min = 0): int
+    public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
-        $this->pdo()->beginTransaction();
+        if ($transaction) {
+            $this->pdo()->beginTransaction();
+        }
         try {
             $quotedTenantId = $this->pdo()->quote($tenantId);
             $quotedKey = $this->pdo()->quote($key);
@@ -165,14 +167,18 @@ class MysqlConnector
                     $value = $min;
                 }
                 $value++;
-                $this->pdo()->exec('UPDATE `increment` SET `value` = ' . $value . ' '.$where);
+                $this->pdo()->exec('UPDATE `increment` SET `value` = ' . $value . ' ' . $where);
             }
         } catch (PDOException $e) {
             ErrorHandler::sentryCapture($e);
-            $this->pdo()->rollBack();
+            if ($transaction) {
+                $this->pdo()->rollBack();
+            }
             throw new RuntimeException('Increment for ' . $key . ' failed.');
         }
-        $this->pdo()->commit();
+        if ($transaction) {
+            $this->pdo()->commit();
+        }
         return $value;
     }
 

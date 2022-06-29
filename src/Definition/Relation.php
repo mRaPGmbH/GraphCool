@@ -17,6 +17,7 @@ class Relation extends stdClass
     public string $classname;
     public string $name;
     public bool $null = false;
+    public bool $history = false;
 
     protected function __construct(string $type, string $classname)
     {
@@ -55,6 +56,12 @@ class Relation extends stdClass
     public function nullable(): Relation
     {
         $this->null = true;
+        return $this;
+    }
+
+    public function history(): Relation
+    {
+        $this->history = true;
         return $this;
     }
 

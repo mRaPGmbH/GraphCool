@@ -15,6 +15,7 @@ class Mysql
     protected static ?MysqlNodeWriter $nodeWriter;
     protected static ?MysqlEdgeReader $edgeReader;
     protected static ?MysqlEdgeWriter $edgeWriter;
+    protected static ?MysqlHistory $history;
 
     public static function reset(): void
     {
@@ -147,9 +148,22 @@ class Mysql
         static::$edgeWriter = $edgeWriter;
     }
 
-    public static function increment(string $tenantId, string $key, int $min = 0): int
+    public static function history(): MysqlHistory
     {
-        return static::get()->increment($tenantId, $key, $min);
+        if (!isset(static::$history)) {
+            static::$history = new MysqlHistory();
+        }
+        return static::$history;
+    }
+
+    public static function setHistory(MysqlHistory $history): void
+    {
+        static::$history = $history;
+    }
+
+    public static function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
+    {
+        return static::get()->increment($tenantId, $key, $min, $transaction);
     }
 
     public static function getPdo(): \PDO
@@ -157,5 +171,19 @@ class Mysql
         return static::get()->pdo();
     }
 
+    public static function beginTransaction(): void
+    {
+        static::get()->pdo()->beginTransaction();
+    }
+
+    public static function commit(): void
+    {
+        static::get()->pdo()->commit();
+    }
+
+    public static function rollBack(): void
+    {
+        static::get()->pdo()->rollBack();
+    }
 
 }

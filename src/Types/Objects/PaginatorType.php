@@ -17,6 +17,9 @@ class PaginatorType extends ObjectType
         if (str_ends_with($typeName, '_Job')) {
             $typeName = '_'. substr($typeName, 0, -4) . 'Job';
         }
+        if ($typeName === 'History_') {
+            $typeName = '_History';
+        }
         $config = [
             'name' => $name,
             'description' => 'A paginated list of ' . $typeName . ' items.',
