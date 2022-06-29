@@ -104,6 +104,29 @@ class MysqlMigration
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         Mysql::executeRaw($sql);
 
+        $sql = 'CREATE TABLE IF NOT EXISTS `history` (
+            `id` char(36) NOT NULL,
+            `tenant_id` varchar(255) NOT NULL,
+            `number` bigint(20) NOT NULL DEFAULT \'1\',
+            `node_id` char(36) NOT NULL,
+            `model` varchar(255) NOT NULL,
+            `sub` varchar(255) DEFAULT NULL,
+            `ip` tinytext,
+            `user_agent` varchar(255) DEFAULT NULL,
+            `change_type` varchar(255) DEFAULT NULL,
+            `changes` longtext NOT NULL,
+            `preceding_hash` varchar(255) DEFAULT NULL,
+            `hash` varchar(255) NOT NULL,
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `node_id` (`node_id`),
+            KEY `tenant_id_model_number` (`tenant_id`,`model`,`number`),
+            KEY `tenant_id_sub_number` (`tenant_id`,`sub`,`number`),
+            KEY `tenant_id_number` (`tenant_id`,`number`),
+            CONSTRAINT `history_ibfk_1` FOREIGN KEY (`node_id`) REFERENCES `node` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
+        Mysql::executeRaw($sql);
+
         $sql = 'SET sql_notes = 1';
         Mysql::executeRaw($sql);
     }
