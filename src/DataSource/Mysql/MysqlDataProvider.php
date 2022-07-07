@@ -505,6 +505,11 @@ class MysqlDataProvider implements DataProvider
             if (isset($dto->result)) {
                 $dto->result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
             }
+            foreach (['run_at', 'created_at', 'started_at', 'finished_at'] as $date) {
+                if (($dto->$date ?? null) !== null) {
+                    $dto->$date = strtotime($dto->$date) * 1000;
+                }
+            }
             $jobs[] = $dto;
         }
         $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());
