@@ -25,6 +25,4 @@ abstract class Query extends \stdClass
      */
     abstract public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed;
 
-    abstract public function authorize(): void;
-
 }

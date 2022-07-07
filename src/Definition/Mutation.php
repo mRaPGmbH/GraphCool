@@ -25,6 +25,4 @@ abstract class Mutation extends \stdClass
      */
     abstract public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info);
 
-    abstract public function authorize(): void;
-
 }
