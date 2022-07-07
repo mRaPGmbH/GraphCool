@@ -17,7 +17,7 @@ class JobType extends ObjectType
             'name' => $name,
             'fields' => [
                 'id' => Type::nonNull(Type::string()),
-                'status' => Type::nonNull(Type::string()),
+                'status' => Type::nonNull($typeLoader->load('_Job_Status')),
                 'result' => $typeLoader->load($this->getResultType($name)),
                 'run_at' => $typeLoader->load('_DateTime'),
                 'created_at' => Type::nonNull($typeLoader->load('_DateTime')),

@@ -17,6 +17,7 @@ use Mrap\GraphCool\Types\Enums\EntityEnumType;
 use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
 use Mrap\GraphCool\Types\Enums\HistoryColumnEnumType;
 use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
+use Mrap\GraphCool\Types\Enums\JobStatusEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
 use Mrap\GraphCool\Types\Enums\PermissionEnumType;
@@ -87,6 +88,7 @@ class TypeLoader
         self::register('_Upload', Upload::class);
         self::register('_File', FileType::class);
         self::register('_Job_Column', JobColumnEnumType::class);
+        self::register('_Job_Status', JobStatusEnumType::class);
         self::register('_History_Column', HistoryColumnEnumType::class);
         self::register('_History_ChangeType', HistoryChangeTypeEnumType::class);
         self::register('_History', HistoryType::class);

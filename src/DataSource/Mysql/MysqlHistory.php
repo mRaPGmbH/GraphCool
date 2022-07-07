@@ -87,7 +87,7 @@ class MysqlHistory
         ];
     }
 
-    protected function getPreceeding(string $tenantId): stdClass
+    protected function getPreceeding(string $tenantId): ?stdClass
     {
         if (!isset($this->preceeding[$tenantId])) {
             $sql = 'SELECT `number`, `hash` FROM `history` WHERE `tenant_id` = :tenant_id ORDER BY `number` DESC LIMIT 1';

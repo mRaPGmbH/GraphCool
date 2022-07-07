@@ -158,7 +158,7 @@ class MysqlConnector
             $quotedTenantId = $this->pdo()->quote($tenantId);
             $quotedKey = $this->pdo()->quote($key);
             $where = 'WHERE `tenant_id` = '.$quotedTenantId.' AND `key` = '.$quotedKey;
-            $value = $this->pdo()->query('SELECT `value` FROM `increment` '.$where, PDO::FETCH_OBJ)->fetchColumn();
+            $value = $this->pdo()->query('SELECT `value` FROM `increment` '.$where.' FOR UPDATE', PDO::FETCH_OBJ)->fetchColumn();
             if ($value === false) {
                 $value = $min+1;
                 $this->pdo()->exec('INSERT INTO `increment` VALUES  (' . $quotedTenantId . ', ' . $quotedKey . ', ' . $value . ' )');
