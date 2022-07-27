@@ -26,6 +26,7 @@ use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
+use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
 use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeInputType;
@@ -94,6 +95,7 @@ class TypeLoader
         self::register('_History', HistoryType::class);
         self::register('_Permission', PermissionEnumType::class);
         self::register('_Entity', EntityEnumType::class);
+        self::register('_WhereMode', WhereModeEnumType::class);
     }
 
     public static function register(string $name, string $classname): void

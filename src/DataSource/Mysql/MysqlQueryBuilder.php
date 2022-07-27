@@ -35,6 +35,9 @@ class MysqlQueryBuilder
     /** @var string[] */
     protected array $where = [];
     /** @var string[] */
+    protected array $whereOr = [];
+    protected string $whereMode = 'AND';
+    /** @var string[] */
     protected array $joins = [];
     protected string $groupBy = '';
     protected string $sql;
@@ -295,6 +298,11 @@ class MysqlQueryBuilder
         return $this;
     }
 
+    public function hasWheres(): bool
+    {
+        return count($this->whereOr) > 0;
+    }
+
     /**
      * @param Model $model
      * @param string $name
@@ -311,6 +319,9 @@ class MysqlQueryBuilder
             ->tenant($tenantId)
             ->select(['id'])
             ->where($where);
+        if (!$query->hasWheres()) {
+            return $this;
+        }
 
         $as = '`' . $name . 'Edge`';
         $joinSql = ' LEFT JOIN `edge` AS ' . $as . ' ON (';
@@ -329,10 +340,19 @@ class MysqlQueryBuilder
 
         $this->joins[] = $joinSql;
         if ($whereSql !== null) {
-            $this->where[] = $whereSql;
+            $this->whereOr[] = $whereSql;
         }
         $this->parameters = array_merge($this->parameters, $query->getParameters());
         $this->groupBy = ' GROUP BY `node`.`id` ';
+        return $this;
+    }
+
+    public function whereMode(string $mode): MysqlQueryBuilder
+    {
+        if ($mode !== 'AND' && $mode !== 'OR') {
+            throw new RuntimeException('Unknown whereMode: ' . $mode);
+        }
+        $this->whereMode = $mode;
         return $this;
     }
 
@@ -347,7 +367,7 @@ class MysqlQueryBuilder
         }
         $whereSql = $this->whereRecursive($where);
         if ($whereSql !== null) {
-            $this->where[] = $whereSql;
+            $this->whereOr[] = $whereSql;
         }
         return $this;
     }
@@ -534,9 +554,13 @@ class MysqlQueryBuilder
     {
         if (!isset($this->sql)) {
             sort($this->where); // sort to optimize statement re-use
+            sort($this->whereOr);
             $this->sql = 'FROM `' . $this->name . '` ';
             $this->sql .= implode(' ', $this->joins);
             $this->sql .= ' WHERE ' . implode(' AND ', $this->where);
+            if (count($this->whereOr) > 0) {
+                $this->sql .= ' AND (' . implode(' ' . $this->whereMode . ' ', $this->whereOr) . ')';
+            }
             $this->sql .= $this->resultType;
         }
         return $this->sql;

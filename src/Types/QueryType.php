@@ -12,7 +12,6 @@ use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
@@ -114,6 +113,7 @@ class QueryType extends ObjectType
             'first' => Type::int(),
             'page' => Type::int(),
             'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+            'whereMode' => $typeLoader->load('_WhereMode'),
         ];
         foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
