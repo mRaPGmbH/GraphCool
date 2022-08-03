@@ -44,6 +44,7 @@ use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
 use Mrap\GraphCool\Types\Objects\HistoryType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
+use Mrap\GraphCool\Types\Objects\ImportPreviewType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
@@ -215,6 +216,9 @@ class TypeLoader
         }
         if (str_ends_with($name, 'Job') && $name !== '_Job') {
             return new JobType($name, $this);
+        }
+        if (str_ends_with($name, 'ImportPreview')) {
+            return new ImportPreviewType($name, $this);
         }
         throw new RuntimeException('unhandled createSpecial: ' . $name);
     }

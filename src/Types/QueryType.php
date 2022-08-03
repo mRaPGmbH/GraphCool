@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
@@ -11,13 +12,17 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
+use stdClass;
 
 class QueryType extends ObjectType
 {
@@ -52,7 +57,7 @@ class QueryType extends ObjectType
             $fields[lcfirst($name) . 's'] = $this->list($name, $model, $typeLoader);
             $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
             $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model, $typeLoader);
-//            $fields['previewImport' . $type->name . 's'] = $this->previewImport($type, $typeLoader);
+            $fields['import' . $name . 'sPreview'] = $this->previewImport($name, $typeLoader);
         }
         foreach (ClassFinder::queries() as $name => $classname) {
             $query = new $classname($typeLoader);
@@ -190,19 +195,19 @@ class QueryType extends ObjectType
         return $args;
     }
 
-    /*
     protected function previewImport(string $name, TypeLoader $typeLoader): array
     {
         return [
-            'type' => $typeLoader->load('_' . $name.'Paginator'),
+            'type' => $typeLoader->load('_' . $name.'ImportPreview'),
             'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
             'args' => [
-                'data_base64' => new NonNull(Type::string()),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ExportColumn')))),
+                'file' => $typeLoader->load('_Upload'),
+                'data_base64' => Type::string(),
+                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
                 '_timezone' => $typeLoader->load('_TimezoneOffset'),
             ]
         ];
-    }*/
+    }
 
     /**
      * @param mixed[] $rootValue
@@ -264,11 +269,86 @@ class QueryType extends ObjectType
                 Authorization::authorize('read', $name);
                 return DB::getJob(JwtAuthentication::tenantId(), $this->getWorkerForJob($name), $args['id']);
             }
+            if (str_starts_with($info->fieldName, 'import') && str_ends_with($info->fieldName, 'Preview')) {
+                $name = substr($info->fieldName, 6, -8);
+                Authorization::authorize('import', $name);
+                return $this->resolveImport($name, $args);
+            }
         }
         $name = $info->returnType->toString();
         Authorization::authorize('read', $name);
         return DB::load(JwtAuthentication::tenantId(), $name, $args['id']);
     }
+
+    /**
+     * @param string $name
+     * @param mixed[] $args
+     * @return stdClass
+     * @throws Error
+     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
+     */
+    protected function resolveImport(string $name, array $args): stdClass
+    {
+        $total = 20;
+        [$create, $update, $errors] = File::read($name, $args);
+        $data = [];
+        $max = $total - min((int)round($total/2), count($update));
+        $i = 1;
+        $ids = [];
+        foreach ($update as $nr => $row) {
+            $ids[$nr] = $row['id'];
+        }
+        $this->checkExistence($ids, $name, $errors);
+        foreach ($create as $row) {
+            $row['id'] = 'NEW';
+            $row['created_at'] = time() * 1000;
+            $data[] = (object) $row;
+            if ($i >= $max) {
+                break;
+            }
+            $i++;
+        }
+        foreach ($update as $row) {
+            $row['created_at'] = time() * 1000;
+            $data[] = (object) $row;
+            if ($i >= $total) {
+                break;
+            }
+            $i++;
+        }
+        return (object)[
+            'data' => $data,
+            'errors' => $errors
+        ];
+    }
+
+    protected function checkExistence(array $ids, string $name, array &$errors): void
+    {
+        $model = Model::get($name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
+
+        $query->select(['id'])
+            ->where(['column' => 'id', 'operator' => 'IN', 'value' => $ids])
+            ->withTrashed();
+
+        $databaseIds = [];
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
+            $databaseIds[] = $row['id'];
+        }
+        $rowNumbers = array_flip($ids);
+        foreach (array_diff($ids, $databaseIds) as $missingId) {
+            $errors[] = [
+                'row' => $rowNumbers[$missingId] ?? 0,
+                'column' => FileImport2::$lastIdColumn,
+                'value' => $missingId,
+                'relation' => null,
+                'field' => 'id',
+                'ignored' => false,
+                'message' => 'Cannot update: ID not found.'
+            ];
+        }
+    }
+
 
     protected function getWorkerForJob(string $name): string
     {

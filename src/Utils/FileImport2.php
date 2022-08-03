@@ -26,6 +26,8 @@ class FileImport2
 
     protected string $file;
 
+    public static string $lastIdColumn;
+
     /**
      * @param string $name
      * @param mixed[] $args
@@ -53,6 +55,8 @@ class FileImport2
         $rows = $sheet->getRowIterator();
         $rows->rewind();
         [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns);
+        static::$lastIdColumn = $this->getColumn($idKey);
+
         $rows->next();
         if (!$rows->valid()) {
             throw new Error('Sheet must contain at least one row with headers, and one row with data.');
@@ -69,15 +73,12 @@ class FileImport2
             } else {
                 $id = $cells[$idKey]->getValue() ?? null;
             }
-            if (empty($id)) {
-                $item = $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i);
-                if ($item !== null && $item !== []) {
-                    $create[] = $item;
-                }
-            } else {
-                $item = $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i);
-                if ($item !== null) {
-                    $update[] = [
+            $item = $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i);
+            if ($item !== null && $item !== []) {
+                if (empty($id)) {
+                    $create[$i] = $item;
+                } else {
+                    $update[$i] = [
                         'id' => $id,
                         'data' => $item
                     ];
