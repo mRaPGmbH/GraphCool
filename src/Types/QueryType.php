@@ -344,7 +344,7 @@ class QueryType extends ObjectType
                 'relation' => null,
                 'field' => 'id',
                 'ignored' => false,
-                'message' => 'Cannot update: ID not found.'
+                'message' => 'ID not found.'
             ];
         }
     }
