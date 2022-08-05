@@ -472,6 +472,16 @@ class MysqlDataProvider implements DataProvider
         }
         if (isset($dto->result)) {
             $dto->result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
+            if ($name === 'importer') {
+                $dto->inserted_rows ??= 0;
+                $dto->inserted_ids ??= [];
+                $dto->updated_rows ??= 0;
+                $dto->updated_ids ??= [];
+                $dto->affected_rows ??= 0;
+                $dto->affectd_ids ??= [];
+                $dto->failed_rows ??= 0;
+                $dto->failed_ids ??= [];
+            }
         }
         foreach (['run_at', 'created_at', 'started_at', 'finished_at'] as $date) {
             if (($dto->$date ?? null) !== null) {

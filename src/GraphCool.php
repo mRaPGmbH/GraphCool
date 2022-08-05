@@ -52,10 +52,7 @@ class GraphCool
         StopWatch::stop(__METHOD__);
         $instance->sendResponse($result);
 
-        //FullTextIndex::shutdown();
-        foreach (static::$shutdown as $closure) {
-            $closure();
-        }
+        static::shutdown();
     }
 
     /**
@@ -171,6 +168,7 @@ class GraphCool
     {
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
+            sleep(1);
         }
     }
 
@@ -180,32 +178,24 @@ class GraphCool
      */
     public static function runScript(array $args): array
     {
-        Env::init();
         $scriptName = strtolower(trim(array_shift($args)));
-        if ($scriptName === 'scheduler') {
-            try {
-                return static::scheduler()->run();
-            } catch (Throwable $e) {
-                ErrorHandler::sentryCapture($e);
-                return [];
-            }
+        $ret = [];
+        try {
+            $ret = match($scriptName) {
+                'scheduler' => static::scheduler()->run(),
+                'importer' => static::importer()->run(array_shift($args)),
+                'exporter' => static::exporter()->run(array_shift($args)),
+                default => static::executeScript($scriptName, $args)
+            };
+        } catch (Throwable $e) {
+            ErrorHandler::sentryCapture($e);
         }
-        if ($scriptName === 'importer') {
-            try {
-                return static::importer()->run(array_shift($args));
-            } catch (Throwable $e) {
-                ErrorHandler::sentryCapture($e);
-                return [];
-            }
-        }
-        if ($scriptName === 'exporter') {
-            try {
-                return static::exporter()->run(array_shift($args));
-            } catch (Throwable $e) {
-                ErrorHandler::sentryCapture($e);
-                return [];
-            }
-        }
+        static::shutdown();
+        return $ret;
+    }
+
+    protected static function executeScript(string $scriptName, array $args): array
+    {
         foreach (ClassFinder::scripts() as $shortname => $classname) {
             if ($scriptName === strtolower($shortname)) {
                 try {
@@ -219,7 +209,6 @@ class GraphCool
                         'log' => $script->getLog()
                     ];
                 } catch (Throwable $e) {
-                    //var_dump($e);
                     ErrorHandler::sentryCapture($e);
                     $result = [
                         'success' => false,
@@ -244,6 +233,13 @@ class GraphCool
     public static function onShutdown(Closure $closure): void
     {
         static::$shutdown[] = $closure;
+    }
+
+    protected static function shutdown(): void
+    {
+        foreach (static::$shutdown as $closure) {
+            $closure();
+        }
     }
 
     protected static function scheduler(): Scheduler
