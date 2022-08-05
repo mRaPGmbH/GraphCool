@@ -100,6 +100,7 @@ class Scheduler
     {
         $job = DB::takeJob();
         if ($job === null) {
+            echo 'no job found' . PHP_EOL;
             return false;
         }
         $start = $this->time();

@@ -428,7 +428,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1';
+            $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1 FOR UPDATE';
             $params = ['status' => Job::NEW];
             $dto = Mysql::fetch($sql, $params);
 
