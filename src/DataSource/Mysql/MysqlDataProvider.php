@@ -426,18 +426,22 @@ class MysqlDataProvider implements DataProvider
      */
     public function takeJob(): ?Job
     {
+        echo 'A';
         Mysql::beginTransaction();
         try {
+            echo 'B';
             $sql = 'SELECT * FROM `job` WHERE `status` = :status AND (`run_at` IS NULL OR `run_at` < now())  ORDER BY `created_at` ASC LIMIT 1 FOR UPDATE';
             $params = ['status' => Job::NEW];
             $dto = Mysql::fetch($sql, $params);
 
             if ($dto === null) {
+                echo 'C';
                 Mysql::rollBack();
                 return null;
             }
             $sql = 'UPDATE `job` SET `status` = :status, `started_at` = now() WHERE `id` = :id';
             $params = ['id' => $dto->id, 'status' => Job::RUNNING];
+            echo 'D';
             Mysql::execute($sql, $params);
 
             $job = new Job();
@@ -447,10 +451,12 @@ class MysqlDataProvider implements DataProvider
             if ($dto->data === null) {
                 $job->data = null;
             } else {
+                echo 'E';
                 $job->data = json_decode($dto->data, true, 512, JSON_THROW_ON_ERROR);
             }
             $job->result = null;
             Mysql::commit();
+            echo 'F';
             return $job;
         } catch (\Throwable $e) {
             Mysql::rollBack();
