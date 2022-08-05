@@ -34,6 +34,7 @@ class Scheduler
 
     public function run(): array
     {
+        echo 'scheduler starting' . PHP_EOL;
         $this->start = time();
         while ($this->time() < 290) {
             set_time_limit(90);
@@ -45,6 +46,7 @@ class Scheduler
             sleep(15);
             // @codeCoverageIgnoreEnd
         }
+        echo 'scheduler stopping' . PHP_EOL;
         return [
             'success' => true
         ];
