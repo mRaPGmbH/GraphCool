@@ -89,17 +89,20 @@ class Scheduler
     {
         foreach ($scripts as $script) {
             $start = $this->time();
+            echo 'starting ' . $script . PHP_EOL;
             try {
                 GraphCool::runScript([$script]);
             } catch (Throwable $e) {
                 ErrorHandler::sentryCapture($e);
             }
+            echo 'completed ' . $script . PHP_EOL;
             $this->checkTime($start, $script);
         }
     }
 
     protected function runJob(): bool
     {
+        echo 'fetching job' . PHP_EOL;
         $job = DB::takeJob();
         if ($job === null) {
             echo 'no job found' . PHP_EOL;
