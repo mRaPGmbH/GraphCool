@@ -189,6 +189,10 @@ class GraphCool
             };
         } catch (Throwable $e) {
             ErrorHandler::sentryCapture($e);
+            $ret = [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
         static::shutdown();
         return $ret;

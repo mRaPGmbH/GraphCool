@@ -88,12 +88,9 @@ class Scheduler
         foreach ($scripts as $script) {
             $start = $this->time();
             try {
-                $result = GraphCool::runScript([$script]);
+                GraphCool::runScript([$script]);
             } catch (Throwable $e) {
-                $result = [
-                    'success' => false,
-                    'error' => $e->getMessage()
-                ];
+                ErrorHandler::sentryCapture($e);
             }
             $this->checkTime($start, $script);
         }

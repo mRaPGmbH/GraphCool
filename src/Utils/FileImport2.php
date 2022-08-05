@@ -55,7 +55,7 @@ class FileImport2
         $rows = $sheet->getRowIterator();
         $rows->rewind();
         [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns);
-        static::$lastIdColumn = $this->getColumn($idKey);
+        static::$lastIdColumn = $this->getColumn($idKey ?? 0);
 
         $rows->next();
         if (!$rows->valid()) {
