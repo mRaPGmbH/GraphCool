@@ -470,20 +470,7 @@ class MysqlDataProvider implements DataProvider
         if ($dto === null) {
             return null;
         }
-        if (isset($dto->result)) {
-            $result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
-            if ($result instanceof stdClass) {
-                $dto->result = $result;
-            } else {
-                $dto->result = null;
-            }
-        }
-        foreach (['run_at', 'created_at', 'started_at', 'finished_at'] as $date) {
-            if (($dto->$date ?? null) !== null) {
-                $dto->$date = strtotime($dto->$date) * 1000;
-            }
-        }
-        return $dto;
+        return Job::parse($dto);
     }
 
     public function findJobs(?string $tenantId, string $name, array $args): stdClass
@@ -508,20 +495,7 @@ class MysqlDataProvider implements DataProvider
 
         $jobs = [];
         foreach (Mysql::fetchAll($builder->toSql(), $builder->getParameters()) as $dto) {
-            if (isset($dto->result)) {
-                $result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
-                if ($result instanceof stdClass) {
-                    $dto->result = $result;
-                } else {
-                    $dto->result = null;
-                }
-            }
-            foreach (['run_at', 'created_at', 'started_at', 'finished_at'] as $date) {
-                if (($dto->$date ?? null) !== null) {
-                    $dto->$date = strtotime($dto->$date) * 1000;
-                }
-            }
-            $jobs[] = $dto;
+            $jobs[] = Job::parse($dto);
         }
         $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());
 
