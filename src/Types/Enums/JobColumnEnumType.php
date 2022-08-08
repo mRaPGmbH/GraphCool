@@ -17,6 +17,7 @@ class JobColumnEnumType extends EnumType
             'values' => [
                 'ID' => ['value' => 'id', 'description' => null],
                 'WORKER' => ['value' => 'worker', 'description' => null],
+                'MODEL' => ['value' => 'model', 'description' => null],
                 'STATUS' => ['value' => 'status', 'description' => null],
                 'DATA' => ['value' => 'data', 'description' => null],
                 'RESULT' => ['value' => 'result', 'description' => null],

@@ -66,7 +66,7 @@ interface DataProvider
 
     public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int;
 
-    public function addJob(string $tenantId, string $worker, ?array $data = null): string;
+    public function addJob(string $tenantId, string $worker, ?string $model, ?array $data = null): string;
 
     public function takeJob(): ?Job;
 

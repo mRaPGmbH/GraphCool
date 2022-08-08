@@ -373,18 +373,19 @@ class MysqlDataProvider implements DataProvider
     /**
      * @throws JsonException
      */
-    public function addJob(string $tenantId, string $worker, ?array $data = null): string
+    public function addJob(string $tenantId, string $worker, ?string $model, ?array $data = null): string
     {
         Mysql::beginTransaction();
         try {
             if ($data !== null) {
                 $data = json_encode($data, JSON_THROW_ON_ERROR);
             }
-            $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :status, :data)';
+            $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `model`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :model, :status, :data)';
             $params = [
                 'id' => Uuid::uuid4()->toString(),
                 'tenant_id' => $tenantId,
                 'worker' => $worker,
+                'model' => $model,
                 'status' => Job::NEW,
                 'data' => $data
             ];
@@ -546,6 +547,7 @@ class MysqlDataProvider implements DataProvider
         $job = new Model();
         unset($job->updated_at, $job->deleted_at);
         $job->worker = Field::string();
+        $job->model = Field::string()->nullable();
         $job->status = Field::enum(Job::allStatuses());
         $job->data = Field::string()->nullable();
         $job->result = Field::string()->nullable();

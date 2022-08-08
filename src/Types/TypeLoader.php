@@ -20,6 +20,7 @@ use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
 use Mrap\GraphCool\Types\Enums\JobStatusEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\ModelEnumType;
 use Mrap\GraphCool\Types\Enums\PermissionEnumType;
 use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
 use Mrap\GraphCool\Types\Enums\ResultType;
@@ -97,6 +98,7 @@ class TypeLoader
         self::register('_Permission', PermissionEnumType::class);
         self::register('_Entity', EntityEnumType::class);
         self::register('_WhereMode', WhereModeEnumType::class);
+        self::register('_Model', ModelEnumType::class);
     }
 
     public static function register(string $name, string $classname): void

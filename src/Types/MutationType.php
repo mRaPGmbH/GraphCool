@@ -41,6 +41,7 @@ class MutationType extends ObjectType
             $fields['restore' . $name] = $this->restore($name, $typeLoader);
             $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
             $fields['import' . $name . 'sAsync'] = $this->importAsync($name, $typeLoader);
+            $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model, $typeLoader);
         }
         foreach (ClassFinder::mutations() as $name => $classname) {
             /** @var Mutation $query */
@@ -280,6 +281,17 @@ class MutationType extends ObjectType
                 return $this->resolveImport($name, $args);
             }
         }
+        $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
+        if (str_ends_with($info->fieldName, 'Async') && str_starts_with($info->fieldName, 'export')) {
+            $name = substr($info->fieldName, 6, -6);
+            Authorization::authorize('export', $name);
+            $data = [
+                'name' => $name,
+                'args' => $args,
+                'jwt' => File::getToken(),
+            ];
+            return DB::addJob(JwtAuthentication::tenantId(), 'exporter', $name, $data);
+        }
         throw new RuntimeException(print_r($info->fieldName, true));
     }
 
@@ -337,7 +349,49 @@ class MutationType extends ObjectType
             'name' => $name,
             'args' => $args,
         ];
-        return DB::addJob(JwtAuthentication::tenantId(), 'importer', $data);
+        return DB::addJob(JwtAuthentication::tenantId(), 'importer', $name, $data);
     }
+
+    protected function exportAsync(string $name, Model $model, TypeLoader $typeLoader): array
+    {
+        return[
+            'type' => Type::string(),
+            'description' => 'Start background export of ' . $name . 's and get the ID of the _ExportJob you can later fetch the file from.',
+            'args' => $this->exportArgs($name, $model, $typeLoader),
+        ];
+    }
+
+    protected function exportArgs(string $name, Model $model, TypeLoader $typeLoader): array
+    {
+        $args = [
+            'type' => new NonNull($typeLoader->load('_ExportFile')),
+            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
+            'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
+            'search' => Type::string(),
+            'searchLoosely' => Type::string(),
+            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
+        ];
+
+        foreach (get_object_vars($model) as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
+                $args[$key] = new ListOfType(
+                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping'))
+                );
+            }
+            if ($relation->type === Relation::BELONGS_TO_MANY) {
+                $args[$key] = new ListOfType(
+                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector'))
+                );
+            }
+            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
+        }
+        $args['result'] = $typeLoader->load('_Result');
+        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+        return $args;
+    }
+
 
 }

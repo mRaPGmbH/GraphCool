@@ -160,10 +160,10 @@ class DB
         return $result;
     }
 
-    public static function addJob(string $tenantId, string $worker, ?array $data = null): string
+    public static function addJob(string $tenantId, string $worker, ?string $model, ?array $data = null): string
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->addJob($tenantId, $worker, $data);
+        $result = static::get()->addJob($tenantId, $worker, $model, $data);
         StopWatch::stop(__METHOD__);
         return $result;
     }

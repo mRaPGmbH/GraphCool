@@ -252,7 +252,7 @@ class QueryType extends ObjectType
                     'args' => $args,
                     'jwt' => File::getToken(),
                 ];
-                return DB::addJob(JwtAuthentication::tenantId(), 'exporter', $data);
+                return DB::addJob(JwtAuthentication::tenantId(), 'exporter', $name, $data);
             }
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
