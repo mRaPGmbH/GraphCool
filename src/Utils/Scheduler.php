@@ -34,7 +34,6 @@ class Scheduler
 
     public function run(): array
     {
-        echo 'scheduler starting' . PHP_EOL;
         $this->start = time();
         while ($this->time() < 290) {
             set_time_limit(90);
@@ -46,7 +45,6 @@ class Scheduler
             sleep(15);
             // @codeCoverageIgnoreEnd
         }
-        echo 'scheduler stopping' . PHP_EOL;
         return [
             'success' => true
         ];
@@ -89,30 +87,28 @@ class Scheduler
     {
         foreach ($scripts as $script) {
             $start = $this->time();
-            echo 'starting ' . $script . PHP_EOL;
             try {
                 GraphCool::runScript([$script]);
             } catch (Throwable $e) {
                 ErrorHandler::sentryCapture($e);
             }
-            echo 'completed ' . $script . PHP_EOL;
             $this->checkTime($start, $script);
         }
     }
 
     protected function runJob(): bool
     {
-        echo 'fetching job' . PHP_EOL;
         $job = DB::takeJob();
         if ($job === null) {
-            echo 'no job found' . PHP_EOL;
             return false;
         }
         $start = $this->time();
-        echo $job->worker . PHP_EOL;
+        echo 'running  job ' . $job->id . ' with worker ' . $job->worker . '...';
         try {
             $result = GraphCool::runScript([$job->worker, $job]);
+            echo ' DONE' . PHP_EOL;
         } catch (Throwable $e) {
+            echo ' FAILED' . PHP_EOL;
             $result = [
                 'success' => false,
                 'error' => $e->getMessage()
