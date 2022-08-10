@@ -333,7 +333,7 @@ class QueryType extends ObjectType
 
         $databaseIds = [];
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
-            $databaseIds[] = $row['id'];
+            $databaseIds[] = $row->id;
         }
         $rowNumbers = array_flip($ids);
         foreach (array_diff($ids, $databaseIds) as $missingId) {
