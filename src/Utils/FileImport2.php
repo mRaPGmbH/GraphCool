@@ -238,7 +238,7 @@ class FileImport2
                 $id = $key;
                 continue;
             }
-            if ($field === null || !$field instanceof Field || $field->readonly === true) {
+            if ($field === null || !$field instanceof Field) {
                 $errors[] = [
                     'row' => 1,
                     'column' => $this->getColumn($key),
@@ -247,6 +247,16 @@ class FileImport2
                     'field' => $property,
                     'ignored' => true,
                     'message' => 'Unknown field in mapping.',
+                ];
+            } elseif ($field->readonly === true) {
+                $errors[] = [
+                    'row' => 1,
+                    'column' => $this->getColumn($key),
+                    'value' => $mappingHeader,
+                    'relation' => null,
+                    'field' => $property,
+                    'ignored' => true,
+                    'message' => 'Field is readonly.',
                 ];
             } else {
                 $mapping[$property] = $key;
@@ -273,7 +283,7 @@ class FileImport2
                     }
                     $key = $headers[$mappingHeader];
                     $field = $model->$relationName->$property ?? null;
-                    if ($field === null || !$field instanceof Field || $field->readonly === true) {
+                    if ($field === null || !$field instanceof Field) {
                         $errors[] = [
                             'row' => 1,
                             'column' => $this->getColumn($key),
@@ -282,6 +292,16 @@ class FileImport2
                             'field' => $property,
                             'ignored' => true,
                             'message' => 'Unknown field in mapping.',
+                        ];
+                    } elseif ($field->readonly === true) {
+                        $errors[] = [
+                            'row' => 1,
+                            'column' => $this->getColumn($key),
+                            'value' => $mappingHeader,
+                            'relation' => $relationName,
+                            'field' => $property,
+                            'ignored' => true,
+                            'message' => 'Field is readonly.',
                         ];
                     } else {
                         if (!isset($edgeMapping[$relationName])) {
@@ -528,7 +548,7 @@ class FileImport2
             return;
         }
         $model = Model::get($relation->name);
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
+        $query = MysqlQueryBuilder::forModel($model, $relation->name)->tenant(JwtAuthentication::tenantId());
 
         $query->select(['id'])
             ->where(['column' => 'id', 'operator' => 'IN', 'value' => $ids])
