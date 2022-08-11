@@ -12,6 +12,8 @@ use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -54,7 +56,8 @@ class FileImport2
         $sheet = $sheets->current();
         $rows = $sheet->getRowIterator();
         $rows->rewind();
-        [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns);
+        $errors = [];
+        [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns, $errors);
         static::$lastIdColumn = $this->getColumn($idKey ?? 0);
 
         $rows->next();
@@ -63,7 +66,6 @@ class FileImport2
         }
         $create = [];
         $update = [];
-        $errors = [];
         $i = 2;
         while ($rows->valid()) {
             $row = $rows->current();
@@ -186,51 +188,125 @@ class FileImport2
      * @param Row $row
      * @param array[] $columns
      * @param array[] $edgeColumns
+     * @param array $errors
      * @return mixed[]
      */
-    protected function getHeaderMapping(Model $model, Row $row, array $columns, array $edgeColumns): array
+    protected function getHeaderMapping(Model $model, Row $row, array $columns, array $edgeColumns, array &$errors): array
     {
         $mapping = [];
         $edgeMapping = [];
         $id = null;
+        $headers = [];
         foreach ($row->getCells() as $key => $cell) {
-            $header = $cell->getValue();
-            foreach ($columns as $column) {
-                if (($column['label'] ?? $column['column']) !== $header) {
-                    continue;
-                }
-                $property = $column['column'];
-                $field = $model->$property ?? null;
-                if ($field instanceof Field && $field->type === Type::ID) {
-                    $id = $key;
-                    continue;
-                }
-                if ($field === null || !$field instanceof Field || $field->readonly === true) {
-                    continue;
-                }
+            $v = $cell->getValue();
+            if ($v === null) {
+                continue;
+            }
+            $v = (string)$v;
+            if (array_key_exists($v, $headers)) {
+                $errors[] = [
+                    'row' => 1,
+                    'column' => $this->getColumn($key),
+                    'value' => $v,
+                    'relation' => null,
+                    'field' => $key,
+                    'ignored' => true,
+                    'message' => 'Duplicate column.',
+                ];
+            } else {
+                $headers[$v] = $key;
+            }
+        }
+        foreach ($columns as $column) {
+            $property = $column['column'];
+            $mappingHeader = $column['label'] ?? $property;
+            if (!array_key_exists($mappingHeader, $headers)) {
+                $errors[] = [
+                    'row' => 1,
+                    'column' => '?',
+                    'value' => $mappingHeader,
+                    'relation' => null,
+                    'field' => $property,
+                    'ignored' => true,
+                    'message' => 'Missing column.',
+                ];
+                continue;
+            }
+            $key = $headers[$mappingHeader];
+            $field = $model->$property ?? null;
+            if ($field instanceof Field && $field->type === Type::ID) {
+                $id = $key;
+                continue;
+            }
+            if ($field === null || !$field instanceof Field || $field->readonly === true) {
+                $errors[] = [
+                    'row' => 1,
+                    'column' => $this->getColumn($key),
+                    'value' => $mappingHeader,
+                    'relation' => null,
+                    'field' => $property,
+                    'ignored' => true,
+                    'message' => 'Unknown field in mapping.',
+                ];
+            } else {
                 $mapping[$property] = $key;
             }
-            foreach ($edgeColumns as $relationName => $edges) {
-                foreach ($edges as $edge) {
-                    foreach ($edge['columns'] as $column) {
-                        $property = substr($column['column'], 1);
-                        $field = $model->$relationName->$property ?? null;
-                        if ($field === null || !$field instanceof Field || $field->readonly === true) {
-                            continue;
+        }
+        foreach ($edgeColumns as $relationName => $edges) {
+            $relationIds = [];
+            foreach ($edges as $edge) {
+                $relationIds[] = $edge['id'];
+                foreach ($edge['columns'] as $column) {
+                    $property = substr($column['column'], 1);
+                    $mappingHeader = $column['label'] ?? '-';
+                    if (!array_key_exists($mappingHeader, $headers)) {
+                        $errors[] = [
+                            'row' => 1,
+                            'column' => '?',
+                            'value' => $mappingHeader,
+                            'relation' => $relationName,
+                            'field' => $property,
+                            'ignored' => true,
+                            'message' => 'Missing column.',
+                        ];
+                        continue;
+                    }
+                    $key = $headers[$mappingHeader];
+                    $field = $model->$relationName->$property ?? null;
+                    if ($field === null || !$field instanceof Field || $field->readonly === true) {
+                        $errors[] = [
+                            'row' => 1,
+                            'column' => $this->getColumn($key),
+                            'value' => $mappingHeader,
+                            'relation' => $relationName,
+                            'field' => $property,
+                            'ignored' => true,
+                            'message' => 'Unknown field in mapping.',
+                        ];
+                    } else {
+                        if (!isset($edgeMapping[$relationName])) {
+                            $edgeMapping[$relationName] = [];
                         }
-                        if (isset($column['label']) && $column['label'] === $header) {
-                            if (!isset($edgeMapping[$relationName])) {
-                                $edgeMapping[$relationName] = [];
-                            }
-                            $edgeMapping[$relationName][] = [
-                                'index' => $key,
-                                'relatedId' => $edge['id'],
-                                'edgeProperty' => $property,
-                            ];
-                        }
+                        $edgeMapping[$relationName][] = [
+                            'index' => $key,
+                            'relatedId' => $edge['id'],
+                            'edgeProperty' => $property,
+                        ];
                     }
                 }
             }
+            $this->checkRelationExistence($relationIds, $model, $relationName, $errors);
+        }
+        if (count($mapping) === 0) {
+            $errors[] = [
+                'row' => 1,
+                'column' => '?',
+                'value' => '',
+                'relation' => null,
+                'field' => 'unknown',
+                'ignored' => false,
+                'message' => 'No columns found.',
+            ];
         }
         return [$id, $mapping, $edgeMapping];
     }
@@ -443,6 +519,36 @@ class FileImport2
             $return[$relatedId][$edgeProperty] = $this->convertField($field, $value);
         }
         return $return;
+    }
+
+    protected function checkRelationExistence(array $ids, Model $parent, string $name, array &$errors): void
+    {
+        $relation = $parent->$name ?? null;
+        if ($relation === null || !($relation instanceof Relation)) {
+            return;
+        }
+        $model = Model::get($relation->name);
+        $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
+
+        $query->select(['id'])
+            ->where(['column' => 'id', 'operator' => 'IN', 'value' => $ids])
+            ->withTrashed();
+
+        $databaseIds = [];
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
+            $databaseIds[] = $row->id;
+        }
+        foreach (array_diff($ids, $databaseIds) as $missingId) {
+            $errors[] = [
+                'row' => 1,
+                'column' => '?',
+                'value' => $missingId,
+                'relation' => $name,
+                'field' => 'id',
+                'ignored' => false,
+                'message' => 'ID not found.'
+            ];
+        }
     }
 
 

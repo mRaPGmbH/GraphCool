@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\Types;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
@@ -24,7 +23,7 @@ use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
 use stdClass;
 
-class MutationType extends ObjectType
+class MutationType extends BaseType
 {
 
     /** @var callable[] */
@@ -205,28 +204,6 @@ class MutationType extends ObjectType
         ];
     }
 
-    protected function importArgs(string $name, TypeLoader $typeLoader): array
-    {
-        $args = [
-            'file' => $typeLoader->load('_Upload'),
-            'data_base64' => Type::string(),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
-            '_timezone' => $typeLoader->load('_TimezoneOffset'),
-        ];
-        $model = Model::get($name);
-        foreach ($model as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(
-                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeReducedSelector'))
-                );
-            }
-        }
-        return $args;
-    }
-
     /**
      * @param mixed[] $rootValue
      * @param mixed[] $args
@@ -360,38 +337,5 @@ class MutationType extends ObjectType
             'args' => $this->exportArgs($name, $model, $typeLoader),
         ];
     }
-
-    protected function exportArgs(string $name, Model $model, TypeLoader $typeLoader): array
-    {
-        $args = [
-            'type' => new NonNull($typeLoader->load('_ExportFile')),
-            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
-            'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
-            'search' => Type::string(),
-            'searchLoosely' => Type::string(),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
-        ];
-
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(
-                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping'))
-                );
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(
-                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector'))
-                );
-            }
-            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
-        }
-        $args['result'] = $typeLoader->load('_Result');
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
-        return $args;
-    }
-
 
 }

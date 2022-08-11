@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\Types;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
@@ -24,7 +23,7 @@ use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
 
-class QueryType extends ObjectType
+class QueryType extends BaseType
 {
 
     /** @var callable[] */
@@ -56,7 +55,6 @@ class QueryType extends ObjectType
             $fields[lcfirst($name)] = $this->read($name, $typeLoader);
             $fields[lcfirst($name) . 's'] = $this->list($name, $model, $typeLoader);
             $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
-            $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model, $typeLoader);
             $fields['import' . $name . 'sPreview'] = $this->previewImport($name, $typeLoader);
         }
         foreach (ClassFinder::queries() as $name => $classname) {
@@ -154,58 +152,12 @@ class QueryType extends ObjectType
         ];
     }
 
-    protected function exportAsync(string $name, Model $model, TypeLoader $typeLoader): array
-    {
-        return[
-            'type' => Type::string(),
-            'description' => 'Start background export of ' . $name . 's and get the ID of the _ExportJob you can later fetch the file from.',
-            'args' => $this->exportArgs($name, $model, $typeLoader),
-        ];
-    }
-
-    protected function exportArgs(string $name, Model $model, TypeLoader $typeLoader): array
-    {
-        $args = [
-            'type' => new NonNull($typeLoader->load('_ExportFile')),
-            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
-            'orderBy' => new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause'))),
-            'search' => Type::string(),
-            'searchLoosely' => Type::string(),
-            'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
-        ];
-
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = new ListOfType(
-                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeColumnMapping'))
-                );
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = new ListOfType(
-                    new NonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeSelector'))
-                );
-            }
-            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
-        }
-        $args['result'] = $typeLoader->load('_Result');
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
-        return $args;
-    }
-
     protected function previewImport(string $name, TypeLoader $typeLoader): array
     {
         return [
             'type' => $typeLoader->load('_' . $name.'ImportPreview'),
             'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
-            'args' => [
-                'file' => $typeLoader->load('_Upload'),
-                'data_base64' => Type::string(),
-                'columns' => new NonNull(new ListOfType(new NonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
-            ]
+            'args' => $this->importArgs($name, $typeLoader)
         ];
     }
 
@@ -272,7 +224,7 @@ class QueryType extends ObjectType
             if (str_starts_with($info->fieldName, 'import') && str_ends_with($info->fieldName, 'Preview')) {
                 $name = substr($info->fieldName, 6, -8);
                 Authorization::authorize('import', $name);
-                return $this->resolveImport($name, $args);
+                return $this->resolveImportPreview($name, $args);
             }
         }
         $name = $info->returnType->toString();
@@ -287,7 +239,7 @@ class QueryType extends ObjectType
      * @throws Error
      * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      */
-    protected function resolveImport(string $name, array $args): stdClass
+    protected function resolveImportPreview(string $name, array $args): stdClass
     {
         $total = 20;
         [$create, $update, $errors] = File::read($name, $args);
