@@ -39,6 +39,10 @@ class FileImport2
      */
     public function import(string $name, array $args): array
     {
+        $errors = [];
+        $create = [];
+        $update = [];
+
         $model = Model::get($name);
 
         $columns = $args['columns'];
@@ -49,23 +53,40 @@ class FileImport2
 
         $sheets = $reader->getSheetIterator();
         if (iterator_count($sheets) > 1) {
-            throw new Error('File contains multiple sheets, but only one sheet can be imported.');
+            $errors[] = [
+                'row' => 0,
+                'column' => '?',
+                'value' => '?',
+                'relation' => null,
+                'field' => '?',
+                'ignored' => false,
+                'message' => 'File contains multiple sheets, but only one sheet can be imported.',
+            ];
+            unlink($this->file);
+            return [$create, $update, $errors];
         }
         $sheets->rewind();
         /** @var SheetInterface $sheet */
         $sheet = $sheets->current();
         $rows = $sheet->getRowIterator();
         $rows->rewind();
-        $errors = [];
         [$idKey, $mapping, $edgeMapping] = $this->getHeaderMapping($model, $rows->current(), $columns, $edgeColumns, $errors);
         static::$lastIdColumn = $this->getColumn($idKey ?? 0);
 
         $rows->next();
         if (!$rows->valid()) {
-            throw new Error('Sheet must contain at least one row with headers, and one row with data.');
+            $errors[] = [
+                'row' => 2,
+                'column' => '?',
+                'value' => '?',
+                'relation' => null,
+                'field' => '?',
+                'ignored' => false,
+                'message' => 'Sheet must contain at least one row with headers, and one row with data.',
+            ];
+            unlink($this->file);
+            return [$create, $update, $errors];
         }
-        $create = [];
-        $update = [];
         $i = 2;
         while ($rows->valid()) {
             $row = $rows->current();
