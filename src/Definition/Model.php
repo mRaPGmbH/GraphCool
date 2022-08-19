@@ -172,4 +172,12 @@ class Model extends stdClass
         return $result;
     }
 
+    final public function prepare(string $id, array $data): array
+    {
+        $data = $this->beforeInsert($tenantId, $data);
+
+
+        return $data;
+    }
+
 }

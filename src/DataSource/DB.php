@@ -6,7 +6,10 @@ namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
+use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Utils\StopWatch;
+use Ramsey\Uuid\Provider\Node\RandomNodeProvider;
+use Ramsey\Uuid\Uuid;
 use stdClass;
 
 class DB
@@ -89,10 +92,20 @@ class DB
     public static function insert(string $tenantId, string $modelName, array $data): ?stdClass
     {
         StopWatch::start(__METHOD__);
+        //$id = static::id();
+        //$model = Model::get($modelName);
+        //$data = $model->prepare($id, $data);
+
         $result = static::get()->insert($tenantId, $modelName, $data);
         FullTextIndex::index($tenantId, $modelName, $result->id);
         StopWatch::stop(__METHOD__);
         return $result;
+    }
+
+    public static function id(): string
+    {
+        $nodeProvider = new RandomNodeProvider();
+        return Uuid::uuid1($nodeProvider->getNode())->toString();
     }
 
     /**

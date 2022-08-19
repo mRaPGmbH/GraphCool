@@ -22,6 +22,7 @@ class Field
     public const TIME = 'TIME';
     public const TIMEZONE_OFFSET = 'TIMEZONE_OFFSET';
     public const FILE = 'FILE';
+    public const AUTO_INCREMENT = 'AUTO_INCREMENT';
 
     public string $type;
     public int $decimalPlaces;
@@ -49,12 +50,6 @@ class Field
     public static function id(): Field
     {
         return (new Field(Type::ID))->readonly();
-    }
-
-    public function readonly(): Field
-    {
-        $this->readonly = true;
-        return $this;
     }
 
     public static function bool(): Field
@@ -92,13 +87,6 @@ class Field
     public static function updatedAt(): Field
     {
         return (new Field(static::UPDATED_AT))->nullable()->readonly();
-    }
-
-
-    public function nullable(): Field
-    {
-        $this->null = true;
-        return $this;
     }
 
     public static function deletedAt(): Field
@@ -155,6 +143,23 @@ class Field
         $field = new Field(static::ENUM);
         $field->enumValues = $values;
         return $field;
+    }
+
+    public static function autoIncrement(): Field
+    {
+        return (new Field(static::AUTO_INCREMENT))->readonly()->unique();
+    }
+
+    public function readonly(): Field
+    {
+        $this->readonly = true;
+        return $this;
+    }
+
+    public function nullable(): Field
+    {
+        $this->null = true;
+        return $this;
     }
 
     public function unique(bool $ignoreTrashed = false): Field
