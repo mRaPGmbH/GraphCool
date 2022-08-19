@@ -143,7 +143,7 @@ class FileExport
             }
             if (($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) && isset($args[$key])) {
                 $closure = $row->$key;
-                $data = $closure([]);
+                $data = $closure(['first' => 9999]);
                 foreach ($args[$key] as $column) {
                     $p = $column['column'];
                     $value = $data->$p ?? null;
@@ -156,7 +156,7 @@ class FileExport
                     $ids[] = $related['id'];
                 }
                 $closure = $row->$key;
-                $data = $closure(['where' => [['column' => 'id', 'operator' => 'IN', 'value' => $ids]]]);
+                $data = $closure(['first' => 9999, 'where' => [['column' => 'id', 'operator' => 'IN', 'value' => $ids]]]);
                 $edges = [];
                 foreach ($data['edges'] as $edge) {
                     $edges[$edge->parent_id] = $edge;

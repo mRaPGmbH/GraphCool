@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
