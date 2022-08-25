@@ -115,7 +115,7 @@ class SchedulerTest extends TestCase
             ->with('asdf123', ['success'=>true, 'log'=>['test log']], false);
         DB::setProvider($dataProvider);
         $scheduler = new Scheduler();
-        $this->expectOutputString('DummyScript' . PHP_EOL . 'test log' . PHP_EOL . 'test');
+        $this->expectOutputString('running job asdf123 with worker DummyScript...test log' . PHP_EOL . 'test DONE' . PHP_EOL);
         $result = $scheduler->run();
         self::assertEquals(['success'=>true], $result);
     }
@@ -137,7 +137,7 @@ class SchedulerTest extends TestCase
             ->with('asdf123', ['success'=>false, 'error' => 'Script does-not-exist not found.'], true);
         DB::setProvider($dataProvider);
         $scheduler = new Scheduler();
-        $this->expectOutputString('does-not-exist' . PHP_EOL);
+        $this->expectOutputString('running job asdf123 with worker does-not-exist... DONE' . PHP_EOL);
         $result = $scheduler->run();
         self::assertEquals(['success'=>true], $result);
     }

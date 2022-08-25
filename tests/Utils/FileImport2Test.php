@@ -3,6 +3,8 @@
 namespace Mrap\GraphCool\Tests\Utils;
 
 use GraphQL\Error\Error;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Utils\FileImport2;
 
@@ -25,7 +27,7 @@ class FileImport2Test extends TestCase
             ['column' => 'last_name', 'label' => 'Familienname']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -42,14 +44,12 @@ class FileImport2Test extends TestCase
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
         self::assertSame([], $inserts, 'There should be nothing to insert.');
-        self::assertSame([['id' => '123','data' => ['last_name' => 'Huber']]], $updates, 'Updates don\'t match expectation.');
+        self::assertSame([2 => ['id' => '123','data' => ['last_name' => 'Huber']]], $updates, 'Updates don\'t match expectation.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
 
     public function testImportNotEnoughRowsError(): void
     {
-        $this->expectException(Error::class);
-
         $data = [
             ['id','Familienname'],
         ];
@@ -57,7 +57,10 @@ class FileImport2Test extends TestCase
             ['column' => 'last_name', 'label' => 'Familienname'],
             ['column' => 'id']
         ];
-        $this->getImportResult($data, $columns);
+        [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
+        self::assertSame([], $inserts, 'There should be nothing to insert.');
+        self::assertSame([], $updates, 'There should be nothing to update.');
+        self::assertSame('Sheet must contain at least one row with headers, and one row with data.', $errors[0]['message']);
     }
 
     public function testImportDate(): void
@@ -70,7 +73,7 @@ class FileImport2Test extends TestCase
             ['column' => 'date', 'label' => 'Datum']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['date' => 1577836800000]], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['date' => 1577836800000]], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -85,7 +88,7 @@ class FileImport2Test extends TestCase
             ['column' => 'date_time', 'label' => 'Termin']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['date_time' => 1577842200000]], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['date_time' => 1577842200000]], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -100,7 +103,7 @@ class FileImport2Test extends TestCase
             ['column' => 'time', 'label' => 'Zeit']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['time' => strtotime(date('Y-m-d').' 01:30:00')*1000]], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['time' => strtotime(date('Y-m-d').' 01:30:00')*1000]], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -115,7 +118,7 @@ class FileImport2Test extends TestCase
             ['column' => 'float', 'label' => 'Zahl']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['float' => 0.123]], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['float' => 0.123]], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -130,7 +133,7 @@ class FileImport2Test extends TestCase
             ['column' => 'country', 'label' => 'Land']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['country' => 'AT']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['country' => 'AT']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -145,7 +148,7 @@ class FileImport2Test extends TestCase
             ['column' => 'timezone', 'label' => 'Zeitzone']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['timezone' => 7200]], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['timezone' => 7200]], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -160,7 +163,7 @@ class FileImport2Test extends TestCase
             ['column' => 'locale', 'label' => 'Sprache']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['locale' => 'de_AT']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['locale' => 'de_AT']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -175,7 +178,7 @@ class FileImport2Test extends TestCase
             ['column' => 'currency', 'label' => 'Währung']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['currency' => 'EUR']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['currency' => 'EUR']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -190,7 +193,7 @@ class FileImport2Test extends TestCase
             ['column' => 'language', 'label' => 'Sprache']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['language' => 'de']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['language' => 'de']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -205,7 +208,7 @@ class FileImport2Test extends TestCase
             ['column' => 'enum', 'label' => 'Auswahl']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['enum' => 'A']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['enum' => 'A']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -245,7 +248,7 @@ class FileImport2Test extends TestCase
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
         self::assertSame([], $inserts, 'There should be nothing to insert.');
-        self::assertSame([['id'=>'123', 'data'=>['last_name' => null]]], $updates, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['id'=>'123', 'data'=>['last_name' => null]]], $updates, 'Inserts don\'t match expectation.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
 
@@ -321,6 +324,13 @@ class FileImport2Test extends TestCase
 
     public function testImportRelation(): void
     {
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->once())
+            ->method('fetchAll')
+            ->withAnyParameters()
+            ->willReturn([(object)['id' => '123-test-id']]);
+        Mysql::setConnector($mock);
+
         $data = [
             ['Familienname','Pivot Property'],
             ['Huber','test A']
@@ -328,10 +338,10 @@ class FileImport2Test extends TestCase
         $columns = [
             ['column' => 'last_name', 'label' => 'Familienname']
         ];
-        $edgeColumns = ['belongs_to_many' => [['id' => '123-test-id', 'columns' => [['column' => '_pivot_property', 'label' => 'Pivot Property'],['column' => '_none', '-']]]]];
+        $edgeColumns = ['belongs_to_many' => [['id' => '123-test-id', 'columns' => [['column' => '_pivot_property', 'label' => 'Pivot Property']]]]];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns, $edgeColumns);
         self::assertSame([
-            ['last_name' => 'Huber', 'belongs_to_many' => ['123-test-id'=>['where'=>['column'=>'id','operator'=>'=','value'=>'123-test-id'],'pivot_property'=>'test A']]]
+            2 => ['last_name' => 'Huber', 'belongs_to_many' => ['123-test-id'=>['where'=>['column'=>'id','operator'=>'=','value'=>'123-test-id'],'pivot_property'=>'test A']]]
         ], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
@@ -339,6 +349,13 @@ class FileImport2Test extends TestCase
 
     public function testImportRelationEmpty(): void
     {
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->once())
+            ->method('fetchAll')
+            ->withAnyParameters()
+            ->willReturn([(object)['id' => '123-test-id']]);
+        Mysql::setConnector($mock);
+
         $data = [
             ['Familienname','Pivot Property'],
             ['Huber','']
@@ -346,10 +363,10 @@ class FileImport2Test extends TestCase
         $columns = [
             ['column' => 'last_name', 'label' => 'Familienname']
         ];
-        $edgeColumns = ['belongs_to_many' => [['id' => '123-test-id', 'columns' => [['column' => '_pivot_property', 'label' => 'Pivot Property'],['column' => '_none', '-']]]]];
+        $edgeColumns = ['belongs_to_many' => [['id' => '123-test-id', 'columns' => [['column' => '_pivot_property', 'label' => 'Pivot Property']]]]];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns, $edgeColumns);
         self::assertSame([
-            ['last_name' => 'Huber', 'belongs_to_many' => ['123-test-id'=>['where'=>['column'=>'id','operator'=>'=','value'=>'123-test-id'],'pivot_property'=>null]]]
+            2 => ['last_name' => 'Huber', 'belongs_to_many' => ['123-test-id'=>['where'=>['column'=>'id','operator'=>'=','value'=>'123-test-id'],'pivot_property'=>null]]]
         ], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
@@ -365,7 +382,7 @@ class FileImport2Test extends TestCase
             ['column' => 'last_name', 'label' => 'Familienname']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns, [], true);
-        self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
     }
@@ -381,9 +398,11 @@ class FileImport2Test extends TestCase
             ['column' => 'ignoreMe']
         ];
         [$inserts, $updates, $errors] = $this->getImportResult($data, $columns);
-        self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
-        self::assertSame([], $errors, 'There should be no errors.');
+        self::assertSame('Unknown field in mapping.', $errors[0]['message']);
+        self::assertSame('ignoreMe', $errors[0]['value']);
+        self::assertTrue($errors[0]['ignored']);
     }
 
     public function testImportNothingError(): void
@@ -427,7 +446,7 @@ class FileImport2Test extends TestCase
             'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
             'file' => ['tmp_name' => $file]
         ]);
-        self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
         self::assertFalse(file_exists($file), 'Temporary file should get deleted');
@@ -435,15 +454,18 @@ class FileImport2Test extends TestCase
 
     public function testImportFileExcelError(): void
     {
-        $this->expectException(Error::class);
         $file = tempnam(sys_get_temp_dir(), 'import');
         copy($this->dataPath().'/import2.xlsx', $file);
 
         $import = new FileImport2();
-        $import->import('DummyModel', [
+        [$inserts, $updates, $errors] = $import->import('DummyModel', [
             'columns' => [['column' => 'last_name', 'label' => 'Familienname']],
             'file' => ['tmp_name' => $file]
         ]);
+        self::assertSame([], $inserts, 'There should be nothing to insert.');
+        self::assertSame([], $updates, 'There should be nothing to update.');
+        self::assertSame('File contains multiple sheets, but only one sheet can be imported.', $errors[0]['message']);
+        self::assertFalse($errors[0]['ignored']);
     }
 
     public function testImportFileUnknownError(): void
@@ -470,7 +492,7 @@ class FileImport2Test extends TestCase
             'file' => ['tmp_name' => $file]
         ]);
 
-        self::assertSame([['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
+        self::assertSame([2 => ['last_name' => 'Huber']], $inserts, 'Inserts don\'t match expectation.');
         self::assertSame([], $updates, 'There should be nothing to update.');
         self::assertSame([], $errors, 'There should be no errors.');
         self::assertFalse(file_exists($file), 'Temporary file should get deleted');

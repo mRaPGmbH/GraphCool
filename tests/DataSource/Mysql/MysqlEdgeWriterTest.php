@@ -28,7 +28,7 @@ class MysqlEdgeWriterTest extends TestCase
             ],
         ];
         $writer = new MysqlEdgeWriter();
-        $writer->insertEdges('hc132', 'DummyModel', 'asdf123123', $data);
+        $writer->writeEdges('hc132', 'DummyModel', 'asdf123123', $data);
     }
 
     public function testWriteEdgesBelongsToMany(): void
@@ -55,7 +55,7 @@ class MysqlEdgeWriterTest extends TestCase
             ],
         ];
         $writer = new MysqlEdgeWriter();
-        $writer->insertEdges('hc132', 'DummyModel', 'asdf123123', $data);
+        $writer->writeEdges('hc132', 'DummyModel', 'asdf123123', $data);
     }
 
     public function testWriteEdgesBelongsToManyRemove(): void
@@ -82,7 +82,7 @@ class MysqlEdgeWriterTest extends TestCase
             ],
         ];
         $writer = new MysqlEdgeWriter();
-        $writer->insertEdges('hc132', 'DummyModel', 'asdf123123', $data);
+        $writer->writeEdges('hc132', 'DummyModel', 'asdf123123', $data);
     }
 
     public function testUpdateEdges(): void
@@ -159,7 +159,7 @@ class MysqlEdgeWriterTest extends TestCase
         Mysql::setConnector($mock);
 
         $writer = new MysqlEdgeWriter();
-        $writer->insertEdges('hc132', 'DummyModel', '', []);
+        $writer->writeEdges('hc132', 'DummyModel', '', []);
     }
 
     public function testUpdateEdgesBelongsToManyRemoveEmpty(): void
