@@ -220,7 +220,7 @@ class FileImport2
         $headers = [];
         foreach ($row->getCells() as $key => $cell) {
             $v = $cell->getValue();
-            if ($v === null) {
+            if ($v === null || $v === '') {
                 continue;
             }
             $v = (string)$v;

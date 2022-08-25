@@ -103,7 +103,7 @@ class Scheduler
             return false;
         }
         $start = $this->time();
-        echo 'running  job ' . $job->id . ' with worker ' . $job->worker . '...';
+        echo 'running job ' . $job->id . ' with worker ' . $job->worker . '...';
         try {
             $result = GraphCool::runScript([$job->worker, $job]);
             echo ' DONE' . PHP_EOL;
