@@ -46,7 +46,7 @@ class MysqlConverter
         }
         return match ($field->type) {
             default => (string)$value,
-            Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT => (int)$value,
+            Field::DATE, Field::DATE_TIME, Field::TIME, Field::TIMEZONE_OFFSET, Type::BOOLEAN, Type::INT, FIELD::AUTO_INCREMENT => (int)$value,
             Type::FLOAT => (float)$value,
             Field::DECIMAL => (int)(round($value * (10 ** $field->decimalPlaces))),
             Field::FILE => (string)$value->id
@@ -79,7 +79,7 @@ class MysqlConverter
             default => (string)$property->value_string,
             Type::BOOLEAN => (bool)$property->value_int,
             Type::FLOAT => (double)$property->value_float,
-            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET => (int)$property->value_int,
+            Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, FIELD::AUTO_INCREMENT => (int)$property->value_int,
             Field::DECIMAL => (float)($property->value_int / (10 ** $field->decimalPlaces)),
             //Field::FILE => File::retrieve($name, $id, $key, $property->value_string),
         };
