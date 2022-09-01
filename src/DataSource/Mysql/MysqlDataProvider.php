@@ -9,6 +9,7 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
@@ -93,7 +94,8 @@ class MysqlDataProvider implements DataProvider
 
         $result = new stdClass();
         $result->paginatorInfo = PaginatorInfoType::create(count($ids), $page, $limit, $total);
-        $result->data = $this->loadAll($tenantId, $name, $ids, $resultType);
+        $result->data = function() use($tenantId, $name, $ids, $resultType) {return $this->loadAll($tenantId, $name, $ids, $resultType);};
+        $result->ids = $ids;
         return $result;
     }
 
@@ -214,6 +216,7 @@ class MysqlDataProvider implements DataProvider
             $data = $this->storeFiles($model, $name, $data, $id);
             $data = $model->beforeInsert($tenantId, $data);
             $this->checkUnique($tenantId, $model, $name, $data);
+            $data = $this->checkIncrements($tenantId, $model, $name, $data);
 
             Mysql::nodeWriter()->insert($tenantId, $name, $id, $data);
 
@@ -651,6 +654,19 @@ class MysqlDataProvider implements DataProvider
                 }
             }
         }
+    }
+
+    protected function checkIncrements(string $tenantId, Model $model, string $name, array $data): array
+    {
+        foreach (get_object_vars($model) as $key => $field) {
+            if (!$field instanceof Field) {
+                continue;
+            }
+            if ($field->type === Field::AUTO_INCREMENT) {
+                $data[$key] = $this->increment($tenantId, $name . '.' . $key, 0, false);
+            }
+        }
+        return $data;
     }
 
     /**

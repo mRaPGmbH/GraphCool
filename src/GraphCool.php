@@ -55,6 +55,11 @@ class GraphCool
         static::shutdown();
     }
 
+    public static function reset(): void
+    {
+        static::$shutdown = [];
+    }
+
     /**
      * @return mixed[]
      * @throws Error

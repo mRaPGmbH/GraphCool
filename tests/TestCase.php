@@ -19,6 +19,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
         ClassFinder::setRootPath($this->dataPath());
         TimeZone::unset();
         Mysql::reset();
+        GraphCool::reset();
         Config::setProvider(new ConfigProvider());
         unset($_SERVER['HTTP_AUTHORIZATION']);
         $_FILES = [];

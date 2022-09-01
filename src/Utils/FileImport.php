@@ -9,6 +9,7 @@ use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
+use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
@@ -157,6 +158,9 @@ class FileImport
                         $value = $cell->getValue();
                         if (empty($value)) {
                             $value = $field->default ?? null;
+                        }
+                        if ($value instanceof Closure) {
+                            $value = $value();
                         }
                         $item[$property] = $value;
                         if ($property === 'id' && empty($item[$property])) {

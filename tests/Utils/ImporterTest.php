@@ -8,6 +8,8 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\DataSource\FullTextIndexProvider;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Tests\TestCase;
@@ -21,7 +23,7 @@ class ImporterTest extends TestCase
         $job = $this->createMock(Job::class);
         $job->tenantId = '1';
         $job->data = [
-            'name' => 'test',
+            'name' => 'DummyModel',
             'args' => [],
             'jwt' => 'test-jwt'
         ];
@@ -30,7 +32,7 @@ class ImporterTest extends TestCase
         $importerMock->expects($this->once())
             ->method('import')
             ->withAnyParameters()
-            ->willReturn([[['create']], [['update']], []]);
+            ->willReturn([[['create']], [['id' => 'f12']], []]);
         File::setImporter($importerMock);
 
         $dbMock = $this->createMock(MysqlDataProvider::class);
@@ -49,6 +51,13 @@ class ImporterTest extends TestCase
             ->method('index')
             ->withAnyParameters();
         FullTextIndex::setProvider($providerMock);
+
+        $mock = $this->createMock(MysqlConnector::class);
+        $mock->expects($this->once())
+            ->method('fetchAll')
+            ->withAnyParameters()
+            ->willReturn([(object)['id' => 'f12']]);
+        Mysql::setConnector($mock);
 
         $importer = new Importer();
         $result = $importer->run($job);

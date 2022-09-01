@@ -539,7 +539,7 @@ class MysqlDataProviderTest extends TestCase
         Mysql::setConnector($mock);
 
         $provider = new MysqlDataProvider();
-        $provider->addJob('1', 'test', []);
+        $provider->addJob('1', 'test', 'DummyModel', []);
     }
 
     public function testFinishJob(): void

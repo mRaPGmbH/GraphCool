@@ -126,8 +126,9 @@ class GraphCoolTest extends TestCase
 
     public function testRunScriptError(): void
     {
-        $this->expectException(RuntimeException::class);
-        GraphCool::runScript(['does-not-exist']);
+        $result = GraphCool::runScript(['does-not-exist']);
+        self::assertFalse($result['success']);
+        self::assertEquals('Script does-not-exist not found.', $result['error']);
     }
 
     public function testRunScriptException(): void
@@ -168,16 +169,18 @@ class GraphCoolTest extends TestCase
         $scheduler = $this->createMock(Scheduler::class);
         $scheduler->expects($this->once())
             ->method('run')
-            ->willThrowException(new RuntimeException('test'));
+            ->willThrowException(new RuntimeException('test message'));
         GraphCool::setScheduler($scheduler);
         $result = GraphCool::runScript(['scheduler']);
-        self::assertEquals([], $result);
+        self::assertFalse($result['success']);
+        self::assertEquals('test message', $result['error']);
     }
 
     public function testRunScriptImporterEmptyJob(): void
     {
         $result = GraphCool::runScript(['importer', $this->createMock(Job::class)]);
-        self::assertEquals([], $result);
+        self::assertFalse($result['success']);
+        self::assertEquals('Typed property Mrap\GraphCool\Definition\Job::$data must not be accessed before initialization', $result['error']);
     }
 
     public function testRunScriptImporter(): void
@@ -198,16 +201,18 @@ class GraphCoolTest extends TestCase
         $mock->expects($this->once())
             ->method('run')
             ->withAnyParameters()
-            ->willThrowException(new RuntimeException());
+            ->willThrowException(new RuntimeException('test message'));
         GraphCool::setImporter($mock);
         $result = GraphCool::runScript(['importer', $this->createMock(Job::class)]);
-        self::assertEquals([], $result);
+        self::assertFalse($result['success']);
+        self::assertEquals('test message', $result['error']);
     }
 
     public function testRunScriptExporterEmptyJob(): void
     {
         $result = GraphCool::runScript(['exporter', $this->createMock(Job::class)]);
-        self::assertEquals([], $result);
+        self::assertFalse($result['success']);
+        self::assertEquals('Typed property Mrap\GraphCool\Definition\Job::$data must not be accessed before initialization', $result['error']);
     }
 
     public function testRunScriptExporter(): void
@@ -228,10 +233,11 @@ class GraphCoolTest extends TestCase
         $mock->expects($this->once())
             ->method('run')
             ->withAnyParameters()
-            ->willThrowException(new RuntimeException());
+            ->willThrowException(new RuntimeException('test message'));
         GraphCool::setExporter($mock);
         $result = GraphCool::runScript(['exporter', $this->createMock(Job::class)]);
-        self::assertEquals([], $result);
+        self::assertFalse($result['success']);
+        self::assertEquals('test message', $result['error']);
     }
 
 }

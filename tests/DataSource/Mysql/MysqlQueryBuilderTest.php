@@ -304,7 +304,7 @@ class MysqlQueryBuilderTest extends TestCase
             ]],
         );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node` LEFT JOIN `node_property` AS `node_last_name` ON (`node_last_name`.`node_id` = `node`.`id` AND `node_last_name`.`property` = :p1 AND `node_last_name`.`deleted_at` IS NULL) LEFT JOIN `node_property` AS `node_date` ON (`node_date`.`node_id` = `node`.`id` AND `node_date`.`property` = :p7 AND `node_date`.`deleted_at` IS NULL) WHERE ((`node_last_name`.`value_string` LIKE :p2 AND `node`.`created_at` BETWEEN :p3 AND :p4 AND `node`.`id` IN (:p5,:p6)) OR `node_date`.`value_int` IS NULL) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node` LEFT JOIN `node_property` AS `node_last_name` ON (`node_last_name`.`node_id` = `node`.`id` AND `node_last_name`.`property` = :p1 AND `node_last_name`.`deleted_at` IS NULL) LEFT JOIN `node_property` AS `node_date` ON (`node_date`.`node_id` = `node`.`id` AND `node_date`.`property` = :p7 AND `node_date`.`deleted_at` IS NULL) WHERE `node`.`model` = :p0 AND (((`node_last_name`.`value_string` LIKE :p2 AND `node`.`created_at` BETWEEN :p3 AND :p4 AND `node`.`id` IN (:p5,:p6)) OR `node_date`.`value_int` IS NULL)) AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
@@ -346,7 +346,7 @@ class MysqlQueryBuilderTest extends TestCase
         $builder->tenant('1');
         $builder->where(['fulltextSearch' => 'searchword']);
         $query = trim($builder->toSql());
-        $expectedSql = 'SELECT * FROM `node`  WHERE `node`.`id` IN (\'found-id\') AND `node`.`model` = :p0 AND `node`.`tenant_id` = :p1 AND `node`.`deleted_at` IS NULL';
+        $expectedSql = 'SELECT * FROM `node`  WHERE `node`.`model` = :p0 AND `node`.`tenant_id` = :p1 AND (`node`.`id` IN (\'found-id\')) AND `node`.`deleted_at` IS NULL';
         self::assertSame($expectedSql, $query);
         $params = $builder->getParameters();
         $expected = [
@@ -374,7 +374,7 @@ class MysqlQueryBuilderTest extends TestCase
             ['column' => 'id', 'operator' => 'IN', 'value' => []]
         );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  WHERE 0=1 AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node`  WHERE `node`.`model` = :p0 AND (0=1) AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
@@ -442,15 +442,16 @@ class MysqlQueryBuilderTest extends TestCase
         $model = new DummyModel();
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $builder->whereHas('1', $model, 'DummyModel', Relation::BELONGS_TO_MANY,
-            ['OR' => []]
+            ['column' => 'created_at', 'operator' => 'IS NOT NULL']
         );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`child_id` = `node`.`id` AND `DummyModelEdge`.`parent` = :p1) WHERE `DummyModelEdge`.`parent_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
+        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`child_id` = `node`.`id` AND `DummyModelEdge`.`parent` = :p1) WHERE `node`.`model` = :p0 AND (`DummyModelEdge`.`parent_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`tenant_id` = :DummyModel1 AND (`node`.`created_at` IS NOT NULL) AND `node`.`deleted_at` IS NULL )) AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
             ':p1' => 'DummyModel',
             ':DummyModel0' => 'DummyModel',
+            ':DummyModel1' => '1',
         ];
         self::assertSame($expected, $params);
     }
@@ -460,14 +461,21 @@ class MysqlQueryBuilderTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $model = new DummyModel();
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
-        $builder->whereHas('1', $model, 'DummyModel', Relation::HAS_ONE, ['column' => 'updated_at', 'operator' => 'IS NULL']);
+        $builder->whereHas(
+            '1',
+            $model,
+            'DummyModel',
+            Relation::HAS_ONE,
+            ['column' => 'updated_at', 'operator' => 'IS NULL']
+        );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`parent_id` = `node`.`id` AND `DummyModelEdge`.`child` = :p1) WHERE `DummyModelEdge`.`child_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`updated_at` IS NULL AND `node`.`deleted_at` IS NULL ) AND `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
+        self::assertSame('SELECT * FROM `node`  LEFT JOIN `edge` AS `DummyModelEdge` ON (`DummyModelEdge`.`parent_id` = `node`.`id` AND `DummyModelEdge`.`child` = :p1) WHERE `node`.`model` = :p0 AND (`DummyModelEdge`.`child_id` IN (SELECT `node`.`id` FROM `node`  WHERE `node`.`model` = :DummyModel0 AND `node`.`tenant_id` = :DummyModel1 AND (`node`.`updated_at` IS NULL) AND `node`.`deleted_at` IS NULL )) AND `node`.`deleted_at` IS NULL GROUP BY `node`.`id`', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
             ':p1' => 'DummyModel',
             ':DummyModel0' => 'DummyModel',
+            ':DummyModel1' => '1',
         ];
         self::assertSame($expected, $params);
     }
@@ -478,7 +486,7 @@ class MysqlQueryBuilderTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $model = new DummyModel();
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
-        $builder->whereHas('1', $model, 'DummyModel', 'not-a-valid-relation-type', ['OR' => []]);
+        $builder->whereHas('1', $model, 'DummyModel', 'not-a-valid-relation-type', ['column' => 'created_at', 'operator' => 'IS NOT NULL']);
     }
 
     public function testEmptyWhereReleated(): void

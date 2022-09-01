@@ -7,6 +7,7 @@ namespace Mrap\GraphCool\Definition;
 use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Exception\DoNotUpdateDerivedFieldException;
 use stdClass;
 
 class Model extends stdClass
@@ -34,6 +35,22 @@ class Model extends stdClass
             self::$instances[$name] = new $classname();
         }
         return self::$instances[$name];
+    }
+
+    public function onChange(stdClass $loaded, array $changes): void {}
+    public function onDelete(stdClass $loaded): void {}
+
+    public function udpateDerivedFields(string $tenantId, array $changes, ?string $id = null): array
+    {
+        foreach ($this as $key => $field) {
+            if (!$field instanceof Field || $field->derived !== true) {
+                continue;
+            }
+            try {
+                $changes[$key] = ($field->closure)($changes, $tenantId, $id);
+            } catch (DoNotUpdateDerivedFieldException){}
+        }
+        return $changes;
     }
 
     /**
@@ -171,5 +188,6 @@ class Model extends stdClass
         }
         return $result;
     }
+
 
 }

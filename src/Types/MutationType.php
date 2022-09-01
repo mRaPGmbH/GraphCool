@@ -225,7 +225,13 @@ class MutationType extends BaseType
         if (str_starts_with($info->fieldName, 'create')) {
             $name = $info->returnType->toString();
             Authorization::authorize('create', $name);
-            return DB::insert(JwtAuthentication::tenantId(), $name, $args);
+            $model = Model::get($name);
+            $data = $model->udpateDerivedFields(JwtAuthentication::tenantId(), $args);
+            $result = DB::insert(JwtAuthentication::tenantId(), $name, $data);
+            if ($result !== null) {
+                $model->onChange($result, $args);
+            }
+            return $result;
         }
         if (str_starts_with($info->fieldName, 'updateMany')) {
             $name = substr($info->fieldName, 10, -1);
@@ -235,7 +241,13 @@ class MutationType extends BaseType
         if (str_starts_with($info->fieldName, 'update')) {
             $name = $info->returnType->toString();
             Authorization::authorize('update', $name);
-            return DB::update(JwtAuthentication::tenantId(), $name, $args);
+            $model = Model::get($name);
+            $args['data'] = $model->udpateDerivedFields(JwtAuthentication::tenantId(), $args['data'], $args['id']);
+            $result = DB::update(JwtAuthentication::tenantId(), $name, $args);
+            if ($result !== null) {
+                $model->onChange($result, $args);
+            }
+            return $result;
         }
         if (str_starts_with($info->fieldName, 'delete')) {
             $name = $info->returnType->toString();
@@ -252,11 +264,10 @@ class MutationType extends BaseType
                 $name = substr($info->fieldName, 6, -6);
                 Authorization::authorize('import', $name);
                 return $this->resolveImportAsync($name, $args);
-            } else {
-                $name = substr($info->fieldName, 6, -1);
-                Authorization::authorize('import', $name);
-                return $this->resolveImport($name, $args);
             }
+            $name = substr($info->fieldName, 6, -1);
+            Authorization::authorize('import', $name);
+            return $this->resolveImport($name, $args);
         }
         $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
         if (str_ends_with($info->fieldName, 'Async') && str_starts_with($info->fieldName, 'export')) {

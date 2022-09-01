@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
-use Mrap\GraphCool\Utils\FileUpload;
 use RuntimeException;
 use stdClass;
 
@@ -36,6 +35,9 @@ class MysqlNodeWriter
                 continue;
             }
             $value = $data[$key] ?? $item->default ?? null;
+            if ($value instanceof Closure) {
+                $value = $value();
+            }
             if ($value === '') {
                 $value = null;
             }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Closure;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
@@ -33,6 +34,9 @@ class MysqlConverter
     {
         if ($field->null === false && $value === null) {
             $value = $field->default ?? null;
+            if ($value instanceof Closure) {
+                $value = $value();
+            }
             if ($value === null) {
                 throw new RuntimeException('Field may not be null. ' . print_r($field, true));
             }
