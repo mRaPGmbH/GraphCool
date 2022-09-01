@@ -47,7 +47,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
     public function search(string $tenantId, string $searchString): array
     {
         $parts = [];
-        $where = [];
+        $where = ['tenant_id = ' . Mysql::getPdo()->quote('%' . $tenantId . '%')];
         foreach ($this->split($searchString) as $part) {
             if (mb_strlen($part) > 3) {
                 $parts[] = '+' . $part . '*';
