@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Utils;
 
+use Closure;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Job;
@@ -20,9 +21,14 @@ class Exporter
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $jwt;
 
+        $data = DB::findAll($job->tenantId, $name, $args)->data;
+        if ($data instanceof Closure) {
+            $data = $data();
+        }
+
         $file = File::write(
             $name,
-            DB::findAll($job->tenantId, $name, $args)->data ?? [],
+            $data ?? [],
             $args,
             $type
         );
