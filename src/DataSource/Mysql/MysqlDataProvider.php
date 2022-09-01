@@ -94,7 +94,8 @@ class MysqlDataProvider implements DataProvider
 
         $result = new stdClass();
         $result->paginatorInfo = PaginatorInfoType::create(count($ids), $page, $limit, $total);
-        $result->data = $this->loadAll($tenantId, $name, $ids, $resultType);
+        $result->data = function() use($tenantId, $name, $ids, $resultType) {return $this->loadAll($tenantId, $name, $ids, $resultType);};
+        $result->ids = $ids;
         return $result;
     }
 

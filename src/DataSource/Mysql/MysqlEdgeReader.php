@@ -87,6 +87,7 @@ class MysqlEdgeReader
             'NONTRASHED_EDGES_OF_ANY_NODES' => $query->nontrashedEdgesOfAnyNodes(),
             default => null
         };
+        //throw new Error($query->toSql());
 
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $edgeIds) {
             $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);

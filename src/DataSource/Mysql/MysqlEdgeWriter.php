@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Closure;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -86,10 +87,14 @@ class MysqlEdgeWriter
             /** @var Field $field */
             foreach (get_object_vars($relation) as $key => $field) {
                 if (!isset($data[$key])) {
-                    if (($field->default ?? null) !== null) {
+                    $value = $field->default ?? null;
+                    if ($value instanceof Closure) {
+                        $value = $value();
+                    }
+                    if ($value !== null) {
                         [$intValue, $stringValue, $floatValue] = MysqlConverter::convertInputTypeToDatabaseTriplet(
                             $field,
-                            $field->default
+                            $value
                         );
                     } else {
                         // TODO: delete edge property?

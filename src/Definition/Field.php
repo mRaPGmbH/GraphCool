@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Definition;
 
+use Closure;
 use GraphQL\Type\Definition\Type;
 
 class Field
@@ -28,7 +29,7 @@ class Field
     public int $decimalPlaces;
     public bool $null = false;
     public string $description;
-    public string|int|float|bool $default;
+    public string|int|float|bool|Closure $default;
     public bool $readonly = false;
     /** @var mixed[] */
     public array $enumValues;
@@ -36,6 +37,8 @@ class Field
     public bool $uniqueIgnoreTrashed = false;
     public bool $fulltextIndex = false;
     public bool $history = false;
+    public bool $derived = false;
+    public Closure $closure;
 
     protected function __construct(string $type)
     {
@@ -175,7 +178,7 @@ class Field
         return $this;
     }
 
-    public function default(string|int|float|bool $default): Field
+    public function default(string|int|float|bool|Closure $default): Field
     {
         $this->default = $default;
         return $this;
@@ -191,6 +194,13 @@ class Field
     {
         $this->history = true;
         return $this;
+    }
+
+    public function derived(Closure $closure): Field
+    {
+        $this->derived = true;
+        $this->closure = $closure;
+        return $this->readonly();
     }
 
 }
