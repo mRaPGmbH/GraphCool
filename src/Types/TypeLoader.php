@@ -113,7 +113,7 @@ class TypeLoader
             Type::BOOLEAN => Type::boolean(),
             Type::FLOAT, Field::DECIMAL => Type::float(),
             Type::ID => Type::id(),
-            Type::INT => Type::int(),
+            Type::INT, Field::AUTO_INCREMENT => Type::int(),
             Field::COUNTRY_CODE => $this->load('_CountryCode')(),
             Field::CURRENCY_CODE => $this->load('_CurrencyCode')(),
             Field::LANGUAGE_CODE => $this->load('_LanguageCode')(),
