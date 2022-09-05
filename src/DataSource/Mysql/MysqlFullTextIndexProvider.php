@@ -47,7 +47,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
     public function search(string $tenantId, string $searchString): array
     {
         $parts = [];
-        $where = ['tenant_id = ' . Mysql::getPdo()->quote('%' . $tenantId . '%')];
+        $where = ['tenant_id = ' . Mysql::getPdo()->quote($tenantId)];
         foreach ($this->split($searchString) as $part) {
             if (mb_strlen($part) > 3) {
                 $parts[] = '+' . $part . '*';
@@ -64,7 +64,6 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
 
         $result = [];
         $sql = 'SELECT `node_id` FROM `fulltext` WHERE ' . implode(' AND ', $where);
-        //echo $sql . PHP_EOL;
         try {
             foreach (Mysql::getPdo()->query($sql)->fetchAll(\PDO::FETCH_OBJ) as $row) {
                 $result[] = $row->node_id;
