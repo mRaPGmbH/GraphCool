@@ -485,7 +485,7 @@ class MysqlQueryBuilder
             $field = $this->model->$property;
         }
         return match ($field->type) {
-            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL => '`value_int`',
+            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL, Field::AUTO_INCREMENT => '`value_int`',
             Type::FLOAT => '`value_float`',
             default => '`value_string`'
         };
