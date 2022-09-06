@@ -209,9 +209,13 @@ class QueryType extends BaseType
             if ($info->returnType->name === '_FileExport') {
                 $name = ucfirst(substr($info->fieldName, 6, -1));
                 Authorization::authorize('export', $name);
+                $data = DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data;
+                if ($data instanceof \Closure) {
+                    $data = $data();
+                }
                 return File::write(
                     $name,
-                    DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data ?? [],
+                    $data ?? [],
                     $args,
                     $type
                 );
