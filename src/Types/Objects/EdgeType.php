@@ -7,8 +7,8 @@ namespace Mrap\GraphCool\Types\Objects;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class EdgeType extends ObjectType
 {
@@ -17,7 +17,7 @@ class EdgeType extends ObjectType
         $names = explode('__', substr($name, 1, -4), 2);
         $key = $names[1];
 
-        $model = Model::get($names[0]);
+        $model = model($names[0]);
         $relation = $model->$key;
         $type = $typeLoader->load($relation->name);
         $fields = [];

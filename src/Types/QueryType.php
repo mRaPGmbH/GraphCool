@@ -22,6 +22,7 @@ use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class QueryType extends BaseType
 {
@@ -280,7 +281,7 @@ class QueryType extends BaseType
 
     protected function checkExistence(array $ids, string $name, array &$errors): void
     {
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
 
         $query->select(['id'])

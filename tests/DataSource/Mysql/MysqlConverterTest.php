@@ -6,8 +6,8 @@ namespace Mrap\GraphCool\Tests\DataSource\Mysql;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlConverter;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Tests\TestCase;
+use function Mrap\GraphCool\model;
 
 class MysqlConverterTest extends TestCase
 {
@@ -81,7 +81,7 @@ class MysqlConverterTest extends TestCase
     public function testConvertProperties(): void
     {
         require_once($this->dataPath(). '/app/Models/DummyModel.php');
-        $model = Model::get('DummyModel');
+        $model = model('DummyModel');
         $properties = [
             (object)['property' => 'doesnotexist', 'value_int' => 12, 'value_string' => 'asdf', 'value_float' => 0.432],
             (object)['property' => 'last_name', 'value_int' => null, 'value_string' => 'Huber', 'value_float' => null],
@@ -116,7 +116,7 @@ class MysqlConverterTest extends TestCase
             ['where' => ['AND'=>[['column' => 'last_name', 'operator' => '=', 'value' => 3]]], 'expected' => ['AND'=>[['column' => 'last_name', 'operator' => '=', 'value' => '3']]]],
             ['where' => ['OR'=>[['column' => 'last_name', 'operator' => '=', 'value' => 3]]], 'expected' => ['OR'=>[['column' => 'last_name', 'operator' => '=', 'value' => '3']]]],
         ];
-        $model = Model::get('DummyModel');
+        $model = model('DummyModel');
         foreach ($compares as $compare) {
             $result = MysqlConverter::convertWhereValues($model, $compare['where']);
             self::assertSame($compare['expected'], $result);

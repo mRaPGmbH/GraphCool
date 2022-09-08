@@ -14,6 +14,7 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class ModelType extends ObjectType
 {
@@ -21,7 +22,7 @@ class ModelType extends ObjectType
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
-        $this->model = Model::get($name);
+        $this->model = model($name);
         $config = [
             'name' => $name,
             'fields' => [],

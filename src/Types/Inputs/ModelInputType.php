@@ -8,9 +8,9 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\NonNull;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class ModelInputType extends InputObjectType
 {
@@ -18,7 +18,7 @@ class ModelInputType extends InputObjectType
     public function __construct(string $name, TypeLoader $typeLoader)
     {
         $shortname = substr($name, 1, -5);
-        $model = Model::get($shortname);
+        $model = model($shortname);
 
         $fields = [];
         foreach ($model as $key => $field) {

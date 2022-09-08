@@ -6,8 +6,8 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Closure;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
+use function Mrap\GraphCool\model;
 
 class MysqlEdgeWriter
 {
@@ -23,7 +23,7 @@ class MysqlEdgeWriter
         if (empty($id)) {
             return;
         }
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if (!$item instanceof Relation) {
                 continue;
@@ -242,7 +242,7 @@ class MysqlEdgeWriter
         if (count($ids) === 0) {
             return;
         }
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if (!array_key_exists($key, $updates)) {
                 continue;

@@ -6,6 +6,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
+use function Mrap\GraphCool\model;
 
 class BaseType extends ObjectType
 {
@@ -50,7 +51,7 @@ class BaseType extends ObjectType
             'columns' => Type::nonNull(Type::listOf(Type::nonNull($typeLoader->load('_' . $name . 'ColumnMapping')))),
             '_timezone' => $typeLoader->load('_TimezoneOffset'),
         ];
-        $model = Model::get($name);
+        $model = model($name);
         foreach ($model as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;

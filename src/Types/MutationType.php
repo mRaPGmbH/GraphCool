@@ -22,6 +22,7 @@ use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class MutationType extends BaseType
 {
@@ -225,11 +226,11 @@ class MutationType extends BaseType
         if (str_starts_with($info->fieldName, 'create')) {
             $name = $info->returnType->toString();
             Authorization::authorize('create', $name);
-            $model = Model::get($name);
+            $model = model($name);
             $data = $model->udpateDerivedFields(JwtAuthentication::tenantId(), $args);
             $result = DB::insert(JwtAuthentication::tenantId(), $name, $data);
             if ($result !== null) {
-                $model->onChange($result, $args);
+                $model->onSave($result, $args);
             }
             return $result;
         }
@@ -241,11 +242,11 @@ class MutationType extends BaseType
         if (str_starts_with($info->fieldName, 'update')) {
             $name = $info->returnType->toString();
             Authorization::authorize('update', $name);
-            $model = Model::get($name);
+            $model = model($name);
             $args['data'] = $model->udpateDerivedFields(JwtAuthentication::tenantId(), $args['data'], $args['id']);
             $result = DB::update(JwtAuthentication::tenantId(), $name, $args);
             if ($result !== null) {
-                $model->onChange($result, $args);
+                $model->onSave($result, $args);
             }
             return $result;
         }

@@ -3,11 +3,11 @@
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Mrap\GraphCool\DataSource\FullTextIndexProvider;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\ErrorHandler;
 use PHPUnit\Util\Xml\Exception;
 use Throwable;
+use function Mrap\GraphCool\model;
 
 class MysqlFullTextIndexProvider implements FullTextIndexProvider
 {
@@ -90,7 +90,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
             if (count($ids) === 0) {
                 continue;
             }
-            $model =  Model::get($name);
+            $model = model($name);
             $fulltextProps = $model->getPropertyNamesForFulltextIndexing();
             if (count($fulltextProps) > 0) {
                 $sql = $this->getSql($tenantId, $name, $fulltextProps, $ids);
@@ -265,7 +265,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         $nodeSqls = [];
         $edgeSqls = [];
         foreach (ClassFinder::models() as $name => $classname) {
-            $model = Model::get($name);
+            $model = model($name);
             $nodeProps = $model->getPropertyNamesForFulltextIndexing();
             if (count($nodeProps) > 0) {
                 $nodeSqls[] = '(`p`.`property` IN ' . $this->quoteArray($nodeProps)

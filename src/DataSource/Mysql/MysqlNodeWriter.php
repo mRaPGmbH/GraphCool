@@ -8,9 +8,9 @@ use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use RuntimeException;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class MysqlNodeWriter
 {
@@ -23,7 +23,7 @@ class MysqlNodeWriter
     public function insert(string $tenantId, string $name, string $id, array $data): void
     {
         $this->insertNode($tenantId, $id, $name);
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if (!$item instanceof Field) {
                 continue;
@@ -114,7 +114,7 @@ class MysqlNodeWriter
      */
     public function update(string $tenantId, string $name, string $id, array $updates): void
     {
-        $model = Model::get($name);
+        $model = model($name);
         Mysql::edgeWriter()->updateEdges($tenantId, $name, [$id], $updates);
 
         $updates = $model->afterRelationUpdateButBeforeNodeUpdate($tenantId, $id, $updates);
@@ -140,7 +140,7 @@ class MysqlNodeWriter
      */
     public function updateMany(string $tenantId, string $name, array $ids, array $updateData): stdClass
     {
-        $model = Model::get($name);
+        $model = model($name);
         $updates = [
             'deleted_at' => null
         ];

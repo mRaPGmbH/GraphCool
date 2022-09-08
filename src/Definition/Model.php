@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
-use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Exception\DoNotUpdateDerivedFieldException;
 use stdClass;
 
 class Model extends stdClass
 {
-    /** @var Model[] */
-    private static array $instances = [];
-    private Settings $settings;
 
     public function __construct()
     {
@@ -22,22 +18,9 @@ class Model extends stdClass
         $this->created_at = Field::createdAt();
         $this->updated_at = Field::updatedAt();
         $this->deleted_at = Field::deletedAt();
-        $this->settings = new Settings();
     }
 
-    public static function get(string $name): Model
-    {
-        if (!isset(self::$instances[$name])) {
-            $classname = 'App\\Models\\' . $name;
-            if (!class_exists($classname)) {
-                throw new Error('Unknown entity: '.$name);
-            }
-            self::$instances[$name] = new $classname();
-        }
-        return self::$instances[$name];
-    }
-
-    public function onChange(stdClass $loaded, array $changes): void {}
+    public function onSave(stdClass $loaded, array $changes): void {}
     public function onDelete(stdClass $loaded): void {}
 
     public function udpateDerivedFields(string $tenantId, array $changes, ?string $id = null): array
@@ -48,7 +31,9 @@ class Model extends stdClass
             }
             try {
                 $changes[$key] = ($field->closure)($changes, $tenantId, $id);
-            } catch (DoNotUpdateDerivedFieldException){}
+            } catch (DoNotUpdateDerivedFieldException){
+                // do nothing
+            }
         }
         return $changes;
     }
@@ -109,13 +94,6 @@ class Model extends stdClass
     {
     }
 
-    /**
-     * @return Settings
-     */
-    public function settings(): Settings
-    {
-        return $this->settings;
-    }
 
     public function getPropertyNamesForFulltextIndexing(): array
     {

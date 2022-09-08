@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class DynamicEnumType extends EnumType
 {
@@ -16,7 +16,7 @@ class DynamicEnumType extends EnumType
         $names = explode('__', substr($name, 1, -4), 3);
         $key = $names[1];
 
-        $model = Model::get($names[0]);
+        $model = model($names[0]);
 
         $field = $model->$key;
         if (isset($names[2]) && $field instanceof Relation) {

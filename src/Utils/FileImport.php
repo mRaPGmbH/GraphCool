@@ -19,6 +19,8 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use RuntimeException;
 use stdClass;
+use function Mrap\GraphCool\model;
+
 
 /**
  * @deprecated
@@ -35,7 +37,7 @@ class FileImport
     {
         $this->tenantId = $tenantId;
         $this->name = $name;
-        $this->model = Model::get($name);
+        $this->model = model($name);
     }
 
     /**

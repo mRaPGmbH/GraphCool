@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use RuntimeException;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class MysqlNodeReader
 {
@@ -31,7 +31,7 @@ class MysqlNodeReader
                 . $node->model . '" instead (id:"' . $id . '")'
             );
         }
-        $model = Model::get($name);
+        $model = model($name);
         foreach ($this->fetchNodeProperties($id) as $property) {
             $key = $property->property;
             if (!property_exists($model, $key)) {

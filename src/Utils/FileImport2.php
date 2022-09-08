@@ -22,6 +22,7 @@ use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use RuntimeException;
+use function Mrap\GraphCool\model;
 
 class FileImport2
 {
@@ -43,7 +44,7 @@ class FileImport2
         $create = [];
         $update = [];
 
-        $model = Model::get($name);
+        $model = model($name);
 
         $columns = $args['columns'];
         $edgeColumns = $this->getEdgeColumns($model, $args);
@@ -568,7 +569,7 @@ class FileImport2
         if ($relation === null || !($relation instanceof Relation)) {
             return;
         }
-        $model = Model::get($relation->name);
+        $model = model($relation->name);
         $query = MysqlQueryBuilder::forModel($model, $relation->name)->tenant(JwtAuthentication::tenantId());
 
         $query->select(['id'])

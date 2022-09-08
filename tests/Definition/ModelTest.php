@@ -52,13 +52,6 @@ class ModelTest extends TestCase
         self::assertSame($data, $result);
     }
 
-    public function testSettings()
-    {
-        $model = new Model();
-        $settings = $model->settings();
-        self::assertInstanceOf(Settings::class, $settings);
-    }
-
     public function testEmptyMethods()
     {
         $model = new Model();

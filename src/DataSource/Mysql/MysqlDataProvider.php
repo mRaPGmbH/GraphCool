@@ -9,7 +9,6 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
-use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
@@ -19,6 +18,8 @@ use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Ramsey\Uuid\Uuid;
 use stdClass;
+
+use function Mrap\GraphCool\model;
 
 class MysqlDataProvider implements DataProvider
 {
@@ -54,7 +55,7 @@ class MysqlDataProvider implements DataProvider
         $offset = ($page - 1) * $limit;
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         if (isset($args['where'])) {
@@ -101,7 +102,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         $valueType = match ($model->$key->type) {
@@ -130,7 +131,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getSum(?string $tenantId, string $name, string $key): float|bool|int|string
     {
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
         $valueType = match ($model->$key->type) {
@@ -158,7 +159,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getCount(?string $tenantId, string $name): int
     {
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
         return (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
     }
@@ -211,7 +212,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $model = Model::get($name);
+            $model = model($name);
             $id = Uuid::uuid4()->toString();
             $data = $this->storeFiles($model, $name, $data, $id);
             $data = $model->beforeInsert($tenantId, $data);
@@ -244,7 +245,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $model = Model::get($name);
+            $model = model($name);
             $oldNode = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
             if ($oldNode === null) {
                 throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
@@ -294,7 +295,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $model = Model::get($name);
+            $model = model($name);
             $updateData = $data['data'] ?? [];
             $resultType = $data['result'] ?? ResultType::DEFAULT;
             $this->checkNull($model, $updateData);
@@ -323,7 +324,7 @@ class MysqlDataProvider implements DataProvider
             }
             $this->softDeleteFiles($name, $node);
             Mysql::nodeWriter()->delete($tenantId, $id);
-            $model = Model::get($name);
+            $model = model($name);
             $model->afterDelete($node);
             Mysql::history()->recordDelete($node, $model->getPropertyNamesForHistory());
             Mysql::commit();
@@ -338,7 +339,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $model = Model::get($name);
+            $model = model($name);
             $model->beforeRestore($tenantId, $id);
             $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
             if ($node === null) {
@@ -721,7 +722,7 @@ class MysqlDataProvider implements DataProvider
 
     protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
     {
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if (
                 !$item instanceof Field
@@ -740,7 +741,7 @@ class MysqlDataProvider implements DataProvider
 
     protected function softDeleteFiles(string $name, stdClass $node): void
     {
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if ($item instanceof Field && $item->type === Field::FILE) {
                 // $node contains the replaced file-object instead of the original db-value
@@ -755,7 +756,7 @@ class MysqlDataProvider implements DataProvider
 
     protected function restoreFiles(string $name, stdClass $node): void
     {
-        $model = Model::get($name);
+        $model = model($name);
         foreach (get_object_vars($model) as $key => $item) {
             if ($item instanceof Field && $item->type === Field::FILE) {
                 $oldValue = $this->getOldValue($name, $node->id, $key);

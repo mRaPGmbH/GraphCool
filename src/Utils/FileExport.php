@@ -17,6 +17,7 @@ use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
 use RuntimeException;
 use stdClass;
+use function Mrap\GraphCool\model;
 
 class FileExport
 {
@@ -37,7 +38,7 @@ class FileExport
      */
     public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
     {
-        $model = Model::get($name);
+        $model = model($name);
 
         $this->type = $type;
 

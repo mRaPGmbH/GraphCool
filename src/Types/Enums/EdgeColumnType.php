@@ -6,8 +6,8 @@ namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class EdgeColumnType extends EnumType
 {
@@ -16,7 +16,7 @@ class EdgeColumnType extends EnumType
     {
         $names = explode('__', substr($name, 1, -10), 2);
         $key = $names[1];
-        $parentModel = Model::get($names[0]);
+        $parentModel = model($names[0]);
 
         $relation = $parentModel->$key;
 

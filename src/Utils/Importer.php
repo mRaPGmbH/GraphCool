@@ -9,7 +9,7 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Job;
-use Mrap\GraphCool\Definition\Model;
+use function Mrap\GraphCool\model;
 
 class Importer
 {
@@ -94,7 +94,7 @@ class Importer
 
     protected function checkExistence(array $ids, string $name, array &$errors): void
     {
-        $model = Model::get($name);
+        $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
 
         $query->select(['id'])
