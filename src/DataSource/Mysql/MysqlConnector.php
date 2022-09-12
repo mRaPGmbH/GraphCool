@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
 use PDO;
@@ -105,13 +106,19 @@ class MysqlConnector
     /**
      * @param string $sql
      * @param mixed[] $params
+     * @param string $name
      * @return stdClass|null
      */
-    public function fetch(string $sql, array $params): ?stdClass
+    public function fetch(string $sql, array $params, ?string $name = null): stdClass|Entity|null
     {
         $statement = $this->statement($sql);
         $statement->execute($params);
-        $return = $statement->fetch(PDO::FETCH_OBJ);
+        if ($name === null) {
+            $statement->setFetchMode(PDO::FETCH_OBJ);
+        } else {
+            $statement->setFetchMode(PDO::FETCH_CLASS, Entity::class, [$name]);
+        }
+        $return = $statement->fetch();
         if ($return === false) {
             return null;
         }

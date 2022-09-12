@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\GraphCool;
 use Mrap\GraphCool\Utils\StopWatch;
+use phpDocumentor\Reflection\Types\Null_;
 use stdClass;
 
 class Mysql
@@ -67,11 +69,12 @@ class Mysql
     /**
      * @param string $sql
      * @param mixed[] $params
-     * @return stdClass|null
+     * @param string $name
+     * @return stdClass|Entity|null
      */
-    public static function fetch(string $sql, array $params): ?stdClass
+    public static function fetch(string $sql, array $params, ?string $name = null): stdClass|Entity|null
     {
-        return static::get()->fetch($sql, $params);
+        return static::get()->fetch($sql, $params, $name);
     }
 
     /**

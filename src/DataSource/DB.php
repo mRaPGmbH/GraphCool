@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Utils\StopWatch;
@@ -23,7 +24,7 @@ class DB
         static::$provider = $provider;
     }
 
-    public static function load(?string $tenantId, string $name, string $id): ?stdClass
+    public static function load(?string $tenantId, string $name, string $id): ?Entity
     {
         StopWatch::start(__METHOD__);
         $result = static::get()->load($tenantId, $name, $id);

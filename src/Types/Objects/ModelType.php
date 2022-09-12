@@ -9,16 +9,18 @@ use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\TypeLoader;
-use stdClass;
 use function Mrap\GraphCool\model;
 
 class ModelType extends ObjectType
 {
     protected Model $model;
+
+    public function test(): void {}
 
     public function __construct(string $name, TypeLoader $typeLoader)
     {
@@ -76,13 +78,13 @@ class ModelType extends ObjectType
     }
 
     /**
-     * @param stdClass $modelData
+     * @param Entity $modelData
      * @param mixed[] $args
      * @param mixed $context
      * @param ResolveInfo $info
      * @return mixed
      */
-    protected function resolve(stdClass $modelData, array $args, mixed $context, ResolveInfo $info): mixed
+    protected function resolve(Entity $modelData, array $args, mixed $context, ResolveInfo $info): mixed
     {
         $field = $this->model->{$info->fieldName} ?? null;
         if ($field instanceof Relation) {

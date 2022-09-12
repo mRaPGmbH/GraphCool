@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource;
 
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Job;
 use stdClass;
 
@@ -11,7 +12,7 @@ interface DataProvider
 {
     public function migrate(): void;
 
-    public function load(?string $tenantId, string $name, string $id, ?string $resultType = 'DEFAULT'): ?stdClass;
+    public function load(?string $tenantId, string $name, string $id, ?string $resultType = 'DEFAULT'): ?Entity;
 
     /**
      * @param string|null $tenantId

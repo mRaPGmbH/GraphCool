@@ -13,6 +13,7 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -252,22 +253,22 @@ class QueryType extends BaseType
         $max = $total - min((int)round($total/2), count($update));
         $i = 1;
         $ids = [];
-        foreach ($update as $nr => $row) {
-            $ids[$nr] = $row['id'];
+        foreach ($update as $nr => $entity) {
+            $ids[$nr] = $entity->id;
         }
         $this->checkExistence($ids, $name, $errors);
-        foreach ($create as $row) {
-            $row['id'] = 'NEW';
-            $row['created_at'] = time() * 1000;
-            $data[] = (object) $row;
+        foreach ($create as $entity) {
+            $entity->id = 'NEW';
+            $entity->created_at = time() * 1000;
+            $data[] = $entity;
             if ($i >= $max) {
                 break;
             }
             $i++;
         }
-        foreach ($update as $row) {
-            $row['created_at'] = time() * 1000;
-            $data[] = (object) $row;
+        foreach ($update as $entity) {
+            $entity->created_at = time() * 1000;
+            $data[] = $entity;
             if ($i >= $total) {
                 break;
             }

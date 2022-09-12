@@ -14,6 +14,7 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
@@ -97,8 +98,8 @@ class FileImport2
             } else {
                 $id = $cells[$idKey]->getValue() ?? null;
             }
-            $item = $this->getItem($model, $row, $mapping, $edgeMapping, $errors, $i);
-            if ($item !== null && $item !== []) {
+            $item = $this->getItem($name, $row, $mapping, $edgeMapping, $errors, $i);
+            if ($item !== null) {
                 if (empty($id)) {
                     $create[$i] = $item;
                 } else {
@@ -364,17 +365,17 @@ class FileImport2
      * @throws Error
      */
     protected function getItem(
-        Model $model,
+        string $name,
         Row $row,
         array $mapping,
         array $edgeMapping,
         array &$errors,
         int $rowNumber
-    ): ?array {
-        $data = [];
+    ): ?Entity {
+        $entity = new Entity($name);
         $cells = $row->getCells();
         $error = false;
-        foreach (get_object_vars($model) as $key => $field) {
+        foreach ($entity->_vars() as $key => $field) {
             if ($field instanceof Field && isset($mapping[$key])) {
                 $columnNumber = $mapping[$key];
                 try {
@@ -422,15 +423,15 @@ class FileImport2
                     $error = true;
                     continue;
                 }
-                $data[$key] = $value;
+                $entity->$key = $value;
             } elseif ($field instanceof Relation && isset($edgeMapping[$key])) {
-                $data[$key] = $this->importRelation($field, $key, $cells, $edgeMapping[$key], $errors, $rowNumber);
+                $entity->$key = $this->importRelation($field, $key, $cells, $edgeMapping[$key], $errors, $rowNumber);
             }
         }
-        if ($error === true) {
+        if ($error === true || count($entity->_vars()) === 0) {
             return null;
         }
-        return $data;
+        return $entity;
     }
 
     protected function convertField(Field $field, mixed $value): float|int|string|null

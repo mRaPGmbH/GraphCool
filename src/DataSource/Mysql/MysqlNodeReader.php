@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use RuntimeException;
@@ -18,7 +19,7 @@ class MysqlNodeReader
         string $name,
         string $id,
         ?string $resultType = ResultType::DEFAULT
-    ): ?stdClass {
+    ): ?Entity {
         $node = $this->fetchNode($tenantId, $id, $name, $resultType);
         if ($node === null) {
             // @codeCoverageIgnoreStart
@@ -46,7 +47,7 @@ class MysqlNodeReader
         return Mysql::edgeReader()->loadEdges($node, $name);
     }
 
-    protected function fetchNode(?string $tenantId, string $id, string $name, ?string $resultType = ResultType::DEFAULT): ?stdClass
+    protected function fetchNode(?string $tenantId, string $id, string $name, ?string $resultType = ResultType::DEFAULT): ?Entity
     {
         // TODO: use queryBuilder
         $sql = 'SELECT * FROM `node` WHERE `id` = :id AND `model` = :model ';
@@ -61,7 +62,7 @@ class MysqlNodeReader
             default => 'AND `deleted_at` IS NULL ',
         };
 
-        $node = Mysql::fetch($sql, $params);
+        $node = Mysql::fetch($sql, $params, $name);
         if ($node === null) {
             // @codeCoverageIgnoreStart
             return null;

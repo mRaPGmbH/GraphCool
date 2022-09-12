@@ -10,6 +10,7 @@ use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\DataSource\File;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
@@ -193,12 +194,12 @@ class MysqlDataProvider implements DataProvider
         string $name,
         string $id,
         ?string $resultType = ResultType::DEFAULT
-    ): ?stdClass {
-        $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
-        if ($data !== null) {
-            $data = $this->retrieveFiles($name, $data, $id);
+    ): ?Entity {
+        $entity = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        if ($entity !== null) {
+            $entity->_retrieveFiles();
         }
-        return $data;
+        return $entity;
     }
 
     /**
@@ -720,24 +721,6 @@ class MysqlDataProvider implements DataProvider
         return $property->value_string ?? null;
     }
 
-    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
-    {
-        $model = model($name);
-        foreach (get_object_vars($model) as $key => $item) {
-            if (
-                !$item instanceof Field
-                || $item->type !== Field::FILE
-                || ($data->$key ?? null) === null
-            ) {
-                continue;
-            }
-            //can't use closure here, because there are subfields - graphql-php only allows closures at leaf-nodes
-            //$value = $data->$key;
-            //$data->$key = function() use($name, $id, $key, $value) {File::retrieve($name, $id, $key, $value);};
-            $data->$key = File::retrieve($name, $id, $key, $data->$key);
-        }
-        return $data;
-    }
 
     protected function softDeleteFiles(string $name, stdClass $node): void
     {

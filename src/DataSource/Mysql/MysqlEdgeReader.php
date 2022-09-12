@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\Definition\Entity;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
@@ -19,7 +20,7 @@ use function Mrap\GraphCool\model;
 
 class MysqlEdgeReader
 {
-    public function loadEdges(stdClass $node, string $name): stdClass
+    public function loadEdges(Entity $node, string $name): Entity
     {
         $model = model($name);
         foreach (get_object_vars($model) as $key => $relation) {
