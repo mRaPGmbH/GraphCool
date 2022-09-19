@@ -2,11 +2,11 @@
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Utils\ClientInfo;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\StopWatch;
-use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use stdClass;
 
@@ -61,14 +61,12 @@ class MysqlHistory
         if (count($changes) === 0) {
             return;
         }
-        $preceeding = $this->getPreceeding($tenantId);
-
         $sql = 'INSERT INTO `history` (`id`, `tenant_id`, `number`, `node_id`, `model`, `sub`, `ip`, `user_agent`, `change_type`, `changes`, `preceding_hash`, `hash`, `created_at`) '
             . 'VALUES (:id, :tenant_id, :number, :node_id, :model, :sub, :ip, :user_agent, :change_type, :changes, :preceding_hash, :hash, :created_at)';
         $params = [
-            'id' => Uuid::uuid4()->toString(),
+            'id' => DB::id(),
             'tenant_id' => $tenantId,
-            'number' => ($preceeding->number ?? 0) + 1,
+            'number' => DB::increment($tenantId, 'history', 0, false),
             'node_id' => $nodeId,
             'model' => $model,
             'sub' => JwtAuthentication::getClaim('sub'),
@@ -76,25 +74,11 @@ class MysqlHistory
             'user_agent' => ClientInfo::user_agent(),
             'change_type' => $type,
             'changes' => json_encode($changes, JSON_THROW_ON_ERROR),
-            'preceding_hash' => $preceeding->hash ?? null,
+            'preceding_hash' => null,
             'created_at' => date('Y-m-d H:i:s')
         ];
         $params['hash'] = $this->hash($params);
         Mysql::execute($sql, $params);
-        $this->preceeding[$tenantId] = (object)[
-            'hash' => $params['hash'],
-            'number' => $params['number']
-        ];
-    }
-
-    protected function getPreceeding(string $tenantId): ?stdClass
-    {
-        if (!isset($this->preceeding[$tenantId])) {
-            $sql = 'SELECT `number`, `hash` FROM `history` WHERE `tenant_id` = :tenant_id ORDER BY `number` DESC LIMIT 1';
-            $params = ['tenant_id' => $tenantId];
-            $this->preceeding[$tenantId] = Mysql::fetch($sql, $params) ?? (object)['number' => 0, 'hash' => null];
-        }
-        return $this->preceeding[$tenantId];
     }
 
     protected function compare(?stdClass $oldNode, stdClass $newNode, array $properties): array
@@ -217,7 +201,7 @@ class MysqlHistory
         if ((is_bool($bytes) && $bytes === false) || $strong === false) {
             throw new RuntimeException('Secure hash could not be created!');
         }
-        $salt = '$6$rounds=5000$' . substr(base64_encode($bytes),0,22) . '$';
+        $salt = '$6$rounds=100$' . substr(base64_encode($bytes),0,22) . '$';
         return crypt($data, $salt);
     }
 }

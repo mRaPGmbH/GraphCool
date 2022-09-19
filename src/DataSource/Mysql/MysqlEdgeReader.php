@@ -69,12 +69,10 @@ class MysqlEdgeReader
         $orderBy = $args['orderBy'] ?? [];
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
-        $edges = [];
-
         $query = MysqlQueryBuilder::forRelation($relation, [$id]);
         $query
             ->tenant($tenantId)
-            ->select(['_child_id', '_parent_id'])
+            ->select(['*'])
             ->limit($limit, $offset)
             ->where($whereEdge)
             ->whereRelated($whereNode)
@@ -88,38 +86,70 @@ class MysqlEdgeReader
             default => null
         };
         //throw new Error($query->toSql());
+        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $edgeIds) {
-            $edge = $this->fetchEdge($tenantId, $edgeIds->parent_id, $edgeIds->child_id, $resultType);
-            if ($edge === null) {
-                // this should never happen!
-                throw new RuntimeException(
-                    'Edge was null: ' . print_r(
-                        [
-                            'parent_id' => $edgeIds->parent_id,
-                            'child_id' => $edgeIds->child_id,
-                            'resultType' => $resultType
-                        ],
-                        true
-                    )
-                );
+        $idGroups = [];
+        $nodeIds = [];
+        $map = [];
+        $edges = [];
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
+            $edge = new stdClass();
+            $edge->child_id = $row->_child_id;
+            $edge->child = $row->_child;
+            $edge->parent_id = $row->_parent_id;
+            $edge->parent = $row->_parent;
+            $edge->_node = new stdClass();
+            $edge->_node->id = $row->id;
+            $edge->_node->model = $row->model;
+
+            $nodeIds[] = $row->id;
+
+            $dates = ['updated_at', 'created_at', 'deleted_at'];
+            foreach ($dates as $date) {
+                if ($row->$date !== null) {
+                    $dateTime = Carbon::parse($row->$date);
+                    $dateTime->setTimezone(TimeZone::get());
+                    $edge->_node->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
+                }
+                $date2 = '_' . $date;
+                if ($row->$date2 !== null) {
+                    $dateTime = Carbon::parse($row->$date2);
+                    $dateTime->setTimezone(TimeZone::get());
+                    $edge->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
+                }
             }
-            $properties = MysqlConverter::convertProperties(
-                $this->fetchEdgeProperties($edge->parent_id, $edge->child_id),
-                $relation
-            );
-            foreach ($properties as $key => $value) {
-                $edge->$key = $value;
-            }
-            if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-                $edge->_node = DB::load($tenantId, $relation->name, $edge->child_id); // must be DB::load instead of Mysql::nodeReader()->load because of file::retrieve
-            } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-                $edge->_node = DB::load($tenantId, $relation->name, $edge->parent_id);
-            }
+            $idGroups[] = (object)[
+                'parent_id' => $edge->parent_id,
+                'child_id' => $edge->child_id,
+            ];
+            $map[$edge->parent_id.'.'.$edge->child_id] = count($edges);
             $edges[] = $edge;
         }
 
-        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+        foreach ($this->fetchEdgePropertiesMulti($idGroups) as $property) {
+            $props = MysqlConverter::convertProperties(
+                [$property],
+                $relation
+            );
+
+            $i = $map[$property->parent_id.'.'.$property->child_id];
+            $edge = $edges[$i];
+
+            foreach ($props as $key => $value) {
+                $edge->$key = $value;
+            }
+        }
+
+        if (count($nodeIds) > 0) {
+            $nodes = [];
+            $closure = DB::findAll($tenantId, $relation->name, ['first' => 99999, 'where' => ['column' => 'id', 'operator' => 'IN', 'value' => $nodeIds]])->data;
+            foreach($closure() as $node) {
+                $nodes[$node->id] = $node;
+            }
+            foreach ($edges as $edge) {
+                $edge->_node = $nodes[$edge->_node->id];
+            }
+        }
 
         StopWatch::stop(__METHOD__);
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
@@ -181,6 +211,24 @@ class MysqlEdgeReader
             ':parent_id' => $parentId,
             ':child_id' => $childId
         ];
+        return Mysql::fetchAll($sql, $params);
+    }
+
+    protected function fetchEdgePropertiesMulti(array $idGroups): array
+    {
+        if (count($idGroups) === 0) {
+            return [];
+        }
+        $sqlParts = [];
+        $params = [];
+        $i = 0;
+        foreach ($idGroups as $idGroup) {
+            $sqlParts[] = '(`parent_id` = :p' . $i .' AND `child_id` = :c' . $i . ')';
+            $params['p' . $i] = $idGroup->parent_id;
+            $params['c' . $i] = $idGroup->child_id;
+            $i++;
+        }
+        $sql = 'SELECT * FROM `edge_property` WHERE (' . implode(' OR ', $sqlParts) . ') AND `deleted_at` IS NULL';
         return Mysql::fetchAll($sql, $params);
     }
 

@@ -14,6 +14,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Mrap\GraphCool\DataSource\DB;
 use Ramsey\Uuid\Uuid;
 
 class JwtAuthentication
@@ -103,7 +104,7 @@ class JwtAuthentication
         $config = static::localConfig();
         return $config->builder()
             ->issuedBy(Env::get('APP_NAME'))
-            ->identifiedBy(Uuid::uuid4()->toString())
+            ->identifiedBy(DB::id())
             ->expiresAt($now->modify('+1 hour'))
             ->withClaim('tid', $tenantId)
             ->withClaim('perm', Permissions::createLocalCode($permissions))

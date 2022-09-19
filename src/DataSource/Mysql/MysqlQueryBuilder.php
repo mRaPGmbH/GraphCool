@@ -162,11 +162,12 @@ class MysqlQueryBuilder
     protected function getBaseColumns(): array
     {
         return match ($this->name) {
-            'node' => ['created_at', 'updated_at', 'deleted_at', 'id', '*'],
+            'node' => ['created_at', 'updated_at', 'deleted_at', 'model', 'id'],
             'edge' => [
                 'created_at',
                 'updated_at',
                 'deleted_at',
+                'model',
                 'id',
                 '_parent_id',
                 '_child_id',
@@ -175,7 +176,6 @@ class MysqlQueryBuilder
                 '_created_at',
                 '_updated_at',
                 '_deleted_at',
-                '*'
             ],
             default => []
         };
@@ -502,7 +502,15 @@ class MysqlQueryBuilder
         }
         $this->mode = 'SELECT';
         foreach ($fields as $field) {
-            if (in_array($field, $this->getBaseColumns())) {
+            if ($field === '*') {
+                foreach ($this->getBaseColumns() as $baseColumn) {
+                    if ($baseColumn !== '*') {
+                        $this->columns[] = $this->fieldName($baseColumn) . ' AS `' . $baseColumn . '`';
+                    } else {
+                        $this->columns[] = $this->fieldName($baseColumn);
+                    }
+                }
+            } elseif (in_array($field, $this->getBaseColumns())) {
                 $this->columns[] = $this->fieldName($field);
             } else {
                 $join = $this->join($field);

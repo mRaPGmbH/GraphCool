@@ -11,6 +11,8 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\DataSource\Mysql\Mysql;
+use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
@@ -155,6 +157,7 @@ class GraphCool
         header('Content-Type: application/json');
         $env = Env::get('APP_ENV');
         if ($env === 'local' || $env === 'test') {
+            $response['_sqlCount'] = MysqlConnector::$sqlCounter;
             $response['_debugTimings'] = StopWatch::get();
         }
         try {

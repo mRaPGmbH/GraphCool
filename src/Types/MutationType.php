@@ -19,6 +19,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\JwtAuthentication;
+use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
 use stdClass;
@@ -224,6 +225,7 @@ class MutationType extends BaseType
         }
 
         if (str_starts_with($info->fieldName, 'create')) {
+            StopWatch::start(__METHOD__);
             $name = $info->returnType->toString();
             Authorization::authorize('create', $name);
             $model = model($name);
@@ -231,7 +233,9 @@ class MutationType extends BaseType
             $result = DB::insert(JwtAuthentication::tenantId(), $name, $data);
             if ($result !== null) {
                 $model->onSave($result, $args);
+                $model->onChange($result, $args); // deprecated!
             }
+            StopWatch::stop(__METHOD__);
             return $result;
         }
         if (str_starts_with($info->fieldName, 'updateMany')) {
@@ -247,6 +251,7 @@ class MutationType extends BaseType
             $result = DB::update(JwtAuthentication::tenantId(), $name, $args);
             if ($result !== null) {
                 $model->onSave($result, $args);
+                $model->onChange($result, $args);
             }
             return $result;
         }

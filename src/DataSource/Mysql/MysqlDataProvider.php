@@ -9,6 +9,7 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
@@ -16,7 +17,6 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
-use Ramsey\Uuid\Uuid;
 use stdClass;
 
 use function Mrap\GraphCool\model;
@@ -178,14 +178,11 @@ class MysqlDataProvider implements DataProvider
         array $ids,
         ?string $resultType = ResultType::DEFAULT
     ): array {
-        $result = [];
-        foreach ($ids as $id) {
-            $node = $this->load($tenantId, $name, $id, $resultType);
-            if ($node !== null) {
-                $result[] = $node;
-            }
+        $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
+        foreach ($results as $key => $result) {
+            $results[$key] = $this->retrieveFiles($name, $result, $result->id);
         }
-        return $result;
+        return $results;
     }
 
     public function load(
@@ -213,7 +210,7 @@ class MysqlDataProvider implements DataProvider
         Mysql::beginTransaction();
         try {
             $model = model($name);
-            $id = Uuid::uuid4()->toString();
+            $id = DB::id();
             $data = $this->storeFiles($model, $name, $data, $id);
             $data = $model->beforeInsert($tenantId, $data);
             $this->checkUnique($tenantId, $model, $name, $data);
@@ -243,7 +240,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
-        Mysql::beginTransaction();
+        //Mysql::beginTransaction();
         try {
             $model = model($name);
             $oldNode = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
@@ -276,10 +273,10 @@ class MysqlDataProvider implements DataProvider
                 $model->afterUpdate($loaded);
                 Mysql::history()->recordUpdate($oldNode, $loaded, $history);
             }
-            Mysql::commit();
+            //Mysql::commit();
             return $loaded;
         } catch (\Throwable $e) {
-            Mysql::rollBack();
+            //Mysql::rollBack();
             throw $e;
         }
     }
@@ -386,7 +383,7 @@ class MysqlDataProvider implements DataProvider
             }
             $sql = 'INSERT INTO `job` (`id`, `tenant_id`, `worker`, `model`, `status`, `data`) VALUES (:id, :tenant_id, :worker, :model, :status, :data)';
             $params = [
-                'id' => Uuid::uuid4()->toString(),
+                'id' => DB::id(),
                 'tenant_id' => $tenantId,
                 'worker' => $worker,
                 'model' => $model,
@@ -520,7 +517,6 @@ class MysqlDataProvider implements DataProvider
         $offset = ($page - 1) * $limit;
 
         $builder = MysqlFlatQueryBuilder::forTable('history');
-        //$builder->where(['column' => 'worker', 'operator' => '=', 'value' => $name]);
         if ($tenantId !== null) {
             $builder->tenant($tenantId);
         }

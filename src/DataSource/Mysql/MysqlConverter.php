@@ -81,7 +81,6 @@ class MysqlConverter
             Type::FLOAT => (double)$property->value_float,
             Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, FIELD::AUTO_INCREMENT => (int)$property->value_int,
             Field::DECIMAL => (float)($property->value_int / (10 ** $field->decimalPlaces)),
-            //Field::FILE => File::retrieve($name, $id, $key, $property->value_string),
         };
     }
 

@@ -12,17 +12,21 @@ class StopWatch
     /** @var float[] */
     protected static array $times = [];
 
+    protected static array $counts = [];
+
     public static function start(string $name): void
     {
         self::$starts[$name] = microtime(true);
         if (!isset(self::$times[$name])) {
             self::$times[$name] = .0;
+            self::$counts[$name] = 0;
         }
     }
 
     public static function stop(string $name): void
     {
         self::$times[$name] += 1000 * (microtime(true) - self::$starts[$name]);
+        self::$counts[$name]++;
     }
 
     /**
@@ -31,11 +35,13 @@ class StopWatch
     public static function get(): array
     {
         arsort(self::$times);
-        $percentages = [];
+        $result = [];
         foreach (self::$times as $key => $value) {
-            $percentages[$key] = round($value / (self::$times['Mrap\\GraphCool\\GraphCool::run'] ?? 1) * 100, 2) . '%';
+            $count = self::$counts[$key];
+            $percent = round($value / (self::$times['Mrap\\GraphCool\\GraphCool::run'] ?? 1) * 100, 2);
+            $result[$key . ' *' . $count] = round($value, 1) . 'ms (' . $percent  . '%)';
         }
-        return [self::$times, $percentages];
+        return $result;
     }
 
     public static function reset(): void

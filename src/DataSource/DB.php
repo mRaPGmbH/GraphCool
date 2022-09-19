@@ -6,7 +6,6 @@ namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Utils\StopWatch;
 use Ramsey\Uuid\Provider\Node\RandomNodeProvider;
 use Ramsey\Uuid\Uuid;
@@ -104,8 +103,11 @@ class DB
 
     public static function id(): string
     {
+        /*
         $nodeProvider = new RandomNodeProvider();
         return Uuid::uuid1($nodeProvider->getNode())->toString();
+        */
+        return Uuid::uuid4()->toString();
     }
 
     /**

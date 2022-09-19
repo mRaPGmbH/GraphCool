@@ -19,6 +19,7 @@ class MysqlConnector
      * @var PDOStatement[]
      */
     protected array $statements = [];
+    public static $sqlCounter = 0;
 
     public function setPdo(PDO $pdo): void
     {
@@ -75,6 +76,7 @@ class MysqlConnector
     {
         $statement = $this->statement($sql);
         $statement->execute($params);
+        static::$sqlCounter++;
         return $statement->rowCount();
     }
 
@@ -99,6 +101,7 @@ class MysqlConnector
 
     public function executeRaw(string $sql): int|false
     {
+        static::$sqlCounter++;
         return $this->pdo()->exec($sql);
     }
 
@@ -109,6 +112,7 @@ class MysqlConnector
      */
     public function fetch(string $sql, array $params): ?stdClass
     {
+        static::$sqlCounter++;
         $statement = $this->statement($sql);
         $statement->execute($params);
         $return = $statement->fetch(PDO::FETCH_OBJ);
@@ -125,6 +129,7 @@ class MysqlConnector
      */
     public function fetchAll(string $sql, array $params): array
     {
+        static::$sqlCounter++;
         $statement = $this->statement($sql);
         $statement->execute($params);
         $result = $statement->fetchAll(PDO::FETCH_OBJ);
@@ -144,6 +149,7 @@ class MysqlConnector
      */
     public function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
+        static::$sqlCounter++;
         $statement = $this->statement($sql);
         $statement->execute($params);
         return $statement->fetchColumn($column);
@@ -158,15 +164,18 @@ class MysqlConnector
             $quotedTenantId = $this->pdo()->quote($tenantId);
             $quotedKey = $this->pdo()->quote($key);
             $where = 'WHERE `tenant_id` = '.$quotedTenantId.' AND `key` = '.$quotedKey;
+            static::$sqlCounter++;
             $value = $this->pdo()->query('SELECT `value` FROM `increment` '.$where.' FOR UPDATE', PDO::FETCH_OBJ)->fetchColumn();
             if ($value === false) {
                 $value = $min+1;
+                static::$sqlCounter++;
                 $this->pdo()->exec('INSERT INTO `increment` VALUES  (' . $quotedTenantId . ', ' . $quotedKey . ', ' . $value . ' )');
             } else {
                 if ($value < $min) {
                     $value = $min;
                 }
                 $value++;
+                static::$sqlCounter++;
                 $this->pdo()->exec('UPDATE `increment` SET `value` = ' . $value . ' ' . $where);
             }
         } catch (PDOException $e) {

@@ -23,6 +23,11 @@ class Model extends stdClass
     public function onSave(stdClass $loaded, array $changes): void {}
     public function onDelete(stdClass $loaded): void {}
 
+    /**
+     * @deprecated use onSave() instead!
+     */
+    public function onChange(stdClass $loaded, array $changes): void {}
+
     public function udpateDerivedFields(string $tenantId, array $changes, ?string $id = null): array
     {
         foreach ($this as $key => $field) {
