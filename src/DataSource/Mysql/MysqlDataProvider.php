@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\Type;
@@ -531,6 +532,7 @@ class MysqlDataProvider implements DataProvider
             if (isset($dto->result)) {
                 $dto->result = json_decode($dto->result, false, 512, JSON_THROW_ON_ERROR);
             }
+            $dto->created_at = Carbon::parse($dto->created_at)->getPreciseTimestamp(3);
             $history[] = $dto;
         }
         $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());

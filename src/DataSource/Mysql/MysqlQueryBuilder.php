@@ -162,7 +162,7 @@ class MysqlQueryBuilder
     protected function getBaseColumns(): array
     {
         return match ($this->name) {
-            'node' => ['created_at', 'updated_at', 'deleted_at', 'model', 'id'],
+            'node' => ['created_at', 'updated_at', 'deleted_at', 'model', 'id', 'tenant_id'],
             'edge' => [
                 'created_at',
                 'updated_at',

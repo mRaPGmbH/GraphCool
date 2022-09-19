@@ -101,7 +101,7 @@ class MysqlQueryBuilderTest extends TestCase
         $builder = MysqlQueryBuilder::forModel($model, 'DummyModel');
         $builder->select(['*']);
         $query = trim($builder->toSql());
-        self::assertSame('SELECT `node`.`created_at` AS `created_at`, `node`.`deleted_at` AS `deleted_at`, `node`.`id` AS `id`, `node`.`model` AS `model`, `node`.`updated_at` AS `updated_at` FROM `node`  WHERE `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT `node`.`created_at` AS `created_at`, `node`.`deleted_at` AS `deleted_at`, `node`.`id` AS `id`, `node`.`model` AS `model`, `node`.`tenant_id` AS `tenant_id`, `node`.`updated_at` AS `updated_at` FROM `node`  WHERE `node`.`model` = :p0 AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         self::assertSame([':p0' => 'DummyModel'], $params);
     }

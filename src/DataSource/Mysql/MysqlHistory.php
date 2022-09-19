@@ -201,7 +201,7 @@ class MysqlHistory
         if ((is_bool($bytes) && $bytes === false) || $strong === false) {
             throw new RuntimeException('Secure hash could not be created!');
         }
-        $salt = '$6$rounds=100$' . substr(base64_encode($bytes),0,22) . '$';
+        $salt = '$6$rounds=1000$' . substr(base64_encode($bytes),0,22) . '$';
         return crypt($data, $salt);
     }
 }
