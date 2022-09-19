@@ -4,6 +4,7 @@ namespace Mrap\GraphCool\Tests\Definition;
 
 use Carbon\Carbon;
 use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -114,7 +115,7 @@ class FieldTest extends TestCase
 
         $defaults = [
             'string' => 'some text',
-            'id' => (string)Uuid::uuid4(),
+            'id' => DB::id(),
             'bool' => random_int(0,1) === 1,
             'int' => random_int(0, 9999),
             'float' => random_int(0, 9999) / 100,

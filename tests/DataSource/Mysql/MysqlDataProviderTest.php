@@ -46,7 +46,21 @@ class MysqlDataProviderTest extends TestCase
             ->method('fetch');
         Mysql::setConnector($mock);
 
-        $node = $this->expectLoadNode(3);
+        $node = (object)[
+            'id' => 'y5',
+            'tenant_id' => 'a12f',
+            'model' => 'DummyModel',
+            'created_at' => '2021-08-30 12:00:00',
+            'updated_at' => null,
+            'deleted_at' => null
+        ];
+
+        $readerMock = $this->createMock(MysqlNodeReader::class);
+        $readerMock->expects($this->exactly(3))
+            ->method('loadMany')
+            ->withAnyParameters()
+            ->willReturn([$node]);
+        Mysql::setNodeReader($readerMock);
 
         $provider = new MysqlDataProvider();
         $expected = (object)[
@@ -61,8 +75,8 @@ class MysqlDataProviderTest extends TestCase
         ];
         foreach ([ResultType::DEFAULT, ResultType::WITH_TRASHED, ResultType::ONLY_SOFT_DELETED] as $resultType) {
             $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
-            self::assertEquals($expected, $result->paginatorInfo);
-            self::assertEquals([$node], $result->data);
+            self::assertEquals($expected, $result->paginatorInfo, 'Pagination Info does not match expectation for ' . $resultType);
+            self::assertEquals([$node], ($result->data)(), 'Data does not match expectation for ' . $resultType);
         }
     }
 
@@ -310,7 +324,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testUpdate(): void
     {
-        $this->mockTransactions();
+        //$this->mockTransactions();
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -330,7 +344,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testUpdateExistsError(): void
     {
-        $this->mockTransactions(false);
+        //$this->mockTransactions(false);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);
@@ -377,7 +391,7 @@ class MysqlDataProviderTest extends TestCase
 
     public function testUpdateNullError(): void
     {
-        $this->mockTransactions(false);
+        //$this->mockTransactions(false);
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
         $writerMock = $this->createMock(MysqlNodeWriter::class);

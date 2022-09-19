@@ -15,39 +15,7 @@ class MysqlNodeReaderTest extends TestCase
 
     public function testLoad(): void
     {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = new stdClass();
-        $node->id = 'asdf123123';
-        $node->tenant_id = 'hc123';
-        $node->created_at = '2021-08-30 00:00:00';
-        $node->updated_at = null;
-        $node->deleted_at = null;
-        $node->model = 'DummyModel';
-
-        $property = new stdClass();
-        $property->property = 'last_name';
-        $property->value_string = 'Huber';
-
-        $property2 = new stdClass();
-        $property2->property = 'does not exist';
-        $property2->value_string = 'asdf';
-
-        $property3 = new stdClass();
-        $property3->property = 'belongs_to';
-        $property3->value_string = 'asdf';
-
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->withAnyParameters()
-            ->willReturn($node);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withAnyParameters()
-            ->willReturn([$property, $property2, $property3]);
-        Mysql::setConnector($mock);
+        $this->mockLoad();
 
         $reader = new MysqlNodeReader();
         $result = $reader->load('hc123', 'DummyModel', 'asdf123123');
@@ -57,39 +25,7 @@ class MysqlNodeReaderTest extends TestCase
 
     public function testLoadSoftDeleted(): void
     {
-        require_once($this->dataPath().'/app/Models/DummyModel.php');
-
-        $node = new stdClass();
-        $node->id = 'asdf123123';
-        $node->tenant_id = 'hc123';
-        $node->created_at = '2021-08-30 00:00:00';
-        $node->updated_at = null;
-        $node->deleted_at = null;
-        $node->model = 'DummyModel';
-
-        $property = new stdClass();
-        $property->property = 'last_name';
-        $property->value_string = 'Huber';
-
-        $property2 = new stdClass();
-        $property2->property = 'does not exist';
-        $property2->value_string = 'asdf';
-
-        $property3 = new stdClass();
-        $property3->property = 'belongs_to';
-        $property3->value_string = 'asdf';
-
-
-        $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->withAnyParameters()
-            ->willReturn($node);
-        $mock->expects($this->once())
-            ->method('fetchAll')
-            ->withAnyParameters()
-            ->willReturn([$property, $property2, $property3]);
-        Mysql::setConnector($mock);
+        $this->mockLoad();
 
         $reader = new MysqlNodeReader();
         $result = $reader->load('hc123', 'DummyModel', 'asdf123123', ResultType::ONLY_SOFT_DELETED);
@@ -98,6 +34,16 @@ class MysqlNodeReaderTest extends TestCase
     }
 
     public function testLoadWithTrashed(): void
+    {
+        $this->mockLoad();
+
+        $reader = new MysqlNodeReader();
+        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', ResultType::WITH_TRASHED);
+
+        self::assertEquals('Huber', $result->last_name);
+    }
+
+    protected function mockLoad(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 
@@ -112,34 +58,33 @@ class MysqlNodeReaderTest extends TestCase
         $property = new stdClass();
         $property->property = 'last_name';
         $property->value_string = 'Huber';
+        $property->updated_at = null;
+        $property->deleted_at = null;
+        $property->created_at = '2021-08-30 00:00:00';
 
         $property2 = new stdClass();
         $property2->property = 'does not exist';
         $property2->value_string = 'asdf';
+        $property2->updated_at = null;
+        $property2->deleted_at = null;
+        $property2->created_at = '2021-08-30 00:00:00';
 
         $property3 = new stdClass();
         $property3->property = 'belongs_to';
         $property3->value_string = 'asdf';
-
+        $property3->updated_at = null;
+        $property3->deleted_at = null;
+        $property3->created_at = '2021-08-30 00:00:00';
 
         $mock = $this->createMock(MysqlConnector::class);
-        $mock->expects($this->once())
-            ->method('fetch')
-            ->withAnyParameters()
-            ->willReturn($node);
-        $mock->expects($this->once())
+        $mock->expects($this->exactly(2))
             ->method('fetchAll')
             ->withAnyParameters()
-            ->willReturn([$property, $property2, $property3]);
+            ->willReturnOnConsecutiveCalls([$node], [$property, $property2, $property3]);
         Mysql::setConnector($mock);
-
-        $reader = new MysqlNodeReader();
-        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', ResultType::WITH_TRASHED);
-
-        self::assertEquals('Huber', $result->last_name);
     }
 
-    public function testLoadError(): void
+    public function xtestLoadError(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
 

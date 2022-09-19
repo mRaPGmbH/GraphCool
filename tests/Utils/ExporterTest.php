@@ -32,7 +32,7 @@ class ExporterTest extends TestCase
         $dbMock->expects($this->once())
             ->method('findAll')
             ->withAnyParameters()
-            ->willReturn((object)[]);
+            ->willReturn((object)['data' => function(){return[];}]);
         DB::setProvider($dbMock);
 
         $exporterMock = $this->createMock(FileExport::class);

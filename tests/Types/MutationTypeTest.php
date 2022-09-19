@@ -49,7 +49,7 @@ class MutationTypeTest extends TestCase
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->once())
             ->method('toString')
-            ->willReturn('classname');
+            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -57,7 +57,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('insert')
-            ->with('1', 'classname', ['id' => 'some-id-string'])
+            ->with('1', 'DummyModel', ['id' => 'some-id-string'])
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -100,7 +100,7 @@ class MutationTypeTest extends TestCase
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->once())
             ->method('toString')
-            ->willReturn('classname');
+            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -108,11 +108,11 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('update')
-            ->with('1', 'classname', ['id' => 'some-id-string'])
+            ->with('1', 'DummyModel', ['id' => 'some-id-string', 'data' => []])
             ->willReturn($object);
 
         DB::setProvider($mock);
-        $result = $closure([], ['id' => 'some-id-string'], [], $info);
+        $result = $closure([], ['id' => 'some-id-string', 'data' => []], [], $info);
 
         self::assertSame($object, $result);
     }

@@ -14,17 +14,15 @@ class StopWatchTest extends TestCase
     {
         StopWatch::start('name');
         StopWatch::stop('name');
-        [$times, $percentages] = StopWatch::get();
-        self::assertArrayHasKey('name', $times);
-        self::assertArrayHasKey('name', $percentages);
+        $times = StopWatch::get();
+        self::assertArrayHasKey('name *1', $times);
     }
 
     public function testStopWatchReset(): void
     {
         StopWatch::reset();
-        [$times, $percentages] = StopWatch::get();
+        $times = StopWatch::get();
         self::assertEmpty($times);
-        self::assertEmpty($percentages);
     }
 
 }
