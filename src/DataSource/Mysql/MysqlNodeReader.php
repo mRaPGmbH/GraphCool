@@ -102,17 +102,18 @@ class MysqlNodeReader
             default => null
         };
 
-        $nodes = Mysql::fetchAll($query->toSql(), $query->getParameters());
         $dates = ['updated_at', 'created_at', 'deleted_at'];
-        foreach ($nodes as $node) {
+        $sorted = array_flip($ids);
+        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $node) {
             foreach ($dates as $date) {
                 if ($node->$date !== null) {
                     $dateTime = Carbon::parse($node->$date);
                     $node->$date = $dateTime->getPreciseTimestamp(3);
                 }
             }
+            $sorted[$node->id] = $node;
         }
-        return $nodes;
+        return array_values($sorted);
     }
 
     protected function fetchNodeProperties(array $ids): array
