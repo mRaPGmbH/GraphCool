@@ -113,6 +113,11 @@ class MysqlNodeReader
             }
             $sorted[$node->id] = $node;
         }
+        foreach ($sorted as $i => $node) {
+            if (!$node instanceof stdClass) {
+                unset($sorted[$i]);
+            }
+        }
         return array_values($sorted);
     }
 
