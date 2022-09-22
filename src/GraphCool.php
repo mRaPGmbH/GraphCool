@@ -157,7 +157,6 @@ class GraphCool
         header('Content-Type: application/json');
         $env = Env::get('APP_ENV');
         if ($env === 'local' || $env === 'test') {
-            $response['_sqlCount'] = MysqlConnector::$sqlCounter;
             $response['_debugTimings'] = StopWatch::get();
         }
         try {
@@ -176,7 +175,6 @@ class GraphCool
     {
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
-            sleep(1);
         }
     }
 
