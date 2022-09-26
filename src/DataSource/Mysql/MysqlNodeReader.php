@@ -7,6 +7,7 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Carbon\Carbon;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;
@@ -53,6 +54,7 @@ class MysqlNodeReader
         array $ids,
         ?string $resultType = ResultType::DEFAULT
     ): array {
+        StopWatch::start(__METHOD__);
         $nodes = $this->fetchNodes($tenantId, $ids, $name, $resultType);
         if ($nodes === null || count($nodes) === 0) {
             // @codeCoverageIgnoreStart
@@ -86,11 +88,13 @@ class MysqlNodeReader
             }
             $nodes[$i]->$key = MysqlConverter::convertDatabaseTypeToOutput($field, $property);
         }
+        StopWatch::stop(__METHOD__);
         return $nodes;
     }
 
     protected function fetchNodes(?string $tenantId, array $ids, string $name, ?string $resultType = ResultType::DEFAULT): ?array
     {
+        StopWatch::start(__METHOD__);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
@@ -118,11 +122,13 @@ class MysqlNodeReader
                 unset($sorted[$i]);
             }
         }
+        StopWatch::stop(__METHOD__);
         return array_values($sorted);
     }
 
     protected function fetchNodeProperties(array $ids): array
     {
+        StopWatch::start(__METHOD__);
         $params = [];
         $i = 0;
         foreach ($ids as $id) {
@@ -131,9 +137,9 @@ class MysqlNodeReader
             $i++;
         }
         $sql = 'SELECT * FROM `node_property` WHERE `node_id` IN (' . implode(',', array_keys($params)) . ') AND `deleted_at` IS NULL';
-        return Mysql::fetchAll($sql, $params);
+        $result = Mysql::fetchAll($sql, $params);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
-
-
 
 }
