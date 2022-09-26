@@ -15,7 +15,7 @@ class StopWatchTest extends TestCase
         StopWatch::start('name');
         StopWatch::stop('name');
         $times = StopWatch::get();
-        self::assertArrayHasKey('name *1', $times);
+        self::assertArrayHasKey('name', $times);
     }
 
     public function testStopWatchReset(): void

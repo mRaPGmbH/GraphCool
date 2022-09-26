@@ -176,18 +176,15 @@ class MysqlConnector
             $quotedTenantId = $this->pdo()->quote($tenantId);
             $quotedKey = $this->pdo()->quote($key);
             $where = 'WHERE `tenant_id` = '.$quotedTenantId.' AND `key` = '.$quotedKey;
-            static::$sqlCounter++;
             $value = $this->pdo()->query('SELECT `value` FROM `increment` '.$where.' FOR UPDATE', PDO::FETCH_OBJ)->fetchColumn();
             if ($value === false) {
                 $value = $min+1;
-                static::$sqlCounter++;
                 $this->pdo()->exec('INSERT INTO `increment` VALUES  (' . $quotedTenantId . ', ' . $quotedKey . ', ' . $value . ' )');
             } else {
                 if ($value < $min) {
                     $value = $min;
                 }
                 $value++;
-                static::$sqlCounter++;
                 $this->pdo()->exec('UPDATE `increment` SET `value` = ' . $value . ' ' . $where);
             }
         } catch (PDOException $e) {
