@@ -156,7 +156,7 @@ class GraphCool
     {
         header('Content-Type: application/json');
         $env = Env::get('APP_ENV');
-        if ($env === 'local' || $env === 'test') {
+        if ($env === 'local' || $env === 'test' || $env === 'staging') {
             $response['_debugTimings'] = StopWatch::get();
         }
         try {
