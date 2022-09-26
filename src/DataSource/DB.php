@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\DataSource;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Utils\StopWatch;
-use Ramsey\Uuid\Provider\Node\RandomNodeProvider;
 use Ramsey\Uuid\Uuid;
 use stdClass;
 

@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
+use Mrap\GraphCool\Utils\StopWatch;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -19,7 +20,6 @@ class MysqlConnector
      * @var PDOStatement[]
      */
     protected array $statements = [];
-    public static $sqlCounter = 0;
 
     public function setPdo(PDO $pdo): void
     {
@@ -47,6 +47,7 @@ class MysqlConnector
      */
     protected function connect(): void
     {
+        StopWatch::start(__METHOD__);
         $connection = Env::get('DB_CONNECTION') . ':host=' . Env::get('DB_HOST') . ';port=' . Env::get('DB_PORT')
             . ';dbname=' . Env::get('DB_DATABASE') . ';charset=utf8';
         try {
@@ -65,6 +66,7 @@ class MysqlConnector
                 )
             );
         }
+        StopWatch::stop(__METHOD__);
     }
 
     /**
@@ -75,15 +77,18 @@ class MysqlConnector
     public function execute(string $sql, array $params): int
     {
         $statement = $this->statement($sql);
+        StopWatch::start('SQL');
         $statement->execute($params);
-        static::$sqlCounter++;
+        StopWatch::stop('SQL');
         return $statement->rowCount();
     }
 
     protected function statement(string $sql): PDOStatement
     {
         if (!isset($this->statements[$sql])) {
+            StopWatch::start(__METHOD__);
             $this->statements[$sql] = $this->pdo()->prepare($sql);
+            StopWatch::stop(__METHOD__);
         }
         return $this->statements[$sql];
     }
@@ -101,8 +106,10 @@ class MysqlConnector
 
     public function executeRaw(string $sql): int|false
     {
-        static::$sqlCounter++;
-        return $this->pdo()->exec($sql);
+        StopWatch::start('SQL');
+        $ret = $this->pdo()->exec($sql);
+        StopWatch::stop('SQL');
+        return $ret;
     }
 
     /**
@@ -112,10 +119,11 @@ class MysqlConnector
      */
     public function fetch(string $sql, array $params): ?stdClass
     {
-        static::$sqlCounter++;
         $statement = $this->statement($sql);
+        StopWatch::start('SQL');
         $statement->execute($params);
         $return = $statement->fetch(PDO::FETCH_OBJ);
+        StopWatch::stop('SQL');
         if ($return === false) {
             return null;
         }
@@ -129,10 +137,11 @@ class MysqlConnector
      */
     public function fetchAll(string $sql, array $params): array
     {
-        static::$sqlCounter++;
         $statement = $this->statement($sql);
+        StopWatch::start('SQL');
         $statement->execute($params);
         $result = $statement->fetchAll(PDO::FETCH_OBJ);
+        StopWatch::stop('SQL');
         if ($result === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('PDOStatement::FetchAll failed.');
@@ -149,14 +158,17 @@ class MysqlConnector
      */
     public function fetchColumn(string $sql, array $params, int $column = 0): mixed
     {
-        static::$sqlCounter++;
         $statement = $this->statement($sql);
+        StopWatch::start('SQL');
         $statement->execute($params);
-        return $statement->fetchColumn($column);
+        $ret = $statement->fetchColumn($column);
+        StopWatch::stop('SQL');
+        return $ret;
     }
 
     public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
+        StopWatch::start(__METHOD__);
         if ($transaction) {
             $this->pdo()->beginTransaction();
         }
@@ -188,6 +200,7 @@ class MysqlConnector
         if ($transaction) {
             $this->pdo()->commit();
         }
+        StopWatch::stop(__METHOD__);
         return $value;
     }
 

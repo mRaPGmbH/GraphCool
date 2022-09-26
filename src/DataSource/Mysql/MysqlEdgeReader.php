@@ -86,12 +86,15 @@ class MysqlEdgeReader
             default => null
         };
         //throw new Error($query->toSql());
+        StopWatch::start('related count');
         $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+        StopWatch::stop('related count');
 
         $idGroups = [];
         $nodeIds = [];
         $map = [];
         $edges = [];
+        StopWatch::start('related fetchAll');
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $edge = new stdClass();
             $edge->child_id = $row->_child_id;
@@ -125,7 +128,9 @@ class MysqlEdgeReader
             $map[$edge->parent_id.'.'.$edge->child_id] = count($edges);
             $edges[] = $edge;
         }
+        StopWatch::stop('related fetchAll');
 
+        StopWatch::start('related edgeProperties');
         foreach ($this->fetchEdgePropertiesMulti($idGroups) as $property) {
             $props = MysqlConverter::convertProperties(
                 [$property],
@@ -139,7 +144,9 @@ class MysqlEdgeReader
                 $edge->$key = $value;
             }
         }
+        StopWatch::stop('related edgeProperties');
 
+        StopWatch::start('related loadNodes');
         if (count($nodeIds) > 0) {
             $nodes = [];
             $closure = DB::findAll($tenantId, $relation->name, ['first' => 99999, 'where' => ['column' => 'id', 'operator' => 'IN', 'value' => $nodeIds]])->data;
@@ -150,6 +157,7 @@ class MysqlEdgeReader
                 $edge->_node = $nodes[$edge->_node->id];
             }
         }
+        StopWatch::stop('related loadNodes');
 
         StopWatch::stop(__METHOD__);
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
@@ -168,6 +176,7 @@ class MysqlEdgeReader
         string $childId,
         ?string $resultType = ResultType::DEFAULT
     ): ?stdClass {
+        StopWatch::start(__METHOD__);
         $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';
         $parameters = [
             ':parent_id' => $parentId,
@@ -196,6 +205,7 @@ class MysqlEdgeReader
                 $edge->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
             }
         }
+        StopWatch::stop(__METHOD__);
         return $edge;
     }
 
@@ -206,16 +216,20 @@ class MysqlEdgeReader
      */
     protected function fetchEdgeProperties(string $parentId, string $childId): array
     {
+        StopWatch::start(__METHOD__);
         $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
         $params = [
             ':parent_id' => $parentId,
             ':child_id' => $childId
         ];
-        return Mysql::fetchAll($sql, $params);
+        $result =  Mysql::fetchAll($sql, $params);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
     protected function fetchEdgePropertiesMulti(array $idGroups): array
     {
+        StopWatch::start(__METHOD__);
         if (count($idGroups) === 0) {
             return [];
         }
@@ -229,7 +243,9 @@ class MysqlEdgeReader
             $i++;
         }
         $sql = 'SELECT * FROM `edge_property` WHERE (' . implode(' OR ', $sqlParts) . ') AND `deleted_at` IS NULL';
-        return Mysql::fetchAll($sql, $params);
+        $result = Mysql::fetchAll($sql, $params);
+        StopWatch::stop(__METHOD__);
+        return $result;
     }
 
 
