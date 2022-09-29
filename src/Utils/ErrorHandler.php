@@ -47,8 +47,15 @@ class ErrorHandler
                 'dsn' => $sentryDsn,
                 'environment' => Env::get('APP_ENV'),
                 'release' => Env::get('APP_NAME') . '@' . Env::get('APP_VERSION'),
-                'server_name' => $_SERVER['SERVER_NAME'] ?? 'n/a'
+                'server_name' => Env::get('APP_NAME')
             ]);
+            \Sentry\configureScope(function (\Sentry\State\Scope $scope): void {
+                $scope->setUser([
+                    'id' => JwtAuthentication::tenantId(),
+                    'username' => JwtAuthentication::getClaim('sub'),
+                    'ip' => ClientInfo::ip(),
+                ]);
+            });
             \Sentry\captureException($e);
         }
     }
