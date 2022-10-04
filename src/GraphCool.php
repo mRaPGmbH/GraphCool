@@ -11,8 +11,6 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 use JsonException;
 use Mrap\GraphCool\DataSource\DB;
-use Mrap\GraphCool\DataSource\Mysql\Mysql;
-use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
@@ -55,6 +53,7 @@ class GraphCool
         $instance->sendResponse($result);
 
         static::shutdown();
+        StopWatch::log(json_encode($request ?? $result));
     }
 
     public static function reset(): void
@@ -154,6 +153,7 @@ class GraphCool
      */
     protected function sendResponse(array $response): void
     {
+        StopWatch::start(__METHOD__);
         header('Content-Type: application/json');
         $env = Env::get('APP_ENV');
         if ($env === 'local' || $env === 'test' || $env === 'staging') {
@@ -166,6 +166,7 @@ class GraphCool
             echo '{"errors":[[{"message":"Internal server error"}]]}';
         }
         $this->finishRequest();
+        StopWatch::stop(__METHOD__);
     }
 
     /**
@@ -247,9 +248,11 @@ class GraphCool
 
     protected static function shutdown(): void
     {
+        StopWatch::start(__METHOD__);
         foreach (static::$shutdown as $closure) {
             $closure();
         }
+        StopWatch::stop(__METHOD__);
     }
 
     protected static function scheduler(): Scheduler
