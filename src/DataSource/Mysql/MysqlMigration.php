@@ -130,12 +130,12 @@ class MysqlMigration
         $sql = 'CREATE TABLE IF NOT EXISTS `slow_query` (
             `id` char(36) NOT NULL,
             `tenant_id` varchar(255) NOT NULL,
-            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `milliseconds` int(11) NOT NULL,
             `query` longtext NOT NULL,
             `timings` longtext NOT NULL,
             `ip` varchar(255) NOT NULL,
             `user_agent` varchar(255) NOT NULL,
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`tenant_id`,`id`),
             KEY `milliseconds` (`milliseconds`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
