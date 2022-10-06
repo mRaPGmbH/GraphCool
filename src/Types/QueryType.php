@@ -256,18 +256,16 @@ class QueryType extends BaseType
             $ids[$nr] = $row['id'];
         }
         $this->checkExistence($ids, $name, $errors);
+        $model = model($name);
         foreach ($create as $row) {
-            $row['id'] = 'NEW';
-            $row['created_at'] = time() * 1000;
-            $data[] = (object) $row;
+            $data[] = $this->injectFakeValuesForImportPreview((object) $row, $model);
             if ($i >= $max) {
                 break;
             }
             $i++;
         }
         foreach ($update as $row) {
-            $row['created_at'] = time() * 1000;
-            $data[] = (object) $row;
+            $data[] = $this->injectFakeValuesForImportPreview((object) $row, $model);
             if ($i >= $total) {
                 break;
             }
@@ -277,6 +275,22 @@ class QueryType extends BaseType
             'data' => $data,
             'errors' => $errors
         ];
+    }
+
+    protected function injectFakeValuesForImportPreview(stdClass $row, Model $model): stdClass
+    {
+        foreach ($model as $key => $field) {
+            if ($field instanceof Field && !$field->null) {
+                $row->$key = match ($field->type) {
+                    Type::ID => 'NEW',
+                    Field::DELETED_AT, Field::UPDATED_AT, Field::CREATED_AT, Field::DATE_TIME, Field::DATE, Field::TIME => time() * 1000,
+                    Field::AUTO_INCREMENT, Type::INT => 0,
+                    Field::DECIMAL, Type::FLOAT => 0.0,
+                    default => '',
+                };
+            }
+        }
+        return $row;
     }
 
     protected function checkExistence(array $ids, string $name, array &$errors): void
