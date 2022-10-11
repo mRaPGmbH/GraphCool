@@ -258,7 +258,12 @@ class MutationType extends BaseType
         if (str_starts_with($info->fieldName, 'delete')) {
             $name = $info->returnType->toString();
             Authorization::authorize('delete', $name);
-            return DB::delete(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
+            $result = DB::delete(JwtAuthentication::tenantId(), $info->returnType->toString(), $args['id']);
+            if ($result !== null) {
+                $model = model($name);
+                $model->onDelete($result);
+            }
+            return $result;
         }
         if (str_starts_with($info->fieldName, 'restore')) {
             $name = $info->returnType->toString();
