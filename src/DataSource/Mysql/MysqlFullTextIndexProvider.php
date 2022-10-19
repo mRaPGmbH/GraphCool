@@ -49,15 +49,19 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
         $parts = [];
         $where = ['tenant_id = ' . Mysql::getPdo()->quote($tenantId)];
         foreach ($this->split($searchString) as $part) {
+            /*
             if (mb_strlen($part) > 3) {
                 $parts[] = '+' . $part . '*';
             } else {
+            */
                 $where[] = '`text` LIKE ' . Mysql::getPdo()->quote('%' . $part . '%');
-            }
+            //}
         }
+        /*
         if (count($parts) > 0) {
             $where[] = 'MATCH(`text`) AGAINST(' . Mysql::getPdo()->quote(implode(' ', $parts)) . ' IN BOOLEAN MODE)';
         }
+        */
         if (count($where) === 0) {
             return [];
         }
