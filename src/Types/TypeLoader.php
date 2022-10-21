@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\Type;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
@@ -59,6 +60,9 @@ use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use RuntimeException;
 
+/**
+ * @deprecated
+ */
 class TypeLoader
 {
     /** @var string[] */
@@ -106,7 +110,7 @@ class TypeLoader
         static::$registry[$name] = $classname;
     }
 
-    public function loadForField(Field $field, string $name = null, bool $input = false): Type
+    public function loadForField(Field $field, string $name = null, bool $input = false): NullableType
     {
         return match ($field->type) {
             default => Type::string(),
@@ -135,17 +139,14 @@ class TypeLoader
         };
     }
 
-    public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
+    public function load(string $name): callable
     {
         return function () use ($name) {
-            if (!isset($this->types[$name])) {
-                $this->types[$name] = $this->create($name);
-            }
-            return $this->types[$name];
+            return \Mrap\GraphCool\Types\Type::get($name);
         };
     }
 
-    protected function create(string $name): Type
+    public function create(string $name): NullableType
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
@@ -160,7 +161,7 @@ class TypeLoader
         return new ModelType($name, $this);
     }
 
-    protected function createSpecial(string $name): Type
+    protected function createSpecial(string $name): NullableType
     {
         if (str_ends_with($name, 'Paginator')) {
             return new PaginatorType($name, $this);
@@ -199,7 +200,7 @@ class TypeLoader
             return new EdgeColumnMappingType($name, $this);
         }
         if (str_ends_with($name, 'ColumnMapping')) {
-            return new ColumnMappingType($name, $this);
+            return new ColumnMappingType($name);
         }
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name, $this);

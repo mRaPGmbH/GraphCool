@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
-use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class FileType extends InputObjectType
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $fields = [
-            'file' => $typeLoader->load('_Upload')(),
-            'filename' => new NonNull(Type::string()),
+            'file' => Type::get('_Upload'),
+            'filename' => Type::nonNull(Type::string()),
             'data_base64' => Type::string(),
         ];
         $config = [

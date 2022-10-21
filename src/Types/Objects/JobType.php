@@ -5,26 +5,25 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class JobType extends ObjectType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $config = [
             'name' => $name,
             'fields' => [
                 'id' => Type::nonNull(Type::string()),
                 'worker' => Type::nonNull(Type::string()),
-                'model' => $typeLoader->load('_Model'),
-                'status' => Type::nonNull($typeLoader->load('_Job_Status')),
-                'result' => $typeLoader->load($this->getResultType($name)),
-                'run_at' => $typeLoader->load('_DateTime'),
-                'created_at' => Type::nonNull($typeLoader->load('_DateTime')),
-                'started_at' => $typeLoader->load('_DateTime'),
-                'finished_at' => $typeLoader->load('_DateTime'),
+                'model' => Type::get('_Model'),
+                'status' => Type::nonNull(Type::get('_Job_Status')),
+                'result' => Type::get($this->getResultType($name)),
+                'run_at' => Type::get('_DateTime'),
+                'created_at' => Type::nonNull(Type::get('_DateTime')),
+                'started_at' => Type::get('_DateTime'),
+                'finished_at' => Type::get('_DateTime'),
             ],
         ];
         ksort($config['fields']);

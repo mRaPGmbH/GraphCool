@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\ListOfType;
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ImportPreviewType extends ObjectType
@@ -19,8 +17,8 @@ class ImportPreviewType extends ObjectType
             'name' => $name,
             'description' => 'A preview of a ' . $typeName . ' import.',
             'fields' => [
-                'data' => new ListOfType(new NonNull($typeLoader->load($typeName))),
-                'errors' => Type::listOf(Type::nonNull($typeLoader->load('_ImportError')))
+                'data' => Type::listOf(Type::nonNull(Type::get($typeName))),
+                'errors' => Type::listOf(Type::nonNull(Type::get('_ImportError')))
             ],
         ];
         parent::__construct($config);

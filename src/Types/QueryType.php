@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types;
 
 use GraphQL\Error\Error;
-use GraphQL\Type\Definition\ListOfType;
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ResolveInfo;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
@@ -34,12 +31,12 @@ class QueryType extends BaseType
     {
         $fields = [
             '_classDiagram' => Type::string(),
-            '_ImportJob' => $this->job('Import', $typeLoader),
-            '_ImportJobs' => $this->jobs('Import', $typeLoader),
-            '_ExportJob' => $this->job('Export', $typeLoader),
-            '_ExportJobs' => $this->jobs('Export', $typeLoader),
-            '_History' => $this->history($typeLoader),
-            '_Token' => $this->token($typeLoader),
+            '_ImportJob' => $this->job('Import'),
+            '_ImportJobs' => $this->jobs('Import'),
+            '_ExportJob' => $this->job('Export'),
+            '_ExportJobs' => $this->jobs('Export'),
+            '_History' => $this->history(),
+            '_Token' => $this->token(),
         ];
         $this->customResolvers['_classDiagram'] = function ($rootValue, $args, $context, $info) {
             return $this->getDiagram();
@@ -53,10 +50,10 @@ class QueryType extends BaseType
 
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
-            $fields[lcfirst($name)] = $this->read($name, $typeLoader);
-            $fields[lcfirst($name) . 's'] = $this->list($name, $model, $typeLoader);
-            $fields['export' . $name . 's'] = $this->export($name, $model, $typeLoader);
-            $fields['import' . $name . 'sPreview'] = $this->previewImport($name, $typeLoader);
+            $fields[lcfirst($name)] = $this->read($name);
+            $fields[lcfirst($name) . 's'] = $this->list($name, $model);
+            $fields['export' . $name . 's'] = $this->export($name, $model);
+            $fields['import' . $name . 'sPreview'] = $this->previewImport($name);
         }
         foreach (ClassFinder::queries() as $name => $classname) {
             $query = new $classname($typeLoader);
@@ -76,31 +73,30 @@ class QueryType extends BaseType
         parent::__construct($config);
     }
 
-    protected function token(TypeLoader $typeLoader): array
+    protected function token(): array
     {
         return [
             'type' => Type::nonNull(Type::string()),
             'description' => 'Get a single use JWT for a specific endpoint of this service.',
             'args' => [
-                'endpoint' => $typeLoader->load('_Entity'),
-                'operation' => $typeLoader->load('_Permission'),
+                'endpoint' => Type::get('_Entity'),
+                'operation' => Type::get('_Permission'),
             ]
         ];
     }
 
     /**
      * @param string $name
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function read(string $name, TypeLoader $typeLoader): array
+    protected function read(string $name): array
     {
         return [
-            'type' => $typeLoader->load($name),
+            'type' => Type::get($name),
             'description' => 'Get a single ' . $name . ' by it\'s ID',
             'args' => [
-                'id' => new NonNull(Type::id()),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
+                'id' => Type::nonNull(Type::id()),
+                '_timezone' => Type::get('_TimezoneOffset'),
             ]
         ];
     }
@@ -108,31 +104,30 @@ class QueryType extends BaseType
     /**
      * @param string $name
      * @param Model $model
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function list(string $name, Model $model, TypeLoader $typeLoader): array
+    protected function list(string $name, Model $model): array
     {
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
-            'whereMode' => $typeLoader->load('_WhereMode'),
+            'where' => Type::get('_' . $name . 'WhereConditions'),
+            'whereMode' => Type::get('_WhereMode'),
         ];
         foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
-            $args['where' . ucfirst($key)] = $typeLoader->load('_' . $relation->name . 'WhereConditions');
+            $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
         }
-        $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_' . $name . 'OrderByClause')));
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_' . $name . 'OrderByClause')));
         $args['search'] = Type::string();
         $args['searchLoosely'] = Type::string();
-        $args['result'] = $typeLoader->load('_Result');
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+        $args['result'] = Type::get('_Result');
+        $args['_timezone'] = Type::get('_TimezoneOffset');
 
         return [
-            'type' => $typeLoader->load('_' . $name . 'Paginator'),
+            'type' => Type::get('_' . $name . 'Paginator'),
             'description' => 'Get a paginated list of ' . $name . 's filtered by given where clauses.',
             'args' => $args
         ];
@@ -141,24 +136,23 @@ class QueryType extends BaseType
     /**
      * @param string $name
      * @param Model $model
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function export(string $name, Model $model, TypeLoader $typeLoader): array
+    protected function export(string $name, Model $model): array
     {
         return [
-            'type' => $typeLoader->load('_FileExport'),
+            'type' => Type::get('_FileExport'),
             'description' => 'Export ' . $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
-            'args' => $this->exportArgs($name, $model, $typeLoader),
+            'args' => $this->exportArgs($name, $model),
         ];
     }
 
-    protected function previewImport(string $name, TypeLoader $typeLoader): array
+    protected function previewImport(string $name): array
     {
         return [
-            'type' => $typeLoader->load('_' . $name.'ImportPreview'),
+            'type' => Type::get('_' . $name.'ImportPreview'),
             'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
-            'args' => $this->importArgs($name, $typeLoader)
+            'args' => $this->importArgs($name)
         ];
     }
 
@@ -378,47 +372,47 @@ class QueryType extends BaseType
         return implode($newline, $classes) . $newline . implode($newline, $relations);
     }
 
-    protected function job(string $name, TypeLoader $typeLoader): array
+    protected function job(string $name): array
     {
         return [
-            'type' => $typeLoader->load('_'. $name .'Job'),
+            'type' => Type::get('_'. $name .'Job'),
             'description' => 'Get a single ' . $name . ' job by id.',
             'args' => [
-                'id' => new NonNull(Type::id()),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
+                'id' => Type::nonNull(Type::id()),
+                '_timezone' => Type::get('_TimezoneOffset'),
             ]
         ];
     }
 
-    protected function jobs(string $name, TypeLoader $typeLoader): array
+    protected function jobs(string $name): array
     {
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => $typeLoader->load('_Job_WhereConditions'),
+            'where' => Type::get('_Job_WhereConditions'),
         ];
-        $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_Job_OrderByClause')));
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_Job_OrderByClause')));
+        $args['_timezone'] = Type::get('_TimezoneOffset');
 
         return [
-            'type' => $typeLoader->load('_' . $name . '_JobPaginator'),
+            'type' => Type::get('_' . $name . '_JobPaginator'),
             'description' => 'Get a paginated list of ' . $name . ' jobs filtered by given where clauses.',
             'args' => $args
         ];
     }
 
-    protected function history(TypeLoader $typeLoader): array
+    protected function history(): array
     {
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => $typeLoader->load('_History_WhereConditions'),
+            'where' => Type::get('_History_WhereConditions'),
         ];
-        $args['orderBy'] = new ListOfType(new NonNull($typeLoader->load('_History_OrderByClause')));
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_History_OrderByClause')));
+        $args['_timezone'] = Type::get('_TimezoneOffset');
 
         return [
-            'type' => $typeLoader->load('_History_Paginator'),
+            'type' => Type::get('_History_Paginator'),
             'description' => 'Get a paginated list of history logs filtered by given where clauses.',
             'args' => $args
         ];

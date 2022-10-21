@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class HistoryType extends ObjectType
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $config = [
             'name' => '_History',
@@ -23,11 +22,11 @@ class HistoryType extends ObjectType
                 'sub' => Type::string(),
                 'ip' => Type::string(),
                 'user_agent' => Type::string(),
-                'change_type' => $typeLoader->load('_History_ChangeType'),
+                'change_type' => Type::get('_History_ChangeType'),
                 'changes' => Type::nonNull(Type::string()),
                 'preceding_hash' => Type::string(),
                 'hash' => Type::nonNull(Type::string()),
-                'created_at' => Type::nonNull($typeLoader->load('_DateTime')),
+                'created_at' => Type::nonNull(Type::get('_DateTime')),
             ],
         ];
         ksort($config['fields']);
