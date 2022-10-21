@@ -44,6 +44,7 @@ class GraphCool
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
             foreach ($request as $index => $query) {
+                // TODO: should this be $result[]= ?
                 $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
             }
         } catch (Throwable $e) {
