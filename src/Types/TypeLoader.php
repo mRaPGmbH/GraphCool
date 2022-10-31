@@ -164,16 +164,16 @@ class TypeLoader
     protected function createSpecial(string $name): NullableType
     {
         if (str_ends_with($name, 'Paginator')) {
-            return new PaginatorType($name, $this);
+            return new PaginatorType($name);
         }
         if (str_ends_with($name, 'Edges')) {
-            return new EdgesType($name, $this);
+            return new EdgesType($name);
         }
         if (str_ends_with($name, 'Edge')) {
             return new EdgeType($name, $this);
         }
         if (str_ends_with($name, 'EdgeOrderByClause')) {
-            return new EdgeOrderByClauseType($name, $this);
+            return new EdgeOrderByClauseType($name);
         }
         if (str_ends_with($name, 'EdgeReducedColumn')) {
             return new EdgeReducedColumnType($name, $this);
@@ -182,22 +182,22 @@ class TypeLoader
             return new EdgeColumnType($name, $this);
         }
         if (str_ends_with($name, 'WhereConditions')) {
-            return new WhereInputType($name, $this);
+            return new WhereInputType($name);
         }
         if (str_ends_with($name, 'OrderByClause')) {
-            return new OrderByClauseType($name, $this);
+            return new OrderByClauseType($name);
         }
         if (str_ends_with($name, 'EdgeReducedSelector')) {
-            return new EdgeReducedSelectorType($name, $this);
+            return new EdgeReducedSelectorType($name);
         }
         if (str_ends_with($name, 'EdgeSelector')) {
-            return new EdgeSelectorType($name, $this);
+            return new EdgeSelectorType($name);
         }
         if (str_ends_with($name, 'EdgeReducedColumnMapping')) {
-            return new EdgeReducedColumnMappingType($name, $this);
+            return new EdgeReducedColumnMappingType($name);
         }
         if (str_ends_with($name, 'EdgeColumnMapping')) {
-            return new EdgeColumnMappingType($name, $this);
+            return new EdgeColumnMappingType($name);
         }
         if (str_ends_with($name, 'ColumnMapping')) {
             return new ColumnMappingType($name);
@@ -218,7 +218,7 @@ class TypeLoader
             return new ModelInputType($name, $this);
         }
         if (str_ends_with($name, 'Job') && $name !== '_Job') {
-            return new JobType($name, $this);
+            return new JobType($name);
         }
         if (str_ends_with($name, 'ImportPreview')) {
             return new ImportPreviewType($name, $this);
