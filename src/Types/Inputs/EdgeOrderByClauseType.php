@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class EdgeOrderByClauseType extends InputObjectType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $fields = [
-            'field' => $typeLoader->load(substr($name, 0, -17) . 'EdgeColumn'),
-            'order' => $typeLoader->load('_SortOrder'),
+            'field' => Type::get(substr($name, 0, -17) . 'EdgeColumn'),
+            'order' => Type::get('_SortOrder'),
         ];
         $config = [
             'name' => $name,

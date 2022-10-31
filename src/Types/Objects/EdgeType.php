@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Types\TypeLoader;
 use function Mrap\GraphCool\model;
 
@@ -19,13 +19,13 @@ class EdgeType extends ObjectType
 
         $model = model($names[0]);
         $relation = $model->$key;
-        $type = $typeLoader->load($relation->name);
+        $type = Type::get($relation->name);
         $fields = [];
         foreach ($relation as $fieldKey => $field) {
             if ($field instanceof Field) {
                 $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
                 if ($field->null === false) {
-                    $fieldType = new NonNull($fieldType);
+                    $fieldType = Type::nonNull($fieldType);
                 }
                 $fields[$fieldKey] = [
                     'type' => $fieldType

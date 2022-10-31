@@ -6,9 +6,7 @@ namespace Mrap\GraphCool\Types;
 
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ListOfType;
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ResolveInfo;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\FullTextIndex;
@@ -36,20 +34,20 @@ class MutationType extends BaseType
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
             $fields['create' . $name] = $this->create($name, $model, $typeLoader);
-            $fields['update' . $name] = $this->update($name, $typeLoader);
-            $fields['updateMany' . $name . 's'] = $this->updateMany($name, $typeLoader);
-            $fields['delete' . $name] = $this->delete($name, $typeLoader);
-            $fields['restore' . $name] = $this->restore($name, $typeLoader);
-            $fields['import' . $name . 's'] = $this->import($name, $typeLoader);
-            $fields['import' . $name . 'sAsync'] = $this->importAsync($name, $typeLoader);
-            $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model, $typeLoader);
+            $fields['update' . $name] = $this->update($name);
+            $fields['updateMany' . $name . 's'] = $this->updateMany($name);
+            $fields['delete' . $name] = $this->delete($name);
+            $fields['restore' . $name] = $this->restore($name);
+            $fields['import' . $name . 's'] = $this->import($name);
+            $fields['import' . $name . 'sAsync'] = $this->importAsync($name);
+            $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model);
         }
         foreach (ClassFinder::mutations() as $name => $classname) {
-            /** @var Mutation $query */
-            $query = new $classname($typeLoader);
-            $fields[$query->name] = $query->config;
-            $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
-                return $query->resolve($rootValue, $args, $context, $info);
+            /** @var Mutation $mutation */
+            $mutation = new $classname($typeLoader);
+            $fields[$mutation->name] = $mutation->config;
+            $this->customResolvers[$mutation->name] = static function ($rootValue, $args, $context, $info) use ($mutation) {
+                return $mutation->resolve($rootValue, $args, $context, $info);
             };
         }
 
@@ -78,14 +76,14 @@ class MutationType extends BaseType
                 $relation = $field;
                 if ($relation->type === Relation::BELONGS_TO) {
                     if ($relation->null) {
-                        $args[$key] = $typeLoader->load('_' . $name . '__' . $key . 'Relation');
+                        $args[$key] = Type::get('_' . $name . '__' . $key . 'Relation');
                     } else {
-                        $args[$key] = new NonNull($typeLoader->load('_' . $name . '__' . $key . 'Relation'));
+                        $args[$key] = Type::nonNull(Type::get('_' . $name . '__' . $key . 'Relation'));
                     }
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
                     $args[$key] = new ListOfType(
-                        new NonNull($typeLoader->load('_' . $name . '__' . $key . 'ManyRelation'))
+                        Type::nonNull(Type::get('_' . $name . '__' . $key . 'ManyRelation'))
                     );
                 }
             }
@@ -97,88 +95,82 @@ class MutationType extends BaseType
                 if ($field->null === true || ($field->default ?? null) !== null) {
                     $args[$key] = $typeLoader->loadForField($field, $name . '__' . $key, true);
                 } else {
-                    $args[$key] = new NonNull($typeLoader->loadForField($field, $name . '__' . $key, true));
+                    $args[$key] = Type::nonNull($typeLoader->loadForField($field, $name . '__' . $key, true));
                 }
             }
         }
-        $args['_timezone'] = $typeLoader->load('_TimezoneOffset');
+        $args['_timezone'] = Type::get('_TimezoneOffset');
 
         $ret = [
-            'type' => $typeLoader->load($name),
+            'type' => Type::get($name),
             'description' => 'Create a single new ' . $name . ' entry',
         ];
-        //if (count($args) > 0) {
-            ksort($args);
-            $ret['args'] = $args;
-        //}
+        ksort($args);
+        $ret['args'] = $args;
         return $ret;
     }
 
     /**
      * @param string $name
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function update(string $name, TypeLoader $typeLoader): array
+    protected function update(string $name): array
     {
         return [
-            'type' => $typeLoader->load($name),
+            'type' => Type::get($name),
             'description' => 'Modify an existing ' . $name . ' entry',
             'args' => [
-                'id' => new nonNull(Type::id()),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
-                'data' => new NonNull($typeLoader->load('_' . $name . 'Input')),
+                'id' => Type::nonNull(Type::id()),
+                '_timezone' => Type::get('_TimezoneOffset'),
+                'data' => Type::nonNull(Type::get('_' . $name . 'Input')),
             ]
         ];
     }
 
     /**
      * @param string $name
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function updateMany(string $name, TypeLoader $typeLoader): array
+    protected function updateMany(string $name): array
     {
         return [
-            'type' => $typeLoader->load('_UpdateManyResult'),
+            'type' => Type::get('_UpdateManyResult'),
             'description' => 'Modify multiple existing ' . $name . ' entries, using where.',
             'args' => [
-                'where' => $typeLoader->load('_' . $name . 'WhereConditions'),
-                'data' => new NonNull($typeLoader->load('_' . $name . 'Input')),
+                'where' => Type::get('_' . $name . 'WhereConditions'),
+                'data' => Type::nonNull(Type::get('_' . $name . 'Input')),
             ]
         ];
     }
 
     /**
      * @param string $name
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function delete(string $name, TypeLoader $typeLoader): array
+    protected function delete(string $name): array
     {
         return [
-            'type' => $typeLoader->load($name),
+            'type' => Type::get($name),
             'description' => 'Delete a ' . $name . ' entry by ID',
             'args' => [
-                'id' => new NonNull(Type::id()),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
+                'id' => Type::nonNull(Type::id()),
+                '_timezone' => Type::get('_TimezoneOffset'),
             ]
         ];
     }
 
     /**
      * @param string $name
-     * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function restore(string $name, TypeLoader $typeLoader): array
+    protected function restore(string $name): array
     {
         return [
-            'type' => $typeLoader->load($name),
+            'type' => Type::get($name),
             'description' => 'Restore a previously soft-deleted ' . $name . ' record by ID',
             'args' => [
-                'id' => new NonNull(Type::id()),
-                '_timezone' => $typeLoader->load('_TimezoneOffset'),
+                'id' => Type::nonNull(Type::id()),
+                '_timezone' => Type::get('_TimezoneOffset'),
             ]
         ];
     }
@@ -188,21 +180,21 @@ class MutationType extends BaseType
      * @param TypeLoader $typeLoader
      * @return mixed[]
      */
-    protected function import(string $name, TypeLoader $typeLoader): array
+    protected function import(string $name): array
     {
         return [
-            'type' => $typeLoader->load('_ImportSummary'),
+            'type' => Type::get('_ImportSummary'),
             'description' => 'Import a list of ' . $name . 's from a spreadsheet. If ID\'s are present, ' . $name . 's will be updated - otherwise new ' . $name . 's will be created. To completely replace the existing data set, delete everything before importing.',
-            'args' => $this->importArgs($name, $typeLoader)
+            'args' => $this->importArgs($name)
         ];
     }
 
-    protected function importAsync(string $name, TypeLoader $typeLoader): array
+    protected function importAsync(string $name): array
     {
         return [
             'type' => Type::string(),
             'description' => 'Import a list of ' . $name . 's from a spreadsheet - in the background. Will return the job_id of the background job.',
-            'args' => $this->importArgs($name, $typeLoader)
+            'args' => $this->importArgs($name)
         ];
     }
 
@@ -351,12 +343,12 @@ class MutationType extends BaseType
         return DB::addJob(JwtAuthentication::tenantId(), 'importer', $name, $data);
     }
 
-    protected function exportAsync(string $name, Model $model, TypeLoader $typeLoader): array
+    protected function exportAsync(string $name, Model $model): array
     {
         return[
             'type' => Type::string(),
             'description' => 'Start background export of ' . $name . 's and get the ID of the _ExportJob you can later fetch the file from.',
-            'args' => $this->exportArgs($name, $model, $typeLoader),
+            'args' => $this->exportArgs($name, $model),
         ];
     }
 

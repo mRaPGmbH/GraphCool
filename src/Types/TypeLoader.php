@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\Type;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
@@ -59,6 +60,9 @@ use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use RuntimeException;
 
+/**
+ * @deprecated
+ */
 class TypeLoader
 {
     /** @var string[] */
@@ -106,7 +110,7 @@ class TypeLoader
         static::$registry[$name] = $classname;
     }
 
-    public function loadForField(Field $field, string $name = null, bool $input = false): Type
+    public function loadForField(Field $field, string $name = null, bool $input = false): NullableType
     {
         return match ($field->type) {
             default => Type::string(),
@@ -135,17 +139,14 @@ class TypeLoader
         };
     }
 
-    public function load(string $name, ?ModelType $subType = null, ?ModelType $parentType = null): callable
+    public function load(string $name): callable
     {
         return function () use ($name) {
-            if (!isset($this->types[$name])) {
-                $this->types[$name] = $this->create($name);
-            }
-            return $this->types[$name];
+            return \Mrap\GraphCool\Types\Type::get($name);
         };
     }
 
-    protected function create(string $name): Type
+    public function create(string $name): NullableType
     {
         if (isset(static::$registry[$name])) {
             $classname = static::$registry[$name];
@@ -160,19 +161,19 @@ class TypeLoader
         return new ModelType($name, $this);
     }
 
-    protected function createSpecial(string $name): Type
+    protected function createSpecial(string $name): NullableType
     {
         if (str_ends_with($name, 'Paginator')) {
-            return new PaginatorType($name, $this);
+            return new PaginatorType($name);
         }
         if (str_ends_with($name, 'Edges')) {
-            return new EdgesType($name, $this);
+            return new EdgesType($name);
         }
         if (str_ends_with($name, 'Edge')) {
             return new EdgeType($name, $this);
         }
         if (str_ends_with($name, 'EdgeOrderByClause')) {
-            return new EdgeOrderByClauseType($name, $this);
+            return new EdgeOrderByClauseType($name);
         }
         if (str_ends_with($name, 'EdgeReducedColumn')) {
             return new EdgeReducedColumnType($name, $this);
@@ -181,25 +182,25 @@ class TypeLoader
             return new EdgeColumnType($name, $this);
         }
         if (str_ends_with($name, 'WhereConditions')) {
-            return new WhereInputType($name, $this);
+            return new WhereInputType($name);
         }
         if (str_ends_with($name, 'OrderByClause')) {
-            return new OrderByClauseType($name, $this);
+            return new OrderByClauseType($name);
         }
         if (str_ends_with($name, 'EdgeReducedSelector')) {
-            return new EdgeReducedSelectorType($name, $this);
+            return new EdgeReducedSelectorType($name);
         }
         if (str_ends_with($name, 'EdgeSelector')) {
-            return new EdgeSelectorType($name, $this);
+            return new EdgeSelectorType($name);
         }
         if (str_ends_with($name, 'EdgeReducedColumnMapping')) {
-            return new EdgeReducedColumnMappingType($name, $this);
+            return new EdgeReducedColumnMappingType($name);
         }
         if (str_ends_with($name, 'EdgeColumnMapping')) {
-            return new EdgeColumnMappingType($name, $this);
+            return new EdgeColumnMappingType($name);
         }
         if (str_ends_with($name, 'ColumnMapping')) {
-            return new ColumnMappingType($name, $this);
+            return new ColumnMappingType($name);
         }
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name, $this);
@@ -217,7 +218,7 @@ class TypeLoader
             return new ModelInputType($name, $this);
         }
         if (str_ends_with($name, 'Job') && $name !== '_Job') {
-            return new JobType($name, $this);
+            return new JobType($name);
         }
         if (str_ends_with($name, 'ImportPreview')) {
             return new ImportPreviewType($name, $this);

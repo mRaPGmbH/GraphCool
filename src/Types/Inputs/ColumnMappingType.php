@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
-use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class ColumnMappingType extends InputObjectType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $fields = [
-            'column' => new NonNull($typeLoader->load(substr($name, 0, -13) . 'Column')),
+            'column' => Type::nonNull(Type::get(substr($name, 0, -13) . 'Column')),
             'label' => Type::string(),
         ];
         $config = [

@@ -5,22 +5,21 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
-use GraphQL\Type\Definition\ListOfType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class WhereInputType extends InputObjectType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $fields = [
-            'column' => $typeLoader->load(substr($name, 0, -15) . 'Column'),
-            'operator' => $typeLoader->load('_SQLOperator')(),
-            'value' => $typeLoader->load('Mixed'),
+            'column' => Type::get(substr($name, 0, -15) . 'Column'),
+            'operator' => Type::get('_SQLOperator'),
+            'value' => Type::get('Mixed'),
             'fulltextSearch' => Type::string(),
-            'AND' => new ListOfType($this),
-            'OR' => new ListOfType($this)
+            'AND' => Type::listOf($this),
+            'OR' => Type::listOf($this)
         ];
         $config = [
             'name' => $name,
