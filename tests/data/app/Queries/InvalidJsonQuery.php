@@ -5,12 +5,11 @@ namespace App\Queries;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Query;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class InvalidJsonQuery extends Query
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $this->name = 'InvalidJsonQuery';
         $this->config = [

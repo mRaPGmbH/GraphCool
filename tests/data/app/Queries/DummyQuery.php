@@ -3,20 +3,19 @@
 namespace App\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Query;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 
 class DummyQuery extends Query
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $this->name = 'DummyQuery';
         $this->config = [
             'type' => Type::string(),
             'args' => [
-                'arg' => $typeLoader->load('Mixed')
+                'arg' => Type::get('Mixed')
             ]
         ];
     }

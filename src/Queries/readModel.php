@@ -1,25 +1,22 @@
 <?php
 
-namespace App\Queries;
+declare(strict_types=1);
+
+namespace Mrap\GraphCool\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\Query;
 
-class PublicQuery extends Query
+class readModel extends Query
 {
 
     public function __construct()
     {
-        $this->name = 'PublicQuery';
-        $this->config = [];
-    }
 
-    public function authorize(): void
-    {
     }
 
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
-        return 'dummy-query-resolve';
+        // TODO: Implement resolve() method.
     }
 }

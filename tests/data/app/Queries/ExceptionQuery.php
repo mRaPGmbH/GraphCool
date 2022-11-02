@@ -5,13 +5,12 @@ namespace App\Queries;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Query;
-use Mrap\GraphCool\Types\TypeLoader;
 use RuntimeException;
 
 class ExceptionQuery extends Query
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $this->name = 'ExceptionQuery';
         $this->config = [
