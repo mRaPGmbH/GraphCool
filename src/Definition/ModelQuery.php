@@ -7,13 +7,13 @@ namespace Mrap\GraphCool\Definition;
 use GraphQL\Type\Definition\ResolveInfo;
 use stdClass;
 
-abstract class Query extends stdClass
+abstract class ModelQuery extends stdClass
 {
-    public string $fieldName;
-    /** @var mixed[] */
+    public string $name;
     public array $config;
+    protected string $model;
 
-    abstract public function __construct();
+    abstract public function __construct(string $model);
 
     /**
      * @param mixed[] $rootValue

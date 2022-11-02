@@ -18,3 +18,8 @@ function model(string $name): Model
         throw new Error('Unknown entity: ' . $name);
     }
 }
+
+function pluralize(string $name): string
+{
+    return $name . 's';
+}

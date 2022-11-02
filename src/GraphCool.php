@@ -100,7 +100,7 @@ class GraphCool
         $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
-                'query' => new QueryType($typeLoader),
+                'query' => new QueryType(),
                 'mutation' => new MutationType($typeLoader),
                 'typeLoader' => $this->getTypeLoaderClosure(),
             ]

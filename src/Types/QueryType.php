@@ -12,12 +12,15 @@ use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
+use ReflectionClass;
+use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -27,7 +30,9 @@ class QueryType extends BaseType
     /** @var callable[] */
     protected array $customResolvers = [];
 
-    public function __construct(TypeLoader $typeLoader)
+    protected array $queries = [];
+
+    public function __construct()
     {
         $fields = [
             '_classDiagram' => Type::string(),
@@ -50,18 +55,27 @@ class QueryType extends BaseType
 
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
-            $fields[lcfirst($name)] = $this->read($name);
-            $fields[lcfirst($name) . 's'] = $this->list($name, $model);
+            //$fields[lcfirst($name)] = $this->read($name);
+            //$fields[lcfirst($name) . 's'] = $this->list($name, $model);
             $fields['export' . $name . 's'] = $this->export($name, $model);
             $fields['import' . $name . 'sPreview'] = $this->previewImport($name);
         }
+
         foreach (ClassFinder::queries() as $name => $classname) {
-            $query = new $classname($typeLoader);
-            $fields[$query->name] = $query->config;
-            $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
-                return $query->resolve($rootValue, $args, $context, $info);
-            };
+            if ((new ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
+                foreach (ClassFinder::models() as $model => $tmp) {
+                    $query = new $classname($model);
+                    $this->queries[lcfirst($query->name)] = $query;
+                }
+            } else {
+                $query = new $classname();
+                $this->queries[$query->name] = $query;
+            }
         }
+        foreach ($this->queries as $name => $query) {
+            $fields[$name] = $query->config;
+        }
+
         ksort($fields);
         $config = [
             'name' => 'Query',
@@ -82,54 +96,6 @@ class QueryType extends BaseType
                 'endpoint' => Type::get('_Entity'),
                 'operation' => Type::get('_Permission'),
             ]
-        ];
-    }
-
-    /**
-     * @param string $name
-     * @return mixed[]
-     */
-    protected function read(string $name): array
-    {
-        return [
-            'type' => Type::get($name),
-            'description' => 'Get a single ' . $name . ' by it\'s ID',
-            'args' => [
-                'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
-            ]
-        ];
-    }
-
-    /**
-     * @param string $name
-     * @param Model $model
-     * @return mixed[]
-     */
-    protected function list(string $name, Model $model): array
-    {
-        $args = [
-            'first' => Type::int(),
-            'page' => Type::int(),
-            'where' => Type::get('_' . $name . 'WhereConditions'),
-            'whereMode' => Type::get('_WhereMode'),
-        ];
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
-        }
-        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_' . $name . 'OrderByClause')));
-        $args['search'] = Type::string();
-        $args['searchLoosely'] = Type::string();
-        $args['result'] = Type::get('_Result');
-        $args['_timezone'] = Type::get('_TimezoneOffset');
-
-        return [
-            'type' => Type::get('_' . $name . 'Paginator'),
-            'description' => 'Get a paginated list of ' . $name . 's filtered by given where clauses.',
-            'args' => $args
         ];
     }
 
@@ -168,6 +134,9 @@ class QueryType extends BaseType
     {
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
+        }
+        if (isset($this->queries[$info->fieldName])) {
+            return $this->queries[$info->fieldName]->resolve($rootValue, $args, $context, $info);
         }
         if (isset($this->customResolvers[$info->fieldName])) {
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
@@ -226,9 +195,7 @@ class QueryType extends BaseType
                 return $this->resolveImportPreview($name, $args);
             }
         }
-        $name = $info->returnType->toString();
-        Authorization::authorize('read', $name);
-        return DB::load(JwtAuthentication::tenantId(), $name, $args['id']);
+        throw new RuntimeException('no resolver found for '. $info->returnType->toString());
     }
 
     /**
