@@ -14,6 +14,7 @@ use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
+use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
@@ -99,9 +100,9 @@ class GraphCool
         $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
-                'query' => new QueryType($typeLoader),
+                'query' => new QueryType(),
                 'mutation' => new MutationType($typeLoader),
-                'typeLoader' => $this->getTypeLoaderClosure($typeLoader),
+                'typeLoader' => $this->getTypeLoaderClosure(),
             ]
         );
         StopWatch::stop(__METHOD__);
@@ -111,10 +112,10 @@ class GraphCool
     /**
      * @codeCoverageIgnore
      */
-    protected function getTypeLoaderClosure(TypeLoader $typeLoader): Closure
+    protected function getTypeLoaderClosure(): Closure
     {
-        return function ($name) use ($typeLoader) {
-            return $typeLoader->load($name);
+        return function ($name) {
+            return Type::get($name);
         };
     }
 

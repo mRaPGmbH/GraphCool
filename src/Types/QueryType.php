@@ -12,12 +12,15 @@ use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
+use ReflectionClass;
+use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -27,7 +30,9 @@ class QueryType extends BaseType
     /** @var callable[] */
     protected array $customResolvers = [];
 
-    public function __construct(TypeLoader $typeLoader)
+    protected array $queries = [];
+
+    public function __construct()
     {
         $fields = [
             '_classDiagram' => Type::string(),
@@ -48,20 +53,21 @@ class QueryType extends BaseType
             return JwtAuthentication::createLocalToken([$name => [$operation]], JwtAuthentication::tenantId());
         };
 
-        foreach (ClassFinder::models() as $name => $classname) {
-            $model = new $classname();
-            $fields[lcfirst($name)] = $this->read($name);
-            $fields[lcfirst($name) . 's'] = $this->list($name, $model);
-            $fields['export' . $name . 's'] = $this->export($name, $model);
-            $fields['import' . $name . 'sPreview'] = $this->previewImport($name);
-        }
         foreach (ClassFinder::queries() as $name => $classname) {
-            $query = new $classname($typeLoader);
-            $fields[$query->name] = $query->config;
-            $this->customResolvers[$query->name] = static function ($rootValue, $args, $context, $info) use ($query) {
-                return $query->resolve($rootValue, $args, $context, $info);
-            };
+            if ((new ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
+                foreach (ClassFinder::models() as $model => $tmp) {
+                    $query = new $classname($model);
+                    $this->queries[lcfirst($query->name)] = $query;
+                }
+            } else {
+                $query = new $classname();
+                $this->queries[$query->name] = $query;
+            }
         }
+        foreach ($this->queries as $name => $query) {
+            $fields[$name] = $query->config;
+        }
+
         ksort($fields);
         $config = [
             'name' => 'Query',
@@ -86,77 +92,6 @@ class QueryType extends BaseType
     }
 
     /**
-     * @param string $name
-     * @return mixed[]
-     */
-    protected function read(string $name): array
-    {
-        return [
-            'type' => Type::get($name),
-            'description' => 'Get a single ' . $name . ' by it\'s ID',
-            'args' => [
-                'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
-            ]
-        ];
-    }
-
-    /**
-     * @param string $name
-     * @param Model $model
-     * @return mixed[]
-     */
-    protected function list(string $name, Model $model): array
-    {
-        $args = [
-            'first' => Type::int(),
-            'page' => Type::int(),
-            'where' => Type::get('_' . $name . 'WhereConditions'),
-            'whereMode' => Type::get('_WhereMode'),
-        ];
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
-        }
-        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_' . $name . 'OrderByClause')));
-        $args['search'] = Type::string();
-        $args['searchLoosely'] = Type::string();
-        $args['result'] = Type::get('_Result');
-        $args['_timezone'] = Type::get('_TimezoneOffset');
-
-        return [
-            'type' => Type::get('_' . $name . 'Paginator'),
-            'description' => 'Get a paginated list of ' . $name . 's filtered by given where clauses.',
-            'args' => $args
-        ];
-    }
-
-    /**
-     * @param string $name
-     * @param Model $model
-     * @return mixed[]
-     */
-    protected function export(string $name, Model $model): array
-    {
-        return [
-            'type' => Type::get('_FileExport'),
-            'description' => 'Export ' . $name . 's filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
-            'args' => $this->exportArgs($name, $model),
-        ];
-    }
-
-    protected function previewImport(string $name): array
-    {
-        return [
-            'type' => Type::get('_' . $name.'ImportPreview'),
-            'description' => 'Get a preview of what an import of a list of ' .  $name . 's from a spreadsheet would result in. Does not actually modify any data.' ,
-            'args' => $this->importArgs($name)
-        ];
-    }
-
-    /**
      * @param mixed[] $rootValue
      * @param mixed[] $args
      * @param mixed $context
@@ -168,6 +103,9 @@ class QueryType extends BaseType
     {
         if (isset($args['_timezone'])) {
             TimeZone::set($args['_timezone']);
+        }
+        if (isset($this->queries[$info->fieldName])) {
+            return $this->queries[$info->fieldName]->resolve($rootValue, $args, $context, $info);
         }
         if (isset($this->customResolvers[$info->fieldName])) {
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
@@ -184,12 +122,6 @@ class QueryType extends BaseType
                 Authorization::authorize('find', $name);
                 return DB::findHistory(JwtAuthentication::tenantId(), $args);
             }
-            if (str_ends_with($info->returnType->name, 'Paginator')) {
-                $name = substr($info->returnType->name, 1, -9);
-                Authorization::authorize('find', $name);
-                return DB::findAll(JwtAuthentication::tenantId(), $name , $args);
-            }
-            $type = $args['type'] ?? 'xlsx';
             $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
             if (str_ends_with($info->fieldName, 'Async') && str_starts_with($info->fieldName, 'export')) {
                 $name = substr($info->fieldName, 6, -6);
@@ -201,119 +133,14 @@ class QueryType extends BaseType
                 ];
                 return DB::addJob(JwtAuthentication::tenantId(), 'exporter', $name, $data);
             }
-            if ($info->returnType->name === '_FileExport') {
-                $name = ucfirst(substr($info->fieldName, 6, -1));
-                Authorization::authorize('export', $name);
-                $data = DB::findAll(JwtAuthentication::tenantId(), $name, $args)->data;
-                if ($data instanceof \Closure) {
-                    $data = $data();
-                }
-                return File::write(
-                    $name,
-                    $data ?? [],
-                    $args,
-                    $type
-                );
-            }
             if (str_starts_with($info->fieldName, '_') && str_ends_with($info->fieldName, 'Job')) {
                 $name = substr($info->fieldName, 1);
                 Authorization::authorize('read', $name);
                 return DB::getJob(JwtAuthentication::tenantId(), $this->getWorkerForJob($name), $args['id']);
             }
-            if (str_starts_with($info->fieldName, 'import') && str_ends_with($info->fieldName, 'Preview')) {
-                $name = substr($info->fieldName, 6, -8);
-                Authorization::authorize('import', $name);
-                return $this->resolveImportPreview($name, $args);
-            }
         }
-        $name = $info->returnType->toString();
-        Authorization::authorize('read', $name);
-        return DB::load(JwtAuthentication::tenantId(), $name, $args['id']);
+        throw new RuntimeException('no resolver found for '. $info->returnType->toString());
     }
-
-    /**
-     * @param string $name
-     * @param mixed[] $args
-     * @return stdClass
-     * @throws Error
-     * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
-     */
-    protected function resolveImportPreview(string $name, array $args): stdClass
-    {
-        $total = 20;
-        [$create, $update, $errors] = File::read($name, $args);
-        $data = [];
-        $max = $total - min((int)round($total/2), count($update));
-        $i = 1;
-        $ids = [];
-        foreach ($update as $nr => $row) {
-            $ids[$nr] = $row['id'];
-        }
-        $this->checkExistence($ids, $name, $errors);
-        $model = model($name);
-        foreach ($create as $row) {
-            $data[] = $this->injectFakeValuesForImportPreview((object) $row, $model);
-            if ($i >= $max) {
-                break;
-            }
-            $i++;
-        }
-        foreach ($update as $row) {
-            $data[] = $this->injectFakeValuesForImportPreview((object) $row, $model);
-            if ($i >= $total) {
-                break;
-            }
-            $i++;
-        }
-        return (object)[
-            'data' => $data,
-            'errors' => $errors
-        ];
-    }
-
-    protected function injectFakeValuesForImportPreview(stdClass $row, Model $model): stdClass
-    {
-        foreach ($model as $key => $field) {
-            if ($field instanceof Field && !$field->null) {
-                $row->$key = match ($field->type) {
-                    Type::ID => 'NEW',
-                    Field::DELETED_AT, Field::UPDATED_AT, Field::CREATED_AT, Field::DATE_TIME, Field::DATE, Field::TIME => time() * 1000,
-                    Field::AUTO_INCREMENT, Type::INT => 0,
-                    Field::DECIMAL, Type::FLOAT => 0.0,
-                    default => '',
-                };
-            }
-        }
-        return $row;
-    }
-
-    protected function checkExistence(array $ids, string $name, array &$errors): void
-    {
-        $model = model($name);
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant(JwtAuthentication::tenantId());
-
-        $query->select(['id'])
-            ->where(['column' => 'id', 'operator' => 'IN', 'value' => $ids])
-            ->withTrashed();
-
-        $databaseIds = [];
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
-            $databaseIds[] = $row->id;
-        }
-        $rowNumbers = array_flip($ids);
-        foreach (array_diff($ids, $databaseIds) as $missingId) {
-            $errors[] = [
-                'row' => $rowNumbers[$missingId] ?? 0,
-                'column' => FileImport2::$lastIdColumn,
-                'value' => $missingId,
-                'relation' => null,
-                'field' => 'id',
-                'ignored' => false,
-                'message' => 'ID not found.'
-            ];
-        }
-    }
-
 
     protected function getWorkerForJob(string $name): string
     {

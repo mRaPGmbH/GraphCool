@@ -4,12 +4,11 @@ namespace App\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\Query;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class PublicQuery extends Query
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct()
     {
         $this->name = 'PublicQuery';
         $this->config = [];
