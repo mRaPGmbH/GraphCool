@@ -3,7 +3,6 @@
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 
 class EntityEnumType extends EnumType

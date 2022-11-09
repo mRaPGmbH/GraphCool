@@ -15,7 +15,6 @@ use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
