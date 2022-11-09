@@ -1,32 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Mrap\GraphCool\Definition;
 
-use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Types\Type;
-use stdClass;
-
 use function Mrap\GraphCool\model;
 
-abstract class ModelQuery extends stdClass
+trait ModelBased
 {
-    public string $name;
-    public array $config;
-    protected string $model;
-
-    abstract public function __construct(string $model);
-
-    /**
-     * @param mixed[] $rootValue
-     * @param mixed[] $args
-     * @param mixed $context
-     * @param ResolveInfo $info
-     * @return mixed
-     */
-    abstract public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed;
-
     protected function exportArgs(string $name): array
     {
         $model = model($name);

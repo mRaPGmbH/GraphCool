@@ -5,19 +5,15 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types;
 
 use GraphQL\Error\Error;
-use GraphQL\Type\Definition\ListOfType;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\FullTextIndex;
-use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
-use Mrap\GraphCool\Definition\ModelQuery;
-use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\JwtAuthentication;
-use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
 use stdClass;
@@ -44,21 +40,14 @@ class MutationType extends BaseType
             $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model);
         }
         foreach (ClassFinder::mutations() as $name => $classname) {
-            if ((new \ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
+            if (in_array(ModelBased::class, (new \ReflectionClass($classname))->getTraitNames())) {
                 foreach (ClassFinder::models() as $model => $tmp) {
                     $mutation = new $classname($model);
                     $this->mutations[$mutation->name] = $mutation;
                 }
             } else {
-                $mutation = new $classname($typeLoader);
+                $mutation = new $classname();
                 $this->mutations[$mutation->name] = $mutation;
-
-                /*
-                $mutation = new $classname($typeLoader);
-                $fields[$mutation->name] = $mutation->config;
-                $this->customResolvers[$mutation->name] = static function ($rootValue, $args, $context, $info) use ($mutation) {
-                    return $mutation->resolve($rootValue, $args, $context, $info);
-                };*/
             }
 
         }

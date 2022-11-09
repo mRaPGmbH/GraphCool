@@ -6,18 +6,23 @@ namespace Mrap\GraphCool\Mutations;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\DB;
-use Mrap\GraphCool\Definition\ModelQuery;
+use Mrap\GraphCool\Definition\ModelBased;
+use Mrap\GraphCool\Definition\Mutation;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use function Mrap\GraphCool\model;
 
-class CreateModel extends ModelQuery
+class CreateModel extends Mutation
 {
+    use ModelBased;
 
-    public function __construct(string $model)
+    public function __construct(?string $model = null)
     {
+        if ($model === null) {
+            throw new \RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased mutations.');
+        }
         $this->name = 'create'.$model;
         $this->model = $model;
         $modelObj = model($model);
