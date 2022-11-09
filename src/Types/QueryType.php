@@ -57,7 +57,7 @@ class QueryType extends BaseType
             if ((new ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
                 foreach (ClassFinder::models() as $model => $tmp) {
                     $query = new $classname($model);
-                    $this->queries[lcfirst($query->name)] = $query;
+                    $this->queries[$query->name] = $query;
                 }
             } else {
                 $query = new $classname();

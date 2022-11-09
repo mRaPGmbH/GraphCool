@@ -12,7 +12,7 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\FullTextIndex;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
-use Mrap\GraphCool\Definition\Mutation;
+use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
@@ -29,11 +29,12 @@ class MutationType extends BaseType
     /** @var callable[] */
     protected array $customResolvers = [];
 
+    protected array $mutations = [];
+
     public function __construct(TypeLoader $typeLoader)
     {
         foreach (ClassFinder::models() as $name => $classname) {
             $model = new $classname();
-            $fields['create' . $name] = $this->create($name, $model, $typeLoader);
             $fields['update' . $name] = $this->update($name);
             $fields['updateMany' . $name . 's'] = $this->updateMany($name);
             $fields['delete' . $name] = $this->delete($name);
@@ -43,12 +44,26 @@ class MutationType extends BaseType
             $fields['export' . $name . 'sAsync'] = $this->exportAsync($name, $model);
         }
         foreach (ClassFinder::mutations() as $name => $classname) {
-            /** @var Mutation $mutation */
-            $mutation = new $classname($typeLoader);
-            $fields[$mutation->name] = $mutation->config;
-            $this->customResolvers[$mutation->name] = static function ($rootValue, $args, $context, $info) use ($mutation) {
-                return $mutation->resolve($rootValue, $args, $context, $info);
-            };
+            if ((new \ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
+                foreach (ClassFinder::models() as $model => $tmp) {
+                    $mutation = new $classname($model);
+                    $this->mutations[$mutation->name] = $mutation;
+                }
+            } else {
+                $mutation = new $classname($typeLoader);
+                $this->mutations[$mutation->name] = $mutation;
+
+                /*
+                $mutation = new $classname($typeLoader);
+                $fields[$mutation->name] = $mutation->config;
+                $this->customResolvers[$mutation->name] = static function ($rootValue, $args, $context, $info) use ($mutation) {
+                    return $mutation->resolve($rootValue, $args, $context, $info);
+                };*/
+            }
+
+        }
+        foreach ($this->mutations as $name => $mutation) {
+            $fields[$name] = $mutation->config;
         }
 
         ksort($fields);
@@ -62,53 +77,6 @@ class MutationType extends BaseType
         parent::__construct($config);
     }
 
-    /**
-     * @param string $name
-     * @param Model $model
-     * @param TypeLoader $typeLoader
-     * @return mixed[]
-     */
-    protected function create(string $name, Model $model, TypeLoader $typeLoader): array
-    {
-        $args = [];
-        foreach (get_object_vars($model) as $key => $field) {
-            if ($field instanceof Relation) {
-                $relation = $field;
-                if ($relation->type === Relation::BELONGS_TO) {
-                    if ($relation->null) {
-                        $args[$key] = Type::get('_' . $name . '__' . $key . 'Relation');
-                    } else {
-                        $args[$key] = Type::nonNull(Type::get('_' . $name . '__' . $key . 'Relation'));
-                    }
-                }
-                if ($relation->type === Relation::BELONGS_TO_MANY) {
-                    $args[$key] = new ListOfType(
-                        Type::nonNull(Type::get('_' . $name . '__' . $key . 'ManyRelation'))
-                    );
-                }
-            }
-
-            if (!$field instanceof Field) {
-                continue;
-            }
-            if ($field->readonly === false) {
-                if ($field->null === true || ($field->default ?? null) !== null) {
-                    $args[$key] = $typeLoader->loadForField($field, $name . '__' . $key, true);
-                } else {
-                    $args[$key] = Type::nonNull($typeLoader->loadForField($field, $name . '__' . $key, true));
-                }
-            }
-        }
-        $args['_timezone'] = Type::get('_TimezoneOffset');
-
-        $ret = [
-            'type' => Type::get($name),
-            'description' => 'Create a single new ' . $name . ' entry',
-        ];
-        ksort($args);
-        $ret['args'] = $args;
-        return $ret;
-    }
 
     /**
      * @param string $name
@@ -212,24 +180,14 @@ class MutationType extends BaseType
             TimeZone::set($args['_timezone']);
         }
 
+        if (isset($this->mutations[$info->fieldName])) {
+            return $this->mutations[$info->fieldName]->resolve($rootValue, $args, $context, $info);
+        }
+
         if (isset($this->customResolvers[$info->fieldName])) {
             return $this->customResolvers[$info->fieldName]($rootValue, $args, $context, $info);
         }
 
-        if (str_starts_with($info->fieldName, 'create')) {
-            StopWatch::start(__METHOD__);
-            $name = $info->returnType->toString();
-            Authorization::authorize('create', $name);
-            $model = model($name);
-            $data = $model->udpateDerivedFields(JwtAuthentication::tenantId(), $args);
-            $result = DB::insert(JwtAuthentication::tenantId(), $name, $data);
-            if ($result !== null) {
-                $model->onSave($result, $args);
-                $model->onChange($result, $args); // deprecated!
-            }
-            StopWatch::stop(__METHOD__);
-            return $result;
-        }
         if (str_starts_with($info->fieldName, 'updateMany')) {
             $name = substr($info->fieldName, 10, -1);
             Authorization::authorize('updateMany', $name);
