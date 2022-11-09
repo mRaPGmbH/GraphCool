@@ -12,6 +12,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
+use RuntimeException;
 use function Mrap\GraphCool\model;
 
 class CreateModel extends Mutation
@@ -21,7 +22,7 @@ class CreateModel extends Mutation
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new \RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased mutations.');
+            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased mutations.');
         }
         $this->name = 'create'.$model;
         $this->model = $model;

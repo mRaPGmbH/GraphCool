@@ -97,11 +97,10 @@ class GraphCool
     protected function createSchema(): Schema
     {
         StopWatch::start(__METHOD__);
-        $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
                 'query' => new QueryType(),
-                'mutation' => new MutationType($typeLoader),
+                'mutation' => new MutationType(),
                 'typeLoader' => $this->getTypeLoaderClosure(),
             ]
         );

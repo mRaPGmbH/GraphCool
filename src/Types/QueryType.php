@@ -4,28 +4,20 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
-use GraphQL\Error\Error;
+use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
-use Mrap\GraphCool\DataSource\Mysql\Mysql;
-use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\ModelBased;
-use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\ClassFinder;
-use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use Mrap\GraphCool\Utils\TimeZone;
-use ReflectionClass;
 use RuntimeException;
-use stdClass;
-use function Mrap\GraphCool\model;
 
-class QueryType extends BaseType
+class QueryType extends ObjectType
 {
 
     /** @var callable[] */

@@ -12,6 +12,10 @@ use Mrap\GraphCool\Definition\Model;
  */
 function model(string $name): Model
 {
+    if ($name === 'BlacklistedEmails') {
+        throw new \RuntimeException('SDFSDFSDF');
+    }
+
     try {
         return (new ('App\\Models\\' . $name)())->injectFieldNames();
     } catch (\Error) {
