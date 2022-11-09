@@ -194,9 +194,9 @@ class Model extends stdClass
     public function relations(): array
     {
         $ret = [];
-        foreach (get_object_vars($this) as $key => $field) {
-            if ($field instanceof Relation) {
-                $ret[$key] = $field;
+        foreach (get_object_vars($this) as $key => $relation) {
+            if ($relation instanceof Relation) {
+                $ret[$key] = $relation;
             }
         }
         return $ret;
