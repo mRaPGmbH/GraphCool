@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool;
 
-use GraphQL\Error\Error;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Utils\ClassFinder;
+use RuntimeException;
 
 /**
- * @throws Error
+ * @throws RuntimeException
  */
 function model(string $name): Model
 {
-    try {
-        return new ('App\\Models\\' . $name)();
-    } catch (\Error) {
-        throw new Error('Unknown entity: ' . $name);
+    $models = ClassFinder::models();
+    if (isset($models[$name])) {
+        try {
+            return new ($models[$name])();
+        } catch (\Error) {}
     }
+    throw new RuntimeException('Unknown entity: ' . $name);
 }

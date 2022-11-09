@@ -34,6 +34,7 @@ class ClassFinder
         if (!isset(static::$models)) {
             // TODO: move this into app
             static::registerModelPath(self::rootPath() . '/app/Models');
+            static::registerModelPath(__DIR__ . '/../Models', 'Mrap\\GraphCool\\Models\\');
 
             StopWatch::start(__METHOD__);
             static::$models = static::findClasses(self::$modelPaths);

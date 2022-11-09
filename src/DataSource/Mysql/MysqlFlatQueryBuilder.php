@@ -299,4 +299,23 @@ class MysqlFlatQueryBuilder
         return '(' . implode(',', $params) . ')';
     }
 
+    public function whereMode(string $mode): self
+    {
+        // TODO
+        return $this;
+    }
+
+    public function search(?string $text): self
+    {
+        // deprecated!
+        return $this;
+    }
+
+    public function searchLoosely(?string $text): self
+    {
+        // deprecated!
+        return $this;
+    }
+
+
 }

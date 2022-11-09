@@ -12,6 +12,7 @@ use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\File;
+use Mrap\GraphCool\Definition\CustomTable;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
@@ -57,7 +58,11 @@ class MysqlDataProvider implements DataProvider
         $resultType = $args['result'] ?? ResultType::DEFAULT;
 
         $model = model($name);
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+        if ($model instanceof CustomTable) {
+            $query = MysqlFlatQueryBuilder::forTable(lcfirst($name))->tenant($tenantId);
+        } else {
+            $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
+        }
 
         if (isset($args['where'])) {
             $args['where'] = MysqlConverter::convertWhereValues($model, $args['where']);
@@ -179,7 +184,12 @@ class MysqlDataProvider implements DataProvider
         array $ids,
         ?string $resultType = ResultType::DEFAULT
     ): array {
-        $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
+        $model = model($name);
+        if ($model instanceof CustomTable) {
+            $query = MysqlFlatQueryBuilder::forTable(lcfirst($name))->tenant($tenantId);
+        } else {
+            $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
+        }
         foreach ($results as $key => $result) {
             $results[$key] = $this->retrieveFiles($name, $result, $result->id);
         }
