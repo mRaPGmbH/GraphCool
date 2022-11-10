@@ -40,7 +40,7 @@ abstract class Type extends BaseType implements NullableType
         return static::$typeLoader;
     }
 
-    public static function getForField(Field $field, bool $input = false): NullableType|NonNull
+    public static function getForField(Field $field, bool $input = false, bool $optional = false): NullableType|NonNull
     {
         $type = match ($field->type) {
             default => Type::string(),
@@ -60,7 +60,7 @@ abstract class Type extends BaseType implements NullableType
             Field::FILE => $input ? self::get('_File') : self::get('_FileExport'),
         };
         if (
-            $field->null === true
+            $field->null === true || $optional === true
             || ($input === true && ($field->default ?? null) !== null)
         ) {
             return $type;

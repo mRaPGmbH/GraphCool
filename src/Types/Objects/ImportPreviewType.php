@@ -6,11 +6,10 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class ImportPreviewType extends ObjectType
 {
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $typeName = substr($name, 1, -13);
         $config = [
