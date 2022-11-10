@@ -13,10 +13,10 @@ class ImportErrorType extends ObjectType
 
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => '_ImportError',
             'description' => 'Description of a problem encountered in import data.',
-            'fields' => [
+            'fields' => fn() => [
                 'row' => new NonNull(Type::int()),
                 'column' => new NonNull(Type::string()),
                 'value' => new NonNull(Type::string()),
@@ -25,8 +25,7 @@ class ImportErrorType extends ObjectType
                 'ignored' => new NonNull(Type::boolean()),
                 'message' => new NonNull(Type::string())
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
 }

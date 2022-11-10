@@ -13,14 +13,13 @@ class UpdateManyResult extends ObjectType
 
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => '_UpdateManyResult',
             'description' => 'Result of an updateMany request.',
-            'fields' => [
+            'fields' => fn() => [
                 'updated_rows' => new NonNull(Type::int()),
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
 }

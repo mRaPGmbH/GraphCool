@@ -11,18 +11,17 @@ class FileExportType extends ObjectType
 {
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => '_FileExport',
             'description' => 'An exported file in base64 encoding',
-            'fields' => [
+            'fields' => fn() => [
                 'filename' => Type::string(),
                 'mime_type' => Type::string(),
                 'data_base64' => Type::string(),
                 'url' => Type::string(),
                 'filesize' => Type::int(),
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
 }

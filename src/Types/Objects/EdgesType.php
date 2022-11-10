@@ -11,15 +11,14 @@ class EdgesType extends ObjectType
 {
     public function __construct(string $name)
     {
-        $config = [
+        parent::__construct([
             'name' => $name,
             'description' => 'A paginated list of ' . substr($name, 1, -5) . ' relations.',
-            'fields' => [
+            'fields' => fn() => [
                 'paginatorInfo' => Type::get('_PaginatorInfo'),
                 'edges' => Type::listOf(Type::nonNull(Type::get(substr($name, 0, -1)))),
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
 }

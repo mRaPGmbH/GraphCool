@@ -13,9 +13,16 @@ class EdgeType extends ObjectType
     public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -4), 2);
-        $key = $names[1];
+        parent::__construct([
+            'name' => $name,
+            'description' => 'A single ' . substr($name, 1, -4) . ' relation.',
+            'fields' => fn() => $this->fieldConfig($names[0], $names[1]),
+        ]);
+    }
 
-        $model = model($names[0]);
+    protected function fieldConfig(string $name, string $key): array
+    {
+        $model = model($name);
         $relation = $model->$key;
         $type = Type::get($relation->name);
         $fields = [];
@@ -25,12 +32,7 @@ class EdgeType extends ObjectType
             ];
         }
         $fields['_node'] = $type;
-        $config = [
-            'name' => $name,
-            'description' => 'A single ' . substr($name, 1, -4) . ' relation.',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+        return $fields;
     }
 
 }
