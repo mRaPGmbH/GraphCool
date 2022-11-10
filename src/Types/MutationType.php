@@ -20,7 +20,7 @@ class MutationType extends ObjectType
 
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => 'Mutation',
             'fields' => fn() => $this->fieldConfig(),
             'resolveField' => function (array $rootValue, array $args, $context, ResolveInfo $info) {
@@ -32,8 +32,7 @@ class MutationType extends ObjectType
                 }
                 throw new RuntimeException('No resolver found for: ' . $info->fieldName);
             }
-        ];
-        parent::__construct($config);
+        ]);
     }
 
     protected function fieldConfig(): array
