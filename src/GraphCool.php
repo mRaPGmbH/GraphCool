@@ -44,7 +44,7 @@ class GraphCool
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
             foreach ($request as $index => $query) {
-                // TODO: should this be $result[]= ?
+                // must be $result and NOT $result[] - graphql-php manages multiqueries internally
                 $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
             }
         } catch (Throwable $e) {
@@ -76,8 +76,7 @@ class GraphCool
         if (empty($raw)) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
-        }
-        try {
+        } try {
             $request = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             StopWatch::stop(__METHOD__);
