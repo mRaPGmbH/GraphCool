@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 
 class Field
 {

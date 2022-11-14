@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 
 class FileExportType extends ObjectType
 {

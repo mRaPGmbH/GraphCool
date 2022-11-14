@@ -6,8 +6,8 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Closure;
 use GraphQL\Error\Error;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Types\Type;
 use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;

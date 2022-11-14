@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
+
 
 class UpdateManyResult extends ObjectType
 {
@@ -17,7 +17,7 @@ class UpdateManyResult extends ObjectType
             'name' => '_UpdateManyResult',
             'description' => 'Result of an updateMany request.',
             'fields' => fn() => [
-                'updated_rows' => new NonNull(Type::int()),
+                'updated_rows' => Type::nonNull(Type::int()),
             ],
         ]);
     }

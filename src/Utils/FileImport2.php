@@ -11,7 +11,6 @@ use Box\Spout\Reader\CSV\Reader as CSVReader;
 use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use GraphQL\Error\Error;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
@@ -21,6 +20,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\LanguageEnumType;
 use Mrap\GraphCool\Types\Enums\LocaleEnumType;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
+use Mrap\GraphCool\Types\Type;
 use RuntimeException;
 use function Mrap\GraphCool\model;
 

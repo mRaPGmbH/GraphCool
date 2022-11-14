@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types\Objects;
 
-use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 
 class ImportErrorType extends ObjectType
 {
@@ -17,13 +16,13 @@ class ImportErrorType extends ObjectType
             'name' => '_ImportError',
             'description' => 'Description of a problem encountered in import data.',
             'fields' => fn() => [
-                'row' => new NonNull(Type::int()),
-                'column' => new NonNull(Type::string()),
-                'value' => new NonNull(Type::string()),
+                'row' => Type::nonNull(Type::int()),
+                'column' => Type::nonNull(Type::string()),
+                'value' => Type::nonNull(Type::string()),
                 'relation' => Type::string(),
-                'field' => new NonNull(Type::string()),
-                'ignored' => new NonNull(Type::boolean()),
-                'message' => new NonNull(Type::string())
+                'field' => Type::nonNull(Type::string()),
+                'ignored' => Type::nonNull(Type::boolean()),
+                'message' => Type::nonNull(Type::string())
             ],
         ]);
     }

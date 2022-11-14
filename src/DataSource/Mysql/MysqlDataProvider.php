@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
-use GraphQL\Type\Definition\Type;
 use JsonException;
 use Mrap\GraphCool\DataSource\DataProvider;
 use Mrap\GraphCool\DataSource\DB;
@@ -18,6 +17,7 @@ use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ResultType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Type;
 use stdClass;
 
 use function Mrap\GraphCool\model;
