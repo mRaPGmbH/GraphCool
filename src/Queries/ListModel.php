@@ -13,7 +13,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
-
+use RuntimeException;
 use function Mrap\GraphCool\pluralize;
 use function Mrap\GraphCool\model;
 
@@ -24,7 +24,7 @@ class ListModel extends Query
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new \RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
+            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
         }
 
         $this->name = pluralize(lcfirst($model));
