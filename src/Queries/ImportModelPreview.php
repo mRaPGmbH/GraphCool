@@ -17,6 +17,7 @@ use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
+use RuntimeException;
 use stdClass;
 
 use function Mrap\GraphCool\model;
@@ -29,7 +30,7 @@ class ImportModelPreview extends Query
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new \RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
+            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
         }
 
         $plural = pluralize($model);
