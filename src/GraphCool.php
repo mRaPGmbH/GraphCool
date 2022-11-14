@@ -15,7 +15,6 @@ use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
@@ -97,11 +96,10 @@ class GraphCool
     protected function createSchema(): Schema
     {
         StopWatch::start(__METHOD__);
-        $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
                 'query' => new QueryType(),
-                'mutation' => new MutationType($typeLoader),
+                'mutation' => new MutationType(),
                 'typeLoader' => $this->getTypeLoaderClosure(),
             ]
         );
