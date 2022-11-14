@@ -141,6 +141,7 @@ class ClassFinder
         if (!isset(static::$mutations)) {
             // TODO: move this into app
             static::registerMutationPath(self::rootPath() . '/app/Mutations');
+            static::registerMutationPath(__DIR__ . '/../Mutations', 'Mrap\\GraphCool\\Mutations\\');
 
             StopWatch::start(__METHOD__);
             static::$mutations = static::findClasses(self::$mutationPaths);

@@ -172,5 +172,35 @@ class Model extends stdClass
         return $result;
     }
 
+    public function injectFieldNames(): self
+    {
+        foreach ($this as $key => $field) {
+            $field->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, __CLASS__)) . '__' . $key;
+        }
+        return $this;
+    }
+
+    public function fields(): array
+    {
+        $ret = [];
+        foreach (get_object_vars($this) as $key => $field) {
+            if ($field instanceof Field) {
+                $ret[$key] = $field;
+            }
+        }
+        return $ret;
+    }
+
+    public function relations(): array
+    {
+        $ret = [];
+        foreach (get_object_vars($this) as $key => $relation) {
+            if ($relation instanceof Relation) {
+                $ret[$key] = $relation;
+            }
+        }
+        return $ret;
+    }
+
 
 }

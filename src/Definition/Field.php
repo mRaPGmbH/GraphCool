@@ -26,6 +26,7 @@ class Field
     public const AUTO_INCREMENT = 'AUTO_INCREMENT';
 
     public string $type;
+    public string $namekey;
     public int $decimalPlaces;
     public bool $null = false;
     public string $description;

@@ -10,21 +10,29 @@ use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Definition\ModelQuery;
+use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\FileImport2;
 use Mrap\GraphCool\Utils\JwtAuthentication;
+use RuntimeException;
 use stdClass;
 
 use function Mrap\GraphCool\model;
 use function Mrap\GraphCool\pluralize;
 
-class ImportModelPreview extends ModelQuery
+class ImportModelPreview extends Query
 {
+    use ModelBased;
 
-    public function __construct(string $model)
+    public function __construct(?string $model = null)
     {
+        if ($model === null) {
+            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
+        }
+
         $plural = pluralize($model);
         $this->name = 'import' . $plural . 'Preview';
         $this->model = $model;

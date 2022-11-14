@@ -12,6 +12,7 @@ use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Utils\Authorization;
@@ -54,10 +55,10 @@ class QueryType extends BaseType
         };
 
         foreach (ClassFinder::queries() as $name => $classname) {
-            if ((new ReflectionClass($classname))->isSubclassOf(ModelQuery::class)) {
+            if (in_array(ModelBased::class, (new \ReflectionClass($classname))->getTraitNames())) {
                 foreach (ClassFinder::models() as $model => $tmp) {
                     $query = new $classname($model);
-                    $this->queries[lcfirst($query->name)] = $query;
+                    $this->queries[$query->name] = $query;
                 }
             } else {
                 $query = new $classname();

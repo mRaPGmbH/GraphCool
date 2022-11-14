@@ -9,11 +9,11 @@ use stdClass;
 
 abstract class Query extends stdClass
 {
-    public string $fieldName;
+    public string $name;
     /** @var mixed[] */
     public array $config;
 
-    abstract public function __construct();
+    abstract public function __construct(?string $model = null);
 
     /**
      * @param mixed[] $rootValue

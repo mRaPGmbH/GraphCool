@@ -13,7 +13,7 @@ use Mrap\GraphCool\Definition\Model;
 function model(string $name): Model
 {
     try {
-        return new ('App\\Models\\' . $name)();
+        return (new ('App\\Models\\' . $name)())->injectFieldNames();
     } catch (\Error) {
         throw new Error('Unknown entity: ' . $name);
     }
