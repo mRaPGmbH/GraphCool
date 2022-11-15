@@ -76,7 +76,8 @@ class GraphCool
         if (empty($raw)) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
-        } try {
+        } 
+        try {
             $request = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             StopWatch::stop(__METHOD__);
