@@ -12,16 +12,14 @@ class FileType extends InputObjectType
 
     public function __construct()
     {
-        $fields = [
-            'file' => Type::get('_Upload'),
-            'filename' => Type::nonNull(Type::string()),
-            'data_base64' => Type::string(),
-        ];
-        $config = [
+        parent::__construct([
             'name' => '_File',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+            'fields' => fn() => [
+                'file' => Type::get('_Upload'),
+                'filename' => Type::nonNull(Type::string()),
+                'data_base64' => Type::string(),
+            ],
+        ]);
     }
 
 }

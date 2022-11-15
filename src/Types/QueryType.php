@@ -24,6 +24,17 @@ class QueryType extends ObjectType
 
     public function __construct()
     {
+        parent::__construct([
+            'name' => 'Query',
+            'fields' => fn() => $this->fieldConfig(),
+            'resolveField' => function ($rootValue, $args, $context, $info) {
+                return $this->resolve($rootValue, $args, $context, $info);
+            }
+        ]);
+    }
+
+    protected function fieldConfig(): array
+    {
         $fields = [
             '_ImportJob' => $this->job('Import'),
             '_ImportJobs' => $this->jobs('Import'),
@@ -31,7 +42,6 @@ class QueryType extends ObjectType
             '_ExportJobs' => $this->jobs('Export'),
             '_History' => $this->history(),
         ];
-
         foreach (ClassFinder::queries() as $name => $classname) {
             if (in_array(ModelBased::class, (new \ReflectionClass($classname))->getTraitNames())) {
                 foreach (ClassFinder::models() as $model => $tmp) {
@@ -46,16 +56,8 @@ class QueryType extends ObjectType
         foreach ($this->queries as $name => $query) {
             $fields[$name] = $query->config;
         }
-
         ksort($fields);
-        $config = [
-            'name' => 'Query',
-            'fields' => $fields,
-            'resolveField' => function ($rootValue, $args, $context, $info) {
-                return $this->resolve($rootValue, $args, $context, $info);
-            }
-        ];
-        parent::__construct($config);
+        return $fields;
     }
 
     /**

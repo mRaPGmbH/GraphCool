@@ -14,9 +14,16 @@ class EdgeManyInputType extends InputObjectType
     public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -12), 2);
-        $key = $names[1];
+        parent::__construct([
+            'name' => $name,
+            'description' => 'Input for many ' . $names[0] . '.' . $names[1] . ' relations using where.',
+            'fields' => fn() => $this->fieldConfig($names[0], $names[1]),
+        ]);
+    }
 
-        $model = model($names[0]);
+    protected function fieldConfig(string $name, string $key): array
+    {
+        $model = model($name);
         $relation = $model->$key;
 
         $fields = [
@@ -32,12 +39,7 @@ class EdgeManyInputType extends InputObjectType
                 ];
             }
         }
-        $config = [
-            'name' => $name,
-            'description' => 'Input for many ' . $names[0] . '.' . $key . ' relations using where.',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+        return $fields;
     }
 
 

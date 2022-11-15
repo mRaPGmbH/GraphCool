@@ -15,9 +15,16 @@ class EdgeInputType extends InputObjectType
     public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -8), 2);
-        $key = $names[1];
+        parent::__construct([
+            'name' => $name,
+            'description' => 'Input for ' . $names[0] . '.' . $names[1] . ' relations.',
+            'fields' => fn() => $this->fieldConfig($names[0], $names[1]),
+        ]);
+    }
 
-        $model = model($names[0]);
+    protected function fieldConfig(string $name, string $key): array
+    {
+        $model = model($name);
         $fields = [
             'id' => new NonNull(Type::id())
         ];
@@ -28,12 +35,7 @@ class EdgeInputType extends InputObjectType
                 ];
             }
         }
-        $config = [
-            'name' => $name,
-            'description' => 'Input for ' . $names[0] . '.' . $key . ' relations.',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+        return $fields;
     }
 
 

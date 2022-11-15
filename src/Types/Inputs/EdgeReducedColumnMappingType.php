@@ -12,15 +12,13 @@ class EdgeReducedColumnMappingType extends InputObjectType
 
     public function __construct(string $name)
     {
-        $fields = [
-            'column' => Type::nonNull(Type::get(substr($name, 0, -24) . 'EdgeReducedColumn')),
-            'label' => Type::string(),
-        ];
-        $config = [
+        parent::__construct([
             'name' => $name,
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+            'fields' => fn() => [
+                'column' => Type::nonNull(Type::get(substr($name, 0, -24) . 'EdgeReducedColumn')),
+                'label' => Type::string(),
+            ],
+        ]);
     }
 
 }

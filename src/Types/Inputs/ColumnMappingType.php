@@ -12,15 +12,13 @@ class ColumnMappingType extends InputObjectType
 
     public function __construct(string $name)
     {
-        $fields = [
-            'column' => Type::nonNull(Type::get(substr($name, 0, -13) . 'Column')),
-            'label' => Type::string(),
-        ];
-        $config = [
+        parent::__construct([
             'name' => $name,
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+            'fields' => fn() => [
+                'column' => Type::nonNull(Type::get(substr($name, 0, -13) . 'Column')),
+                'label' => Type::string(),
+            ],
+        ]);
     }
 
 }
