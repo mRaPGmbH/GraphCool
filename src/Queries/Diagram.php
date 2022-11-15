@@ -44,7 +44,7 @@ class Diagram extends Query
                     ) {
                         continue;
                     }
-                    $classes[] = $t . $t . strtoupper($item->type) . ' ' . $key . ($item->null?'':'!');
+                    $classes[] = $t . $t . strtoupper($item->type) . ' ' . $key . ($item->null ? '' : '!');
                 } elseif ($item instanceof Relation) {
                     $classes[] = $t . $t . $item->type . '(' . $item->name . ') ' . $key ;
                     if ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY) {
