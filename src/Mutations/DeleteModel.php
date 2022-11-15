@@ -21,9 +21,9 @@ class DeleteModel extends Mutation
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased mutations.');
+            throw new RuntimeException(__METHOD__ . ': parameter $model may not be null for ModelBased mutations.');
         }
-        $this->name = 'delete'.$model;
+        $this->name = 'delete' . $model;
         $this->model = $model;
 
         $this->config = [

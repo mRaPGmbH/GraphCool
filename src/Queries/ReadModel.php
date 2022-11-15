@@ -11,6 +11,7 @@ use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
+use RuntimeException;
 
 class ReadModel extends Query
 {
@@ -19,7 +20,7 @@ class ReadModel extends Query
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new \RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
+            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased queries.');
         }
 
         $this->name = lcfirst($model);

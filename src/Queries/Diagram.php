@@ -10,6 +10,7 @@ use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\ClassFinder;
+use function Mrap\GraphCool\model;
 
 class Diagram extends Query
 {
@@ -32,43 +33,41 @@ class Diagram extends Query
         $relations = [];
         $t = '    ';
         foreach (ClassFinder::models() as $name => $classname) {
-            $model = new $classname();
+            $model = model($name);
             $classes[] = $t . 'class ' . $name . '{';
-            foreach ($model as $key => $item) {
-                if ($item instanceof Field) {
-                    if (
-                        $item->type === Field::CREATED_AT
-                        || $item->type === Field::UPDATED_AT
-                        || $item->type === Field::DELETED_AT
-                        || $item->type === Type::ID
-                    ) {
-                        continue;
+            foreach ($this->filter($model->fields()) as $key => $field) {
+                $classes[] = $t . $t . strtoupper($field->type) . ' ' . $key . ($field->null ? '' : '!');
+            }
+            foreach ($model->relations() as $key => $relation) {
+                $classes[] = $t . $t . $relation->type . '(' . $relation->name . ') ' . $key ;
+                if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
+                    $pivotFields = [];
+                    foreach ($this->filter($model->relationFields($key)) as $subKey => $subItem) {
+                        $pivotFields[] = $subItem->type . ' ' . $subKey . ($subItem->null ? '' : '!');
                     }
-                    $classes[] = $t . $t . strtoupper($item->type) . ' ' . $key . ($item->null?'':'!');
-                } elseif ($item instanceof Relation) {
-                    $classes[] = $t . $t . $item->type . '(' . $item->name . ') ' . $key ;
-                    if ($item->type === Relation::BELONGS_TO || $item->type === Relation::BELONGS_TO_MANY) {
-                        $pivotFields = [];
-                        foreach ($item as $subKey => $subItem) {
-                            if ($subItem instanceof Field) {
-                                if (
-                                    $subItem->type === Field::CREATED_AT
-                                    || $subItem->type === Field::UPDATED_AT
-                                    || $subItem->type === Field::DELETED_AT
-                                    || $subItem->type === Type::ID
-                                ) {
-                                    continue;
-                                }
-                                $pivotFields[] = $subItem->type . ' ' . $subKey . ($subItem->null?'':'!');
-                            }
-                        }
-                        $relations[] = $t . $name . ' --|> ' . $item->name . ' : ' . implode(PHP_EOL, $pivotFields);
-                    }
+                    $relations[] = $t . $name . ' --|> ' . $relation->name . ' : ' . implode(PHP_EOL, $pivotFields);
                 }
             }
             $classes[] = $t . '}';
         }
         $newline = 'NEWLINE';
         return implode($newline, $classes) . $newline . implode($newline, $relations);
+    }
+
+    protected function filter(array $fields): array
+    {
+        $result = [];
+        foreach ($fields as $key => $field) {
+            if (
+                $field->type === Field::CREATED_AT
+                || $field->type === Field::UPDATED_AT
+                || $field->type === Field::DELETED_AT
+                || $field->type === Type::ID
+            ) {
+                continue;
+            }
+            $result[$key] = $field;
+        }
+        return $result;
     }
 }
