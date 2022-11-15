@@ -6,11 +6,9 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -18,60 +16,54 @@ class ModelType extends ObjectType
 {
     protected Model $model;
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $this->model = model($name);
         $config = [
             'name' => $name,
-            'fields' => [],
+            'fields' => fn() => $this->fieldConfig($name),
             'resolveField' => function ($rootValue, $args, $context, $info) {
                 return $this->resolve($rootValue, $args, $context, $info);
             }
         ];
-        foreach ($this->model as $key => $field) {
-            $args = null;
-            if ($field instanceof Relation) {
-                if ($field->type === Relation::BELONGS_TO || $field->type === Relation::HAS_ONE) {
-                    $type = $typeLoader->load('_' . $name . '__' . $key . 'Edge');
-                } elseif ($field->type === Relation::HAS_MANY || $field->type === Relation::BELONGS_TO_MANY) {
-                    $type = $typeLoader->load('_' . $name . '__' . $key . 'Edges');
-                    $args = [
+        parent::__construct($config);
+    }
+
+    protected function fieldConfig(string $name): array
+    {
+        $fields = [];
+        foreach ($this->model->relations() as $key => $relation) {
+            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
+                $fields[$key] = [
+                    'type' => Type::get('_' . $name . '__' . $key . 'Edge'),
+                    'description' => $relation->description ?? null,
+                ];
+            } elseif ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
+                $fields[$key] = [
+                    'type' => Type::get('_' . $name . '__' . $key . 'Edges'),
+                    'description' => $relation->description ?? null,
+                    'args' => [
                         'first' => Type::int(),
                         'page' => Type::int(),
-                        // TODO: replace typeloader with Type::get
-                        'where' => $typeLoader->load('_' . $name . '__' . $key . 'EdgeWhereConditions'),
+                        'where' => Type::get('_' . $name . '__' . $key . 'EdgeWhereConditions'),
                         'orderBy' => Type::listOf(
-                            Type::nonNull($typeLoader->load('_' . $name . '__' . $key . 'EdgeOrderByClause'))
+                            Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeOrderByClause'))
                         ),
                         'search' => Type::string(),
                         'searchLoosely' => Type::string(),
-                        'result' => $typeLoader->load('_Result'),
-                    ];
-                } else {
-                    continue;
-                }
-            } else {
-                if (!$field instanceof Field) {
-                    continue;
-                }
-                $type = $typeLoader->loadForField($field, $name . '__' . $key);
-                if ($field->null === false) {
-                    $type = Type::nonNull($type);
-                }
+                        'result' => Type::get('_Result'),
+                    ]
+                ];
             }
-            $typeConfig = [
-                'type' => $type
-            ];
-            if (isset($field->description)) {
-                $typeConfig['description'] = $field->description;
-            }
-            if ($args !== null) {
-                $typeConfig['args'] = $args;
-            }
-            $config['fields'][$key] = $typeConfig;
         }
-        ksort($config['fields']);
-        parent::__construct($config);
+        foreach ($this->model->fields() as $key => $field) {
+            $fields[$key] = [
+                'type' => Type::getForField($field),
+                'description' => $field->description ?? null,
+            ];
+        }
+        ksort($fields);
+        return $fields;
     }
 
     /**

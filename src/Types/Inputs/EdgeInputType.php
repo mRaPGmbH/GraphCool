@@ -6,32 +6,25 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
-use GraphQL\Type\Definition\Type;
-use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Types\TypeLoader;
+use Mrap\GraphCool\Types\Type;
 use function Mrap\GraphCool\model;
 
 class EdgeInputType extends InputObjectType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -8), 2);
         $key = $names[1];
 
         $model = model($names[0]);
-        $relation = $model->$key;
         $fields = [
             'id' => new NonNull(Type::id())
         ];
-        foreach ($relation as $fieldKey => $field) {
-            if ($field instanceof Field && $field->readonly === false) {
-                $fieldType = $typeLoader->loadForField($field, $names[0] . '__' . $key . '__' . $fieldKey);
-                if ($field->null === false) {
-                    $fieldType = new NonNull($fieldType);
-                }
+        foreach ($model->relationFields($key) as $fieldKey => $field) {
+            if ($field->readonly === false) {
                 $fields[$fieldKey] = [
-                    'type' => $fieldType
+                    'type' => Type::getForField($field, true),
                 ];
             }
         }

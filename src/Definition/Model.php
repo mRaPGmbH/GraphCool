@@ -7,6 +7,7 @@ namespace Mrap\GraphCool\Definition;
 use Closure;
 use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Exception\DoNotUpdateDerivedFieldException;
+use RuntimeException;
 use stdClass;
 
 class Model extends stdClass
@@ -174,8 +175,14 @@ class Model extends stdClass
 
     public function injectFieldNames(): self
     {
-        foreach ($this as $key => $field) {
-            $field->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, __CLASS__)) . '__' . $key;
+        foreach ($this->fields() as $key => $field) {
+            $field->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, static::class)) . '__' . $key;
+        }
+        foreach ($this->relations() as $key => $relation) {
+            $relation->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, static::class)) . '__' . $key;
+            foreach ($this->relationFields($key) as $fkey => $field) {
+                $field->namekey = $relation->namekey . '__' . $fkey;
+            }
         }
         return $this;
     }
@@ -197,6 +204,21 @@ class Model extends stdClass
         foreach (get_object_vars($this) as $key => $relation) {
             if ($relation instanceof Relation) {
                 $ret[$key] = $relation;
+            }
+        }
+        return $ret;
+    }
+
+    public function relationFields(string $relationKey): array
+    {
+        $relation = $this->$relationKey;
+        if (!$relation instanceof Relation) {
+            throw new RuntimeException('Cannot get relationFields: ' . $relationKey . ' is not a relation!');
+        }
+        $ret = [];
+        foreach (get_object_vars($relation) as $key => $field) {
+            if ($field instanceof Field) {
+                $ret[$key] = $field;
             }
         }
         return $ret;

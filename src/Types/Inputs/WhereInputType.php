@@ -6,7 +6,6 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class WhereInputType extends InputObjectType
 {
