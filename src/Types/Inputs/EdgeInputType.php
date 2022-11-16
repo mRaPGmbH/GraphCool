@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
-use GraphQL\Type\Definition\NonNull;
 use Mrap\GraphCool\Types\Type;
 use function Mrap\GraphCool\model;
 
@@ -26,7 +25,7 @@ class EdgeInputType extends InputObjectType
     {
         $model = model($name);
         $fields = [
-            'id' => new NonNull(Type::id())
+            'id' => Type::nonNull(Type::id())
         ];
         foreach ($model->relationFields($key) as $fieldKey => $field) {
             if ($field->readonly === false) {

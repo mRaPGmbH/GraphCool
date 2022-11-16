@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Exception\DoNotUpdateDerivedFieldException;
+use Mrap\GraphCool\Types\Type;
 use RuntimeException;
 use stdClass;
 

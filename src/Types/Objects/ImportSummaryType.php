@@ -12,10 +12,10 @@ class ImportSummaryType extends ObjectType
 
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => '_ImportSummary',
             'description' => 'Summary of import results, including newly created (inserted), modified existing (updated) and the sum of both (affected).',
-            'fields' => [
+            'fields' => fn() => [
                 'inserted_rows' => Type::nonNull(Type::int()),
                 'inserted_ids' => Type::nonNull(Type::listOf(Type::string())),
                 'updated_rows' => Type::nonNull(Type::int()),
@@ -26,8 +26,7 @@ class ImportSummaryType extends ObjectType
                 'failed_row_numbers' => Type::nonNull(Type::listOf(Type::int())),
                 'errors' => Type::listOf(Type::nonNull(Type::get('_ImportError')))
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
 }
