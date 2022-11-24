@@ -73,7 +73,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                 $result[] = $row->node_id;
             }
         } catch (Throwable $e) {
-            $new = new Exception('Fulltext search SQL failed: ' . $sql, 0, $e);
+            $new = new \Exception('Fulltext search SQL failed: ' . $sql, 0, $e);
             ErrorHandler::sentryCapture($new);
         }
         return $result;
@@ -100,6 +100,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                 $sql = $this->getSql($tenantId, $name, $fulltextProps, $ids);
                 Mysql::getPdo()->exec($sql);
             }
+            /*
             $edgeProps = $model->getEdgePropertyNamesForFulltextIndexing();
             if (count($edgeProps) > 0) {
                 if (count($fulltextProps) === 0) {
@@ -114,7 +115,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                 // slower?
                 //$sql = $this->getEdgeSql($tenantId, $name, $edgeProps, $ids);
                 //Mysql::getPdo()->exec($sql);
-            }
+            }*/
         }
     }
 
