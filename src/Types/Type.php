@@ -41,7 +41,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
-use Mrap\GraphCool\Types\Inputs\WhereInputType;
+use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\FileExportType;
@@ -52,7 +52,7 @@ use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
-use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\Objects\UpdateManyResult;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
@@ -72,6 +72,19 @@ abstract class Type extends BaseType implements NullableType
         }
         return static::$types[$name];
     }
+
+    public static function paginatedList(BaseType|string $wrappedType): ModelPaginator
+    {
+        if (is_string($wrappedType)) {
+            $name = $wrappedType;
+        } else {
+            $name = $wrappedType->name;
+        }
+        $type = new ModelPaginator($name);
+        static::$types[$type->name] = $type;
+        return $type;
+    }
+
 
     protected static function create(string $name): NullableType
     {
@@ -113,11 +126,14 @@ abstract class Type extends BaseType implements NullableType
     protected static function createDynamic(string $name): NullableType
     {
         // TODO: this could probably be wrapped types?
+
         if (!str_starts_with($name, '_')) {
             return new ModelType($name);
         }
+
+        // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'Paginator')) {
-            return new PaginatorType($name);
+            return new ModelPaginator(substr($name, 1, -9));
         }
         if (str_ends_with($name, 'Edges')) {
             return new EdgesType($name);
@@ -135,7 +151,7 @@ abstract class Type extends BaseType implements NullableType
             return new EdgeColumnType($name);
         }
         if (str_ends_with($name, 'WhereConditions')) {
-            return new WhereInputType($name);
+            return new WhereConditions(substr($name, 1, -15));
         }
         if (str_ends_with($name, 'OrderByClause')) {
             return new OrderByClauseType($name);

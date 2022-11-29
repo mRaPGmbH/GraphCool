@@ -7,15 +7,15 @@ namespace Mrap\GraphCool\Types\Objects;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class PaginatorType extends ObjectType
+class ModelPaginator extends ObjectType
 {
-    public function __construct(string $name)
+
+    public function __construct(string $wrappedType)
     {
-        $typeName = substr($name, 1, -9);
         parent::__construct([
-            'name' => $name,
-            'description' => 'A paginated list of ' . $typeName . ' items.',
-            'fields' => fn() => $this->fieldConfig($typeName),
+            'name' => '_' . $wrappedType . 'Paginator',
+            'description' => 'A paginated list of ' . $wrappedType . ' items.',
+            'fields' => fn() => $this->fieldConfig($wrappedType),
         ]);
     }
 
