@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
+use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\Type as BaseType;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
@@ -39,7 +40,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\FileType;
-use Mrap\GraphCool\Types\Inputs\ModelInputType;
+use Mrap\GraphCool\Types\Inputs\ModelInput;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereInputType;
 use Mrap\GraphCool\Types\Objects\EdgesType;
@@ -155,9 +156,11 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'ColumnMapping')) {
             return new ColumnMappingType($name);
         }
+
         if (str_ends_with($name, 'Column')) {
-            return new ColumnType($name);
+            return static::column(substr($name, 1, -6));
         }
+
         if (str_ends_with($name, 'ManyRelation')) {
             return new EdgeManyInputType($name);
         }
@@ -166,9 +169,6 @@ abstract class Type extends BaseType implements NullableType
         }
         if (str_ends_with($name, 'Enum')) {
             return new DynamicEnumType($name);
-        }
-        if (str_ends_with($name, 'Input')) {
-            return new ModelInputType($name);
         }
         if (str_ends_with($name, 'Job') && $name !== '_Job') {
             return new JobType($name);
@@ -205,6 +205,42 @@ abstract class Type extends BaseType implements NullableType
             return $type;
         }
         return Type::nonNull($type);
+    }
+
+    public static function input(BaseType|string $wrappedType): ModelInput
+    {
+        if (is_string($wrappedType)) {
+            $name = $wrappedType;
+        } else {
+            $name = $wrappedType->name;
+        }
+        $type = new ModelInput($name);
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        return static::$types[$type->name];
+    }
+
+    public static function column(BaseType|string $wrappedType): ModelColumn|EnumType|NullableType
+    {
+        if ($wrappedType === 'Job_') {
+            // TODO: remove once importjob and exportjob are models
+            return static::get('_Job_Column');
+        }
+        if ($wrappedType === 'History_') {
+            // TODO: remove once history is a model
+            return static::get('_History_Column');
+        }
+        if (is_string($wrappedType)) {
+            $name = $wrappedType;
+        } else {
+            $name = $wrappedType->name;
+        }
+        $type = new ModelColumn($name);
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        return static::$types[$type->name];
     }
 
 }

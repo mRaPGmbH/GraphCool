@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Tests\Types\Enums;
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\EnumValueDefinition;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class ColumnTypeTest extends TestCase
@@ -14,7 +14,7 @@ class ColumnTypeTest extends TestCase
     public function testConstructor(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $enum = new ColumnType('_DummyModelColumn', new TypeLoader());
+        $enum = new ModelColumn('_DummyModelColumn', new TypeLoader());
         self::assertInstanceOf(EnumType::class, $enum);
 
         $columns = [];

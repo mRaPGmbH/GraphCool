@@ -32,7 +32,7 @@ class UpdateManyModels extends Mutation
             'args' => [
                 'where' => Type::get('_' . $model . 'WhereConditions'),
                 // '_timezone' => Type::get('_TimezoneOffset'), // TODO: add this later!
-                'data' => Type::nonNull(Type::get('_' . $model . 'Input')),
+                'data' => Type::nonNull(Type::input($model)),
             ]
         ];
     }

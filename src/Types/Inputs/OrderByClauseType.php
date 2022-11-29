@@ -15,7 +15,7 @@ class OrderByClauseType extends InputObjectType
         parent::__construct([
             'name' => $name,
             'fields' => fn() => [
-                'field' => Type::get(substr($name, 0, -13) . 'Column'),
+                'field' => Type::column(substr($name, 1, -13)),
                 'order' => Type::get('_SortOrder'),
             ],
         ]);

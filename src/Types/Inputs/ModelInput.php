@@ -9,16 +9,15 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 use function Mrap\GraphCool\model;
 
-class ModelInputType extends InputObjectType
+class ModelInput extends InputObjectType
 {
 
-    public function __construct(string $name)
+    public function __construct(string $wrappedType)
     {
-        $shortname = substr($name, 1, -5);
         parent::__construct([
-            'name' => $name,
-            'description' => 'Input for creating or updating a ' . $shortname . '.',
-            'fields' => fn() => $this->fieldConfig($shortname),
+            'name' => '_' . $wrappedType . 'Input',
+            'description' => 'Input for creating or updating a ' . $wrappedType . '.',
+            'fields' => fn() => $this->fieldConfig($wrappedType),
         ]);
     }
 
