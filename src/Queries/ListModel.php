@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\Queries;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\ModelBased;
-use Mrap\GraphCool\Definition\ModelQuery;
 use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
@@ -49,7 +48,7 @@ class ListModel extends Query
         $args['_timezone'] = Type::get('_TimezoneOffset');
 
         $this->config = [
-            'type' => Type::get('_' . $model . 'Paginator'),
+            'type' => Type::paginatedList($model),
             'description' => 'Get a paginated list of ' . $model . 's filtered by given where clauses.',
             'args' => $args
         ];

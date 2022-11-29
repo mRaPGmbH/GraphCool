@@ -22,13 +22,13 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
-use Mrap\GraphCool\Types\Inputs\WhereInputType;
+use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\EdgesType;
 use Mrap\GraphCool\Types\Objects\EdgeType;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
-use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class TypeLoaderTest extends TestCase
@@ -129,7 +129,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelPaginator')();
-        self::assertInstanceOf(PaginatorType::class, $result);
+        self::assertInstanceOf(ModelPaginator::class, $result);
     }
 
     public function testCreateEdges(): void
@@ -171,7 +171,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelWhereConditions')();
-        self::assertInstanceOf(WhereInputType::class, $result);
+        self::assertInstanceOf(WhereConditions::class, $result);
     }
 
     public function testCreateOrderByClause(): void
