@@ -158,6 +158,7 @@ abstract class Type extends BaseType implements NullableType
         }
 
         if (str_ends_with($name, 'Column')) {
+            // TODO: remove this once job+history are models
             return static::column(substr($name, 1, -6));
         }
 
