@@ -13,11 +13,14 @@ use RuntimeException;
  */
 function model(string $name): Model
 {
-    $models = ClassFinder::models();
-    if (isset($models[$name])) {
-        try {
-            return new ($models[$name])();
-        } catch (\Error) {}
+    try {
+        return (new ('App\\Models\\' . $name)())->injectFieldNames();
+    } catch (\Error) {
+        throw new Error('Unknown entity: ' . $name);
     }
-    throw new RuntimeException('Unknown entity: ' . $name);
+}
+
+function pluralize(string $name): string
+{
+    return $name . 's';
 }

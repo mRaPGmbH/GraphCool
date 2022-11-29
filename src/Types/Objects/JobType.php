@@ -12,22 +12,20 @@ class JobType extends ObjectType
 
     public function __construct(string $name)
     {
-        $config = [
+        parent::__construct([
             'name' => $name,
-            'fields' => [
+            'fields' => fn() => [
+                'created_at' => Type::nonNull(Type::get('_DateTime')),
+                'finished_at' => Type::get('_DateTime'),
                 'id' => Type::nonNull(Type::string()),
-                'worker' => Type::nonNull(Type::string()),
                 'model' => Type::get('_Model'),
-                'status' => Type::nonNull(Type::get('_Job_Status')),
                 'result' => Type::get($this->getResultType($name)),
                 'run_at' => Type::get('_DateTime'),
-                'created_at' => Type::nonNull(Type::get('_DateTime')),
                 'started_at' => Type::get('_DateTime'),
-                'finished_at' => Type::get('_DateTime'),
+                'status' => Type::nonNull(Type::get('_Job_Status')),
+                'worker' => Type::nonNull(Type::string()),
             ],
-        ];
-        ksort($config['fields']);
-        parent::__construct($config);
+        ]);
     }
 
     protected function getResultType(string $name): string

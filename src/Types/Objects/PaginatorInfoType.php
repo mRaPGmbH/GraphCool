@@ -6,28 +6,27 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 use stdClass;
 
 class PaginatorInfoType extends ObjectType
 {
     public function __construct()
     {
-        $config = [
+        parent::__construct([
             'name' => '_PaginatorInfo',
             'description' => 'Pagination information about the corresponding list of items.',
-            'fields' => [
-                'count' => new NonNull(Type::int()),
-                'currentPage' => new NonNull(Type::int()),
-                'firstItem' => new NonNull(Type::int()),
-                'hasMorePages' => new NonNull(Type::boolean()),
-                'lastItem' => new NonNull(Type::int()),
-                'lastPage' => new NonNull(Type::int()),
-                'perPage' => new NonNull(Type::int()),
-                'total' => new NonNull(Type::int())
+            'fields' => fn() => [
+                'count' => Type::nonNull(Type::int()),
+                'currentPage' => Type::nonNull(Type::int()),
+                'firstItem' => Type::nonNull(Type::int()),
+                'hasMorePages' => Type::nonNull(Type::boolean()),
+                'lastItem' => Type::nonNull(Type::int()),
+                'lastPage' => Type::nonNull(Type::int()),
+                'perPage' => Type::nonNull(Type::int()),
+                'total' => Type::nonNull(Type::int())
             ],
-        ];
-        parent::__construct($config);
+        ]);
     }
 
     public static function create(int $count, int $page, int $limit, int $total): stdClass

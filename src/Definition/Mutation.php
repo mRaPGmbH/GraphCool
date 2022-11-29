@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\Types\TypeLoader;
-use Mrap\GraphCool\Utils\JwtAuthentication;
+use stdClass;
 
-abstract class Mutation extends \stdClass
+abstract class Mutation extends stdClass
 {
-    public string $fieldName;
+    public string $name;
     /** @var mixed[] */
     public array $config;
 
-    abstract public function __construct(TypeLoader $typeLoader);
+    abstract public function __construct(?string $model = null);
 
     /**
      * @param mixed[] $rootValue

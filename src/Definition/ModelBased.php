@@ -1,17 +1,17 @@
 <?php
 
-namespace Mrap\GraphCool\Types;
+declare(strict_types=1);
 
-use GraphQL\Type\Definition\ObjectType;
-use Mrap\GraphCool\Definition\Model;
-use Mrap\GraphCool\Definition\Relation;
+namespace Mrap\GraphCool\Definition;
+
+use Mrap\GraphCool\Types\Type;
 use function Mrap\GraphCool\model;
 
-class BaseType extends ObjectType
+trait ModelBased
 {
-
-    protected function exportArgs(string $name, Model $model): array
+    protected function exportArgs(string $name): array
     {
+        $model = model($name);
         $args = [
             'type' => Type::nonNull(Type::get('_ExportFile')),
             'where' => Type::get('_' . $name . 'WhereConditions'),
@@ -63,6 +63,5 @@ class BaseType extends ObjectType
         }
         return $args;
     }
-
 
 }

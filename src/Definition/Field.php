@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
-use GraphQL\Type\Definition\Type;
+use Mrap\GraphCool\Types\Type;
 
 class Field
 {
@@ -26,6 +26,7 @@ class Field
     public const AUTO_INCREMENT = 'AUTO_INCREMENT';
 
     public string $type;
+    public string $namekey;
     public int $decimalPlaces;
     public bool $null = false;
     public string $description;

@@ -15,7 +15,6 @@ use Mrap\GraphCool\Definition\Script;
 use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
@@ -45,7 +44,7 @@ class GraphCool
             $request = $instance->parseRequest();
             $schema = $instance->createSchema();
             foreach ($request as $index => $query) {
-                // TODO: should this be $result[]= ?
+                // must be $result and NOT $result[] - graphql-php manages multiqueries internally
                 $result = $instance->executeQuery($schema, $query['query'], $query['variables'] ?? [], $index);
             }
         } catch (Throwable $e) {
@@ -77,7 +76,7 @@ class GraphCool
         if (empty($raw)) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
-        }
+        } 
         try {
             $request = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
@@ -97,11 +96,10 @@ class GraphCool
     protected function createSchema(): Schema
     {
         StopWatch::start(__METHOD__);
-        $typeLoader = new TypeLoader();
         $schema = new Schema(
             [
-                'query' => new QueryType($typeLoader),
-                'mutation' => new MutationType($typeLoader),
+                'query' => new QueryType(),
+                'mutation' => new MutationType(),
                 'typeLoader' => $this->getTypeLoaderClosure(),
             ]
         );

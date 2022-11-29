@@ -5,26 +5,20 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
-use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Types\TypeLoader;
 use function Mrap\GraphCool\model;
 
 class EdgeColumnType extends EnumType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -10), 2);
-        $key = $names[1];
         $parentModel = model($names[0]);
 
-        $relation = $parentModel->$key;
+        $relation = $parentModel->{$names[1]};
 
         $values = [];
-        foreach ($relation as $key => $field) {
-            if (!$field instanceof Field) {
-                continue;
-            }
+        foreach ($parentModel->relationFields($names[1]) as $key => $field) {
             $upperName = strtoupper($key);
             $values['_' . $upperName] = [
                 'value' => '_' . $key,
@@ -32,13 +26,9 @@ class EdgeColumnType extends EnumType
             ];
         }
 
-        $classname = $relation->classname;
-        $model = new $classname();
+        $model = model($relation->name);
 
-        foreach (get_object_vars($model) as $key => $field) {
-            if (!$field instanceof Field) {
-                continue;
-            }
+        foreach ($model->fields() as $key => $field) {
             $upperName = strtoupper($key);
             $values[$upperName] = [
                 'value' => $key,

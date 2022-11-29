@@ -12,18 +12,16 @@ class EdgeReducedSelectorType extends InputObjectType
 
     public function __construct(string $name)
     {
-        $fields = [
-            'id' => Type::nonNull(Type::id()),
-            'columns' => Type::nonNull(
-                Type::listOf(Type::nonNull(Type::get(substr($name, 0, -15) . 'ReducedColumnMapping')))
-            ),
-        ];
-        $config = [
+        parent::__construct([
             'name' => $name,
             'description' => 'Selector for one ' . substr($name, 1, -19) . ' relation.',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+            'fields' => fn() => [
+                'id' => Type::nonNull(Type::id()),
+                'columns' => Type::nonNull(
+                    Type::listOf(Type::nonNull(Type::get(substr($name, 0, -15) . 'ReducedColumnMapping')))
+                ),
+            ],
+        ]);
     }
 
 

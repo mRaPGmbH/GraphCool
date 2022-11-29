@@ -12,18 +12,16 @@ class EdgeSelectorType extends InputObjectType
 
     public function __construct(string $name)
     {
-        $fields = [
-            'id' => Type::nonNull(Type::id()),
-            'columns' => Type::nonNull(
-                Type::listOf(Type::nonNull(Type::get(substr($name, 0, -8) . 'ColumnMapping')))
-            ),
-        ];
-        $config = [
+        parent::__construct([
             'name' => $name,
             'description' => 'Selector for one ' . substr($name, 1, -12) . ' relation.',
-            'fields' => $fields,
-        ];
-        parent::__construct($config);
+            'fields' => fn() => [
+                'id' => Type::nonNull(Type::id()),
+                'columns' => Type::nonNull(
+                    Type::listOf(Type::nonNull(Type::get(substr($name, 0, -8) . 'ColumnMapping')))
+                ),
+            ],
+        ]);
     }
 
 

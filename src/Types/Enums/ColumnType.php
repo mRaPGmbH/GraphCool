@@ -6,13 +6,12 @@ namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Definition\Field;
-use Mrap\GraphCool\Types\TypeLoader;
 use function Mrap\GraphCool\model;
 
 class ColumnType extends EnumType
 {
 
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $typeName = substr($name, 1, -6);
         $model = model($typeName);

@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use GraphQL\Type\Definition\ResolveInfo;
+use stdClass;
 
-abstract class Query extends \stdClass
+abstract class Query extends stdClass
 {
-    public string $fieldName;
+    public string $name;
     /** @var mixed[] */
     public array $config;
 
-    abstract public function __construct();
+    abstract public function __construct(?string $model = null);
 
     /**
      * @param mixed[] $rootValue

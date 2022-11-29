@@ -6,12 +6,11 @@ namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\TypeLoader;
 use function Mrap\GraphCool\model;
 
 class DynamicEnumType extends EnumType
 {
-    public function __construct(string $name, TypeLoader $typeLoader)
+    public function __construct(string $name)
     {
         $names = explode('__', substr($name, 1, -4), 3);
         $key = $names[1];

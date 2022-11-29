@@ -16,6 +16,7 @@ class Relation extends stdClass
     public string $type;
     public string $classname;
     public string $name;
+    public string $namekey;
     public bool $null = false;
     public bool $history = false;
 

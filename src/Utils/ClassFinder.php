@@ -83,7 +83,7 @@ class ClassFinder
                 $classname = $namespace . $name;
                 if (class_exists($classname)) {
                     if (isset($result[$name])) {
-                        throw new RuntimeException('Duplicate Model "' . $name . '": '. $result[$name] . ' + ' . $classname);
+                        throw new RuntimeException('Duplicate class "' . $name . '": '. $result[$name] . ' + ' . $classname);
                     }
                     $result[$name] = $classname;
                 }
@@ -125,6 +125,7 @@ class ClassFinder
         if (!isset(static::$queries)) {
             // TODO: move this into app
             static::registerQueryPath(self::rootPath() . '/app/Queries');
+            static::registerQueryPath(__DIR__ . '/../Queries', 'Mrap\\GraphCool\\Queries\\');
 
             StopWatch::start(__METHOD__);
             static::$queries = static::findClasses(self::$queryPaths);
@@ -141,6 +142,7 @@ class ClassFinder
         if (!isset(static::$mutations)) {
             // TODO: move this into app
             static::registerMutationPath(self::rootPath() . '/app/Mutations');
+            static::registerMutationPath(__DIR__ . '/../Mutations', 'Mrap\\GraphCool\\Mutations\\');
 
             StopWatch::start(__METHOD__);
             static::$mutations = static::findClasses(self::$mutationPaths);

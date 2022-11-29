@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Definition;
 
 use Closure;
-use GraphQL\Type\Definition\Type;
 use Mrap\GraphCool\Exception\DoNotUpdateDerivedFieldException;
+use Mrap\GraphCool\Types\Type;
+use RuntimeException;
 use stdClass;
 
 class Model extends stdClass
@@ -170,6 +171,57 @@ class Model extends stdClass
             }
         }
         return $result;
+    }
+
+    public function injectFieldNames(): self
+    {
+        foreach ($this->fields() as $key => $field) {
+            $field->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, static::class)) . '__' . $key;
+        }
+        foreach ($this->relations() as $key => $relation) {
+            $relation->namekey = basename(str_replace('\\', DIRECTORY_SEPARATOR, static::class)) . '__' . $key;
+            foreach ($this->relationFields($key) as $fkey => $field) {
+                $field->namekey = $relation->namekey . '__' . $fkey;
+            }
+        }
+        return $this;
+    }
+
+    public function fields(): array
+    {
+        $ret = [];
+        foreach (get_object_vars($this) as $key => $field) {
+            if ($field instanceof Field) {
+                $ret[$key] = $field;
+            }
+        }
+        return $ret;
+    }
+
+    public function relations(): array
+    {
+        $ret = [];
+        foreach (get_object_vars($this) as $key => $relation) {
+            if ($relation instanceof Relation) {
+                $ret[$key] = $relation;
+            }
+        }
+        return $ret;
+    }
+
+    public function relationFields(string $relationKey): array
+    {
+        $relation = $this->$relationKey;
+        if (!$relation instanceof Relation) {
+            throw new RuntimeException('Cannot get relationFields: ' . $relationKey . ' is not a relation!');
+        }
+        $ret = [];
+        foreach (get_object_vars($relation) as $key => $field) {
+            if ($field instanceof Field) {
+                $ret[$key] = $field;
+            }
+        }
+        return $ret;
     }
 
 
