@@ -9,6 +9,7 @@ use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\Type as BaseType;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\ColumnType;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
@@ -32,8 +33,8 @@ use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
 use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
-use Mrap\GraphCool\Types\Inputs\EdgeInputType;
-use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
+use Mrap\GraphCool\Types\Inputs\ModelRelation;
+use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
@@ -158,12 +159,16 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name);
         }
+
+        /*
         if (str_ends_with($name, 'ManyRelation')) {
-            return new EdgeManyInputType($name);
+            return new ModelManyRelation($name);
         }
         if (str_ends_with($name, 'Relation')) {
-            return new EdgeInputType($name);
+            return new ModelRelation($name);
         }
+        */
+
         if (str_ends_with($name, 'Enum')) {
             return new DynamicEnumType($name);
         }
@@ -205,6 +210,21 @@ abstract class Type extends BaseType implements NullableType
             return $type;
         }
         return Type::nonNull($type);
+    }
+
+    public static function relation(Relation $relation): ?NullableType
+    {
+        if ($relation->type === Relation::BELONGS_TO) {
+            $type = new ModelRelation($relation);
+        } elseif ($relation->type === Relation::BELONGS_TO_MANY) {
+            $type = new ModelManyRelation($relation);
+        } else {
+            return null;
+        }
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        return static::$types[$type->name];
     }
 
 }
