@@ -14,21 +14,21 @@ use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
-use Mrap\GraphCool\Types\Inputs\EdgeInputType;
-use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
+use Mrap\GraphCool\Types\Inputs\ModelRelation;
+use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
-use Mrap\GraphCool\Types\Inputs\WhereInputType;
-use Mrap\GraphCool\Types\Objects\EdgesType;
-use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Inputs\WhereConditions;
+use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
-use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class TypeLoaderTest extends TestCase
@@ -129,21 +129,21 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelPaginator')();
-        self::assertInstanceOf(PaginatorType::class, $result);
+        self::assertInstanceOf(ModelPaginator::class, $result);
     }
 
     public function testCreateEdges(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdges')();
-        self::assertInstanceOf(EdgesType::class, $result);
+        self::assertInstanceOf(ModelEdgePaginator::class, $result);
     }
 
     public function testCreateEdge(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdge')();
-        self::assertInstanceOf(EdgeType::class, $result);
+        self::assertInstanceOf(ModelEdge::class, $result);
     }
 
     public function testCreateEdgeOrderByClause(): void
@@ -171,7 +171,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelWhereConditions')();
-        self::assertInstanceOf(WhereInputType::class, $result);
+        self::assertInstanceOf(WhereConditions::class, $result);
     }
 
     public function testCreateOrderByClause(): void
@@ -227,14 +227,14 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyManyRelation')();
-        self::assertInstanceOf(EdgeManyInputType::class, $result);
+        self::assertInstanceOf(ModelManyRelation::class, $result);
     }
 
     public function testCreateRelation(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_toRelation')();
-        self::assertInstanceOf(EdgeInputType::class, $result);
+        self::assertInstanceOf(ModelRelation::class, $result);
     }
 
     public function testCreateEnum(): void

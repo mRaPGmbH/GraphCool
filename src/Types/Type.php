@@ -11,6 +11,7 @@ use GraphQL\Type\Definition\Type as BaseType;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\Enums\ModelColumn;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
@@ -33,8 +34,8 @@ use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
 use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
-use Mrap\GraphCool\Types\Inputs\EdgeInputType;
-use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
+use Mrap\GraphCool\Types\Inputs\ModelRelation;
+use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
@@ -42,9 +43,9 @@ use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
-use Mrap\GraphCool\Types\Inputs\WhereInputType;
-use Mrap\GraphCool\Types\Objects\EdgesType;
-use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Inputs\WhereConditions;
+use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\FileExportType;
 use Mrap\GraphCool\Types\Objects\HistoryType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
@@ -53,7 +54,7 @@ use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
-use Mrap\GraphCool\Types\Objects\PaginatorType;
+use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\Objects\UpdateManyResult;
 use Mrap\GraphCool\Types\Scalars\Date;
 use Mrap\GraphCool\Types\Scalars\DateTime;
@@ -73,6 +74,36 @@ abstract class Type extends BaseType implements NullableType
         }
         return static::$types[$name];
     }
+
+    public static function paginatedList(BaseType|string $wrappedType): ModelPaginator
+    {
+        if (is_string($wrappedType)) {
+            $name = $wrappedType;
+        } else {
+            $name = $wrappedType->name;
+        }
+        $type = new ModelPaginator($name);
+        static::$types[$type->name] = $type;
+        return $type;
+    }
+
+    public static function edge(Relation $relation): ModelEdge|ModelEdgePaginator
+    {
+        $type = new ModelEdge($relation);
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        $type = static::$types[$type->name];
+        if ($relation->type === Relation::BELONGS_TO_MANY || $relation->type === Relation::HAS_MANY) {
+            $type = new ModelEdgePaginator($type);
+            if (!isset(static::$types[$type->name])) {
+                static::$types[$type->name] = $type;
+            }
+            $type = static::$types[$type->name];
+        }
+        return $type;
+    }
+
 
     protected static function create(string $name): NullableType
     {
@@ -114,17 +145,14 @@ abstract class Type extends BaseType implements NullableType
     protected static function createDynamic(string $name): NullableType
     {
         // TODO: this could probably be wrapped types?
+
         if (!str_starts_with($name, '_')) {
             return new ModelType($name);
         }
+
+        // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'Paginator')) {
-            return new PaginatorType($name);
-        }
-        if (str_ends_with($name, 'Edges')) {
-            return new EdgesType($name);
-        }
-        if (str_ends_with($name, 'Edge')) {
-            return new EdgeType($name);
+            return new ModelPaginator(substr($name, 1, -9));
         }
         if (str_ends_with($name, 'EdgeOrderByClause')) {
             return new EdgeOrderByClauseType($name);
@@ -136,7 +164,7 @@ abstract class Type extends BaseType implements NullableType
             return new EdgeColumnType($name);
         }
         if (str_ends_with($name, 'WhereConditions')) {
-            return new WhereInputType($name);
+            return new WhereConditions(substr($name, 1, -15));
         }
         if (str_ends_with($name, 'OrderByClause')) {
             return new OrderByClauseType($name);
@@ -162,16 +190,10 @@ abstract class Type extends BaseType implements NullableType
             return static::column(substr($name, 1, -6));
         }
 
-        if (str_ends_with($name, 'ManyRelation')) {
-            return new EdgeManyInputType($name);
-        }
-        if (str_ends_with($name, 'Relation')) {
-            return new EdgeInputType($name);
-        }
         if (str_ends_with($name, 'Enum')) {
             return new DynamicEnumType($name);
         }
-        if (str_ends_with($name, 'Job') && $name !== '_Job') {
+        if ($name !== '_Job' && str_ends_with($name, 'Job')) {
             return new JobType($name);
         }
         if (str_ends_with($name, 'ImportPreview')) {
@@ -238,6 +260,22 @@ abstract class Type extends BaseType implements NullableType
             $name = $wrappedType->name;
         }
         $type = new ModelColumn($name);
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        return static::$types[$type->name];
+    }
+
+
+    public static function relation(Relation $relation): ?NullableType
+    {
+        if ($relation->type === Relation::BELONGS_TO) {
+            $type = new ModelRelation($relation);
+        } elseif ($relation->type === Relation::BELONGS_TO_MANY) {
+            $type = new ModelManyRelation($relation);
+        } else {
+            return null;
+        }
         if (!isset(static::$types[$type->name])) {
             static::$types[$type->name] = $type;
         }

@@ -33,26 +33,21 @@ class ModelType extends ObjectType
     {
         $fields = [];
         foreach ($this->model->relations() as $key => $relation) {
-            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $fields[$key] = [
-                    'type' => Type::get('_' . $name . '__' . $key . 'Edge'),
-                    'description' => $relation->description ?? null,
-                ];
-            } elseif ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
-                $fields[$key] = [
-                    'type' => Type::get('_' . $name . '__' . $key . 'Edges'),
-                    'description' => $relation->description ?? null,
-                    'args' => [
-                        'first' => Type::int(),
-                        'page' => Type::int(),
-                        'where' => Type::get('_' . $name . '__' . $key . 'EdgeWhereConditions'),
-                        'orderBy' => Type::listOf(
-                            Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeOrderByClause'))
-                        ),
-                        'search' => Type::string(),
-                        'searchLoosely' => Type::string(),
-                        'result' => Type::get('_Result'),
-                    ]
+            $fields[$key] = [
+                'type' => Type::edge($relation),
+                'description' => $relation->description ?? null,
+            ];
+            if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
+                $fields[$key]['args'] = [
+                    'first' => Type::int(),
+                    'page' => Type::int(),
+                    'where' => Type::get('_' . $name . '__' . $key . 'EdgeWhereConditions'),
+                    'orderBy' => Type::listOf(
+                        Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeOrderByClause'))
+                    ),
+                    'search' => Type::string(),
+                    'searchLoosely' => Type::string(),
+                    'result' => Type::get('_Result'),
                 ];
             }
         }

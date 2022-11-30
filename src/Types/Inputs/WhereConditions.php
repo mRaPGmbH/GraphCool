@@ -7,15 +7,15 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class WhereInputType extends InputObjectType
+class WhereConditions extends InputObjectType
 {
 
-    public function __construct(string $name)
+    public function __construct(string $wrappedType)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => '_' . $wrappedType . 'WhereConditions',
             'fields' => fn() => [
-                'column' => Type::get(substr($name, 0, -15) . 'Column'),
+                'column' => Type::get('_' . $wrappedType . 'Column'),
                 'operator' => Type::get('_SQLOperator'),
                 'value' => Type::get('Mixed'),
                 'fulltextSearch' => Type::string(),

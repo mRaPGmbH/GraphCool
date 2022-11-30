@@ -31,13 +31,12 @@ class ModelInput extends InputObjectType
             }
         }
         foreach ($model->relations() as $key => $relation) {
-            if ($relation->type === Relation::BELONGS_TO) {
-                $fields[$key] = Type::get('_' . $name . '__' . $key . 'Relation');
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $fields[$key] = Type::listOf(
-                    Type::nonNull(Type::get('_' . $name . '__' . $key . 'ManyRelation'))
-                );
+            $relationType = Type::relation($relation);
+            if ($relationType !== null) {
+                if ($relation->type === Relation::BELONGS_TO_MANY) {
+                    $relationType = Type::listOf(Type::nonNull($relationType));
+                }
+                $fields[$key] = $relationType;
             }
         }
         ksort($fields);

@@ -148,7 +148,7 @@ class FileExport
                 foreach ($args[$key] as $column) {
                     $p = $column['column'];
                     $value = $data->$p ?? null;
-                    $cells[] = WriterEntityFactory::createCell($value);
+                    $cells[] = WriterEntityFactory::createCell($this->sanitize($value));
                 }
             }
             if ($relation->type === Relation::BELONGS_TO_MANY && isset($args[$key]) && count($args[$key]) > 0) {
@@ -182,12 +182,21 @@ class FileExport
                             $property = $column['column'];
                             $value = $edge->_node->$property ?? null;
                         }
-                        $cells[] = WriterEntityFactory::createCell($value);
+                        $cells[] = WriterEntityFactory::createCell($this->sanitize($value));
                     }
                 }
             }
         }
         return $cells;
+    }
+
+    protected function sanitize(mixed $string): mixed
+    {
+        if (!is_string($string)) {
+            return $string;
+        }
+        // 32767 is the max allowed cell length in Excel
+        return mb_substr(Utf8::sanitize($string), 0, 32767);
     }
 
     protected function getCell(Field $field, mixed $value): Cell
@@ -242,10 +251,7 @@ class FileExport
                 }
                 return WriterEntityFactory::createCell($value);
             default:
-                if (is_string($value)) {
-                    $value = substr($value, 0, 32767);
-                }
-                return WriterEntityFactory::createCell($value);
+                return WriterEntityFactory::createCell($this->sanitize($value));
         }
     }
 
