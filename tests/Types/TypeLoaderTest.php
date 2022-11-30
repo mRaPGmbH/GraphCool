@@ -8,7 +8,7 @@ use GraphQL\Type\Definition\ScalarType;
 use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\ColumnType;
+use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
@@ -20,7 +20,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
-use Mrap\GraphCool\Types\Inputs\ModelInputType;
+use Mrap\GraphCool\Types\Inputs\ModelInput;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
@@ -220,7 +220,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelColumn')();
-        self::assertInstanceOf(ColumnType::class, $result);
+        self::assertInstanceOf(ModelColumn::class, $result);
     }
 
     public function testCreateManyRelation(): void
@@ -248,7 +248,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelInput')();
-        self::assertInstanceOf(ModelInputType::class, $result);
+        self::assertInstanceOf(ModelInput::class, $result);
     }
 
     public function testCreateError(): void

@@ -32,7 +32,7 @@ class UpdateModel extends Mutation
             'args' => [
                 'id' => Type::nonNull(Type::id()),
                 '_timezone' => Type::get('_TimezoneOffset'),
-                'data' => Type::nonNull(Type::get('_' . $model . 'Input')),
+                'data' => Type::nonNull(Type::input($model)),
             ]
         ];
     }

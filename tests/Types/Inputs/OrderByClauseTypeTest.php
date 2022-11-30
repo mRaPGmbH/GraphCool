@@ -8,7 +8,7 @@ use App\Models\DummyModel;
 use GraphQL\Type\Definition\InputType;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Inputs\FileInputType;
-use Mrap\GraphCool\Types\Inputs\ModelInputType;
+use Mrap\GraphCool\Types\Inputs\ModelInput;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\TypeLoader;
 
