@@ -215,6 +215,11 @@ class Model extends stdClass
         if (!$relation instanceof Relation) {
             throw new RuntimeException('Cannot get relationFields: ' . $relationKey . ' is not a relation!');
         }
+        return static::relationFieldsForRelation($relation);
+    }
+
+    public static function relationFieldsForRelation(Relation $relation): array
+    {
         $ret = [];
         foreach (get_object_vars($relation) as $key => $field) {
             if ($field instanceof Field) {

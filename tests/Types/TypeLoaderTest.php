@@ -14,8 +14,8 @@ use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
-use Mrap\GraphCool\Types\Inputs\EdgeInputType;
-use Mrap\GraphCool\Types\Inputs\EdgeManyInputType;
+use Mrap\GraphCool\Types\Inputs\ModelRelation;
+use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
 use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
@@ -227,14 +227,14 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyManyRelation')();
-        self::assertInstanceOf(EdgeManyInputType::class, $result);
+        self::assertInstanceOf(ModelManyRelation::class, $result);
     }
 
     public function testCreateRelation(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_toRelation')();
-        self::assertInstanceOf(EdgeInputType::class, $result);
+        self::assertInstanceOf(ModelRelation::class, $result);
     }
 
     public function testCreateEnum(): void
