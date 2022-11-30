@@ -153,12 +153,6 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'Paginator')) {
             return new ModelPaginator(substr($name, 1, -9));
         }
-        if (str_ends_with($name, 'Edges')) {
-            return new ModelEdgePaginator($name);
-        }
-        if (str_ends_with($name, 'Edge')) {
-            return new ModelEdge($name);
-        }
         if (str_ends_with($name, 'EdgeOrderByClause')) {
             return new EdgeOrderByClauseType($name);
         }
@@ -192,16 +186,6 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'Column')) {
             return new ColumnType($name);
         }
-
-        /*
-        if (str_ends_with($name, 'ManyRelation')) {
-            return new ModelManyRelation($name);
-        }
-        if (str_ends_with($name, 'Relation')) {
-            return new ModelRelation($name);
-        }
-        */
-
         if (str_ends_with($name, 'Enum')) {
             return new DynamicEnumType($name);
         }
