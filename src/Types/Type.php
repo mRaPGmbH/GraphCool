@@ -43,8 +43,8 @@ use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
-use Mrap\GraphCool\Types\Objects\EdgesType;
-use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\FileExportType;
 use Mrap\GraphCool\Types\Objects\HistoryType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
@@ -83,6 +83,23 @@ abstract class Type extends BaseType implements NullableType
         }
         $type = new ModelPaginator($name);
         static::$types[$type->name] = $type;
+        return $type;
+    }
+
+    public static function edge(Relation $relation): ModelEdge|ModelEdgePaginator
+    {
+        $type = new ModelEdge($relation);
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        $type = static::$types[$type->name];
+        if ($relation->type === Relation::BELONGS_TO_MANY || $relation->type === Relation::HAS_MANY) {
+            $type = new ModelEdgePaginator($type);
+            if (!isset(static::$types[$type->name])) {
+                static::$types[$type->name] = $type;
+            }
+            $type = static::$types[$type->name];
+        }
         return $type;
     }
 
@@ -137,10 +154,10 @@ abstract class Type extends BaseType implements NullableType
             return new ModelPaginator(substr($name, 1, -9));
         }
         if (str_ends_with($name, 'Edges')) {
-            return new EdgesType($name);
+            return new ModelEdgePaginator($name);
         }
         if (str_ends_with($name, 'Edge')) {
-            return new EdgeType($name);
+            return new ModelEdge($name);
         }
         if (str_ends_with($name, 'EdgeOrderByClause')) {
             return new EdgeOrderByClauseType($name);
