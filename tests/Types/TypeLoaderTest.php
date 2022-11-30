@@ -23,8 +23,8 @@ use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInputType;
 use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
-use Mrap\GraphCool\Types\Objects\EdgesType;
-use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
@@ -136,14 +136,14 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdges')();
-        self::assertInstanceOf(EdgesType::class, $result);
+        self::assertInstanceOf(ModelEdgePaginator::class, $result);
     }
 
     public function testCreateEdge(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdge')();
-        self::assertInstanceOf(EdgeType::class, $result);
+        self::assertInstanceOf(ModelEdge::class, $result);
     }
 
     public function testCreateEdgeOrderByClause(): void

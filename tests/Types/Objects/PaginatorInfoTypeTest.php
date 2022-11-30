@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Tests\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Objects\EdgeType;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
 use Mrap\GraphCool\Types\TypeLoader;
 
