@@ -250,7 +250,11 @@ class GraphCool
     {
         StopWatch::start(__METHOD__);
         foreach (static::$shutdown as $closure) {
-            $closure();
+            try {
+                $closure();
+            } catch (Throwable $e) {
+                ErrorHandler::sentryCapture($e);
+            }
         }
         StopWatch::stop(__METHOD__);
     }
