@@ -9,7 +9,7 @@ use GraphQL\Type\Definition\InputType;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
-use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\TypeLoader;
 
