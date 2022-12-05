@@ -21,7 +21,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
-use Mrap\GraphCool\Types\Inputs\OrderByClause;
+use Mrap\GraphCool\Types\Inputs\ModelOrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
@@ -178,7 +178,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelOrderByClause')();
-        self::assertInstanceOf(OrderByClause::class, $result);
+        self::assertInstanceOf(ModelOrderByClause::class, $result);
     }
 
     public function testCreateEdgeReducedSelector(): void

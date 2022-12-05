@@ -42,7 +42,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
-use Mrap\GraphCool\Types\Inputs\OrderByClause;
+use Mrap\GraphCool\Types\Inputs\ModelOrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
@@ -172,7 +172,7 @@ abstract class Type extends BaseType implements NullableType
 
         // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'OrderByClause')) {
-            return new OrderByClause(substr($name, 1, -13));
+            return new ModelOrderByClause(substr($name, 1, -13));
         }
 
         if (str_ends_with($name, 'EdgeReducedSelector')) {
@@ -299,11 +299,11 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
-    public static function orderByClause(string|Relation $name): OrderByClause|EdgeOrderByClause
+    public static function orderByClause(string|Relation $name): ModelOrderByClause|EdgeOrderByClause
     {
         if (is_string($name)) {
-            /** @var OrderByClause $type */
-            $type = static::cache(new OrderByClause($name));
+            /** @var ModelOrderByClause $type */
+            $type = static::cache(new ModelOrderByClause($name));
             return $type;
         }
         /** @var EdgeOrderByClause $type */

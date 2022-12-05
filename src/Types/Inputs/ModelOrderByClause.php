@@ -7,7 +7,7 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class OrderByClause extends InputObjectType
+class ModelOrderByClause extends InputObjectType
 {
 
     public function __construct(string $name)
