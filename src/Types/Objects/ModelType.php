@@ -41,9 +41,11 @@ class ModelType extends ObjectType
                 $fields[$key]['args'] = [
                     'first' => Type::int(),
                     'page' => Type::int(),
+
+                    // TODO: fix EdgeWhereConditions
                     'where' => Type::get('_' . $name . '__' . $key . 'EdgeWhereConditions'),
                     'orderBy' => Type::listOf(
-                        Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeOrderByClause'))
+                        Type::nonNull(Type::orderByClause($relation))
                     ),
                     'search' => Type::string(),
                     'searchLoosely' => Type::string(),

@@ -12,7 +12,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
-use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeOrderByClause;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;

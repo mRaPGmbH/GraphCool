@@ -5,20 +5,27 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\Relation;
 use function Mrap\GraphCool\model;
 
-class EdgeColumnType extends EnumType
+class EdgeColumn extends EnumType
 {
 
-    public function __construct(string $name)
+    public function __construct(Relation $relation)
     {
-        $names = explode('__', substr($name, 1, -10), 2);
-        $parentModel = model($names[0]);
+        $config = [
+            'name' => '_' . $relation->namekey. 'EdgeColumn',
+            'description' => 'Column names of type `' . $relation->name . '` and pivot properties (prefixed with underscore) of the relation `' . $relation->namekey . '`.',
+            'values' => $this->values($relation),
+        ];
+        parent::__construct($config);
+    }
 
-        $relation = $parentModel->{$names[1]};
-
+    protected function values(Relation $relation): array
+    {
         $values = [];
-        foreach ($parentModel->relationFields($names[1]) as $key => $field) {
+        foreach (Model::relationFieldsForRelation($relation) as $key => $field) {
             $upperName = strtoupper($key);
             $values['_' . $upperName] = [
                 'value' => '_' . $key,
@@ -27,7 +34,6 @@ class EdgeColumnType extends EnumType
         }
 
         $model = model($relation->name);
-
         foreach ($model->fields() as $key => $field) {
             $upperName = strtoupper($key);
             $values[$upperName] = [
@@ -36,12 +42,7 @@ class EdgeColumnType extends EnumType
             ];
         }
         ksort($values);
-        $config = [
-            'name' => $name,
-            'description' => 'Column names of type `' . $relation->name . '` and pivot properties (prefixed with underscore) of the relation `' . $names[0] . '.' . $names[1] . '`.',
-            'values' => $values
-        ];
-        parent::__construct($config);
+        return $values;
     }
 
 }

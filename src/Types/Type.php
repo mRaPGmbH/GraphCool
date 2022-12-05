@@ -15,7 +15,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
-use Mrap\GraphCool\Types\Enums\EdgeColumnType;
+use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Enums\EntityEnumType;
 use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
@@ -33,10 +33,10 @@ use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
-use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\EdgeColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
-use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeOrderByClause;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
@@ -62,6 +62,7 @@ use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use RuntimeException;
+use function Mrap\GraphCool\model;
 
 abstract class Type extends BaseType implements NullableType
 {
@@ -148,15 +149,23 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'Paginator')) {
             return new ModelPaginator(substr($name, 1, -9));
         }
+
+        /*
         if (str_ends_with($name, 'EdgeOrderByClause')) {
-            return new EdgeOrderByClauseType($name);
-        }
+            return new EdgeOrderByClause($name);
+        }*/
+
         if (str_ends_with($name, 'EdgeReducedColumn')) {
             return new EdgeReducedColumnType($name);
         }
+
+        // TODO: remove this once EdgeSelector has been refactored
         if (str_ends_with($name, 'EdgeColumn')) {
-            return new EdgeColumnType($name);
+            $nameParts = explode('__', substr($name, 1, -10), 2);
+            $model = model($nameParts[0]);
+            return static::column($model->{$nameParts[1]});
         }
+
         if (str_ends_with($name, 'WhereConditions')) {
             return new WhereConditions(substr($name, 1, -15));
         }
@@ -175,8 +184,13 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'EdgeReducedColumnMapping')) {
             return new EdgeReducedColumnMappingType($name);
         }
+
+
+        // TODO: this can be removed after EdgeSelector has been refactored
         if (str_ends_with($name, 'EdgeColumnMapping')) {
-            return new EdgeColumnMappingType($name);
+            $nameParts = explode('__', substr($name, 1, -17), 2);
+            $model = model($nameParts[0]);
+            return static::columnMapping($model->{$nameParts[1]});
         }
 
         if (str_ends_with($name, 'Column')) {
@@ -248,7 +262,7 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
-    public static function column(BaseType|string $wrappedType): ModelColumn|EnumType|NullableType
+    public static function column(BaseType|string|Relation $wrappedType): ModelColumn|EnumType|NullableType|EdgeColumn
     {
         if ($wrappedType === 'Job_') {
             // TODO: remove once importjob and exportjob are models
@@ -257,6 +271,11 @@ abstract class Type extends BaseType implements NullableType
         if ($wrappedType === 'History_') {
             // TODO: remove once history is a model
             return static::get('_History_Column');
+        }
+        if ($wrappedType instanceof Relation) {
+            /** @var EdgeColumn $type */
+            $type = static::cache(new EdgeColumn($wrappedType));
+            return $type;
         }
         if (is_string($wrappedType)) {
             $name = $wrappedType;
@@ -268,17 +287,27 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
-    public static function columnMapping(string $model): ModelColumnMapping
+    public static function columnMapping(string|Relation $model): ModelColumnMapping|EdgeColumnMapping
     {
-        /** @var ModelColumnMapping $type */
-        $type = static::cache(new ModelColumnMapping($model));
+        if (is_string($model)) {
+            /** @var ModelColumnMapping $type */
+            $type = static::cache(new ModelColumnMapping($model));
+            return $type;
+        }
+        /** @var EdgeColumnMapping $type */
+        $type = static::cache(new EdgeColumnMapping($model));
         return $type;
     }
 
-    public static function orderByClause(string $name): OrderByClause
+    public static function orderByClause(string|Relation $name): OrderByClause|EdgeOrderByClause
     {
-        /** @var OrderByClause $type */
-        $type = static::cache(new OrderByClause($name));
+        if (is_string($name)) {
+            /** @var OrderByClause $type */
+            $type = static::cache(new OrderByClause($name));
+            return $type;
+        }
+        /** @var EdgeOrderByClause $type */
+        $type = static::cache(new EdgeOrderByClause($name));
         return $type;
     }
 

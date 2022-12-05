@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 
-class EdgeOrderByClauseType extends InputObjectType
+class EdgeOrderByClause extends InputObjectType
 {
 
-    public function __construct(string $name)
+    public function __construct(Relation $relation)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => '_' . $relation->namekey . 'EdgeOrderByClause',
             'fields' => fn() => [
-                'field' => Type::get(substr($name, 0, -17) . 'EdgeColumn'),
+                'field' => Type::column($relation),
                 'order' => Type::get('_SortOrder'),
             ],
         ]);
