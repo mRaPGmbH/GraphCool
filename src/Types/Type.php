@@ -82,24 +82,18 @@ abstract class Type extends BaseType implements NullableType
         } else {
             $name = $wrappedType->name;
         }
-        $type = new ModelPaginator($name);
-        static::$types[$type->name] = $type;
+        /** @var ModelPaginator $type */
+        $type = static::cache(new ModelPaginator($name));
         return $type;
     }
 
     public static function edge(Relation $relation): ModelEdge|ModelEdgePaginator
     {
-        $type = new ModelEdge($relation);
-        if (!isset(static::$types[$type->name])) {
-            static::$types[$type->name] = $type;
-        }
-        $type = static::$types[$type->name];
+        /** @var ModelEdge $type */
+        $type = static::cache(new ModelEdge($relation));
         if ($relation->type === Relation::BELONGS_TO_MANY || $relation->type === Relation::HAS_MANY) {
-            $type = new ModelEdgePaginator($type);
-            if (!isset(static::$types[$type->name])) {
-                static::$types[$type->name] = $type;
-            }
-            $type = static::$types[$type->name];
+            $type = static::cache(new ModelEdgePaginator($type));
+            /** @var ModelEdgePaginator $type */
         }
         return $type;
     }
@@ -202,6 +196,18 @@ abstract class Type extends BaseType implements NullableType
         throw new RuntimeException('Unhandled createDynamic: ' . $name);
     }
 
+    /**
+     * @param BaseType $type
+     * @return BaseType
+     */
+    protected static function cache(BaseType $type): BaseType
+    {
+        if (!isset(static::$types[$type->name])) {
+            static::$types[$type->name] = $type;
+        }
+        return static::$types[$type->name];
+    }
+
     public static function getForField(Field $field, bool $input = false, bool $optional = false): NullableType|NonNull
     {
         $type = match ($field->type) {
@@ -237,11 +243,9 @@ abstract class Type extends BaseType implements NullableType
         } else {
             $name = $wrappedType->name;
         }
-        $type = new ModelInput($name);
-        if (!isset(static::$types[$type->name])) {
-            static::$types[$type->name] = $type;
-        }
-        return static::$types[$type->name];
+        /** @var ModelInput $type */
+        $type = static::cache(new ModelInput($name));
+        return $type;
     }
 
     public static function column(BaseType|string $wrappedType): ModelColumn|EnumType|NullableType
@@ -259,27 +263,25 @@ abstract class Type extends BaseType implements NullableType
         } else {
             $name = $wrappedType->name;
         }
-        $type = new ModelColumn($name);
-        if (!isset(static::$types[$type->name])) {
-            static::$types[$type->name] = $type;
-        }
-        return static::$types[$type->name];
+        /** @var ModelColumn $type */
+        $type = static::cache(new ModelColumn($name));
+        return $type;
     }
 
 
     public static function relation(Relation $relation): ?NullableType
     {
         if ($relation->type === Relation::BELONGS_TO) {
-            $type = new ModelRelation($relation);
-        } elseif ($relation->type === Relation::BELONGS_TO_MANY) {
-            $type = new ModelManyRelation($relation);
-        } else {
-            return null;
+            /** @var ModelRelation $type */
+            $type = static::cache(new ModelRelation($relation));
+            return $type;
         }
-        if (!isset(static::$types[$type->name])) {
-            static::$types[$type->name] = $type;
+        if ($relation->type === Relation::BELONGS_TO_MANY) {
+            /** @var ModelManyRelation $type */
+            $type = static::cache(new ModelManyRelation($relation));
+            return $type;
         }
-        return static::$types[$type->name];
+        return null;
     }
 
 }
