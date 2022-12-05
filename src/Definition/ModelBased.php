@@ -15,10 +15,10 @@ trait ModelBased
         $args = [
             'type' => Type::nonNull(Type::get('_ExportFile')),
             'where' => Type::get('_' . $name . 'WhereConditions'),
-            'orderBy' => Type::listOf(Type::nonNull(Type::get('_' . $name . 'OrderByClause'))),
+            'orderBy' => Type::listOf(Type::nonNull(Type::orderByClause($name ))),
             'search' => Type::string(),
             'searchLoosely' => Type::string(),
-            'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::get('_' . $name . 'ColumnMapping')))),
+            'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::columnMapping($name)))),
         ];
 
         foreach (get_object_vars($model) as $key => $relation) {
@@ -47,7 +47,7 @@ trait ModelBased
         $args = [
             'file' => Type::get('_Upload'),
             'data_base64' => Type::string(),
-            'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::get('_' . $name . 'ColumnMapping')))),
+            'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::columnMapping($name)))),
             '_timezone' => Type::get('_TimezoneOffset'),
         ];
         $model = model($name);

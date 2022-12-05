@@ -41,7 +41,7 @@ class ListModel extends Query
             }
             $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
         }
-        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_' . $model . 'OrderByClause')));
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::orderByClause($model)));
         $args['search'] = Type::string();
         $args['searchLoosely'] = Type::string();
         $args['result'] = Type::get('_Result');

@@ -12,7 +12,7 @@ use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
 use Mrap\GraphCool\Types\Enums\EdgeColumnType;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
-use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
@@ -21,7 +21,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
-use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\OrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
@@ -178,7 +178,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelOrderByClause')();
-        self::assertInstanceOf(OrderByClauseType::class, $result);
+        self::assertInstanceOf(OrderByClause::class, $result);
     }
 
     public function testCreateEdgeReducedSelector(): void
@@ -213,7 +213,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelColumnMapping')();
-        self::assertInstanceOf(ColumnMappingType::class, $result);
+        self::assertInstanceOf(ModelColumnMapping::class, $result);
     }
 
     public function testCreateColumn(): void

@@ -32,7 +32,7 @@ use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
 use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
 use Mrap\GraphCool\Types\Enums\SQLOperatorType;
 use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
-use Mrap\GraphCool\Types\Inputs\ColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
@@ -42,7 +42,7 @@ use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\FileType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
-use Mrap\GraphCool\Types\Inputs\OrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\OrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
@@ -160,9 +160,12 @@ abstract class Type extends BaseType implements NullableType
         if (str_ends_with($name, 'WhereConditions')) {
             return new WhereConditions(substr($name, 1, -15));
         }
+
+        // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'OrderByClause')) {
-            return new OrderByClauseType($name);
+            return new OrderByClause(substr($name, 1, -13));
         }
+
         if (str_ends_with($name, 'EdgeReducedSelector')) {
             return new EdgeReducedSelectorType($name);
         }
@@ -174,9 +177,6 @@ abstract class Type extends BaseType implements NullableType
         }
         if (str_ends_with($name, 'EdgeColumnMapping')) {
             return new EdgeColumnMappingType($name);
-        }
-        if (str_ends_with($name, 'ColumnMapping')) {
-            return new ColumnMappingType($name);
         }
 
         if (str_ends_with($name, 'Column')) {
@@ -268,6 +268,19 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
+    public static function columnMapping(string $model): ModelColumnMapping
+    {
+        /** @var ModelColumnMapping $type */
+        $type = static::cache(new ModelColumnMapping($model));
+        return $type;
+    }
+
+    public static function orderByClause(string $name): OrderByClause
+    {
+        /** @var OrderByClause $type */
+        $type = static::cache(new OrderByClause($name));
+        return $type;
+    }
 
     public static function relation(Relation $relation): ?NullableType
     {

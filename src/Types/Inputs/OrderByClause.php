@@ -7,15 +7,15 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class OrderByClauseType extends InputObjectType
+class OrderByClause extends InputObjectType
 {
 
     public function __construct(string $name)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => '_' . $name . 'OrderByClause',
             'fields' => fn() => [
-                'field' => Type::column(substr($name, 1, -13)),
+                'field' => Type::column($name),
                 'order' => Type::get('_SortOrder'),
             ],
         ]);

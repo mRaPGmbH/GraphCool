@@ -7,15 +7,15 @@ namespace Mrap\GraphCool\Types\Inputs;
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class ColumnMappingType extends InputObjectType
+class ModelColumnMapping extends InputObjectType
 {
 
-    public function __construct(string $name)
+    public function __construct(string $model)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => '_' . $model . 'ColumnMapping',
             'fields' => fn() => [
-                'column' => Type::nonNull(Type::column(substr($name, 1, -13))),
+                'column' => Type::nonNull(Type::column($model)),
                 'label' => Type::string(),
             ],
         ]);
