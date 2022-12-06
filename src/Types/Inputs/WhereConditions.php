@@ -12,10 +12,16 @@ class WhereConditions extends InputObjectType
 
     public function __construct(string $wrappedType)
     {
+        if (str_ends_with($wrappedType, 'Edge')) {
+            // TODO: make this dynamic
+            $column = Type::get('_' . $wrappedType . 'Column');
+        } else {
+            $column = Type::column($wrappedType);
+        }
         parent::__construct([
             'name' => '_' . $wrappedType . 'WhereConditions',
             'fields' => fn() => [
-                'column' => Type::get('_' . $wrappedType . 'Column'),
+                'column' => $column,
                 'operator' => Type::get('_SQLOperator'),
                 'value' => Type::get('Mixed'),
                 'fulltextSearch' => Type::string(),

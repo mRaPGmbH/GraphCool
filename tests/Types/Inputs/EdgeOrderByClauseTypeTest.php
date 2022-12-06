@@ -12,14 +12,14 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
-use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeOrderByClause;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeOrderByClauseTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $enum = new EdgeOrderByClauseType('_DummyModel__belongs_to_manyEdgeOrderByClause', new TypeLoader());
+        $enum = new EdgeOrderByClause('_DummyModel__belongs_to_manyEdgeOrderByClause', new TypeLoader());
         self::assertInstanceOf(InputType::class, $enum);
     }
 }

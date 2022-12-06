@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Tests\Types\Enums;
 use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\EnumValueDefinition;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\EdgeColumnType;
+use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class EdgeColumnTypeTest extends TestCase
@@ -14,7 +14,7 @@ class EdgeColumnTypeTest extends TestCase
     public function testConstructor(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $enum = new EdgeColumnType('_DummyModel__belongs_to_manyEdgeColumn', new TypeLoader());
+        $enum = new EdgeColumn('_DummyModel__belongs_to_manyEdgeColumn', new TypeLoader());
         self::assertInstanceOf(EnumType::class, $enum);
 
         $columns = [];

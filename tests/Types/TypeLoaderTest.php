@@ -10,18 +10,18 @@ use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Types\Enums\DynamicEnumType;
-use Mrap\GraphCool\Types\Enums\EdgeColumnType;
+use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumnType;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
-use Mrap\GraphCool\Types\Inputs\EdgeColumnMappingType;
+use Mrap\GraphCool\Types\Inputs\EdgeColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
 use Mrap\GraphCool\Types\Inputs\ModelManyRelation;
-use Mrap\GraphCool\Types\Inputs\EdgeOrderByClauseType;
+use Mrap\GraphCool\Types\Inputs\EdgeOrderByClause;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedColumnMappingType;
 use Mrap\GraphCool\Types\Inputs\EdgeReducedSelectorType;
 use Mrap\GraphCool\Types\Inputs\EdgeSelectorType;
 use Mrap\GraphCool\Types\Inputs\ModelInput;
-use Mrap\GraphCool\Types\Inputs\OrderByClause;
+use Mrap\GraphCool\Types\Inputs\ModelOrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
@@ -150,7 +150,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdgeOrderByClause')();
-        self::assertInstanceOf(EdgeOrderByClauseType::class, $result);
+        self::assertInstanceOf(EdgeOrderByClause::class, $result);
     }
 
     public function testCreateEdgeReducedColumn(): void
@@ -164,7 +164,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdgeColumn')();
-        self::assertInstanceOf(EdgeColumnType::class, $result);
+        self::assertInstanceOf(EdgeColumn::class, $result);
     }
 
     public function testCreateWhereConditions(): void
@@ -178,7 +178,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModelOrderByClause')();
-        self::assertInstanceOf(OrderByClause::class, $result);
+        self::assertInstanceOf(ModelOrderByClause::class, $result);
     }
 
     public function testCreateEdgeReducedSelector(): void
@@ -206,7 +206,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__belongs_to_manyEdgeColumnMapping')();
-        self::assertInstanceOf(EdgeColumnMappingType::class, $result);
+        self::assertInstanceOf(EdgeColumnMapping::class, $result);
     }
 
     public function testCreateColumnMapping(): void

@@ -27,7 +27,7 @@ trait ModelBased
             }
             if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
                 $args[$key] = Type::listOf(
-                    Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeColumnMapping'))
+                    Type::nonNull(Type::columnMapping($relation))
                 );
             }
             if ($relation->type === Relation::BELONGS_TO_MANY) {
