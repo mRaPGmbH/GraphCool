@@ -22,7 +22,7 @@ class ModelEdge extends ObjectType
 
     protected function fieldConfig(Relation $relation): array
     {
-        $type = Type::get($relation->name);
+        $type = Type::model($relation->name);
         $fields = [];
         foreach (Model::relationFieldsForRelation($relation) as $fieldKey => $field) {
             $fields[$fieldKey] = [

@@ -38,7 +38,7 @@ class ImportModelPreview extends Query
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get('_' . $model.'ImportPreview'),
+            'type' => Type::importPreview($model),
             'description' => 'Get a preview of what an import of a list of ' .  $plural . ' from a spreadsheet would result in. Does not actually modify any data.',
             'args' => $this->importArgs($model)
         ];

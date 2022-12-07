@@ -29,7 +29,7 @@ class ModelPaginator extends ObjectType
         }
         return [
             'paginatorInfo' => Type::get('_PaginatorInfo'),
-            'data' => Type::listOf(Type::nonNull(Type::get($typeName)))
+            'data' => Type::listOf(Type::nonNull(Type::model($typeName)))
         ];
     }
 }

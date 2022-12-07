@@ -26,7 +26,7 @@ class RestoreModel extends Mutation
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get($model),
+            'type' => Type::model($model),
             'description' => 'Restore a previously soft-deleted ' . $model . ' record by ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),

@@ -27,7 +27,7 @@ class UpdateModel extends Mutation
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get($model),
+            'type' => Type::model($model),
             'description' => 'Modify an existing ' . $model . ' entry',
             'args' => [
                 'id' => Type::nonNull(Type::id()),

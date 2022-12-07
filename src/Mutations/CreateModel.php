@@ -64,7 +64,7 @@ class CreateModel extends Mutation
         ksort($args);
 
         $this->config = [
-            'type' => Type::get($model),
+            'type' => Type::model($model),
             'description' => 'Create a single new ' . $model . ' entry',
             'args' => $args,
         ];
