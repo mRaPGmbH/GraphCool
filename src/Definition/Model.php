@@ -198,11 +198,14 @@ class Model extends stdClass
         return $ret;
     }
 
-    public function relations(): array
+    public function relations(?array $filterTypes = null): array
     {
         $ret = [];
         foreach (get_object_vars($this) as $key => $relation) {
-            if ($relation instanceof Relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            if ($filterTypes === null || in_array($relation->type, $filterTypes, true)) {
                 $ret[$key] = $relation;
             }
         }
