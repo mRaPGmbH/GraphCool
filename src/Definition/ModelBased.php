@@ -20,21 +20,13 @@ trait ModelBased
             'searchLoosely' => Type::string(),
             'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::columnMapping($name)))),
         ];
-
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            if ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::HAS_ONE) {
-                $args[$key] = Type::listOf(
-                    Type::nonNull(Type::columnMapping($relation))
-                );
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = Type::listOf(
-                    Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeSelector'))
-                );
-            }
+        foreach ($model->relations([Relation::BELONGS_TO, Relation::HAS_ONE]) as $key => $relation) {
+            $args[$key] = Type::listOf(Type::nonNull(Type::columnMapping($relation)));
+        }
+        foreach ($model->relations([Relation::BELONGS_TO_MANY]) as $key => $relation) {
+            $args[$key] = Type::listOf(Type::nonNull(Type::edgeSelector($relation)));
+        }
+        foreach ($model->relations() as $key => $relation) {
             $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
         }
         $args['result'] = Type::get('_Result');
@@ -51,15 +43,8 @@ trait ModelBased
             '_timezone' => Type::get('_TimezoneOffset'),
         ];
         $model = model($name);
-        foreach ($model as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            if ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = Type::listOf(
-                    Type::nonNull(Type::get('_' . $name . '__' . $key . 'EdgeReducedSelector'))
-                );
-            }
+        foreach ($model->relations([Relation::BELONGS_TO_MANY]) as $key => $relation) {
+            $args[$key] = Type::listOf(Type::nonNull(Type::edgeSelector($relation, true)));
         }
         return $args;
     }
