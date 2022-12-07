@@ -60,7 +60,7 @@ class CreateModel extends Mutation
                 );
             }*/
         }
-        $args['_timezone'] = Type::get('_TimezoneOffset');
+        $args['_timezone'] = Type::timezoneOffset();
         ksort($args);
 
         $this->config = [

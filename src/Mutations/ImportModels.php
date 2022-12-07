@@ -30,7 +30,7 @@ class ImportModels extends Mutation
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get('_ImportSummary'),
+            'type' => Type::importSummary(),
             'description' => 'Import a list of ' . $plural . ' from a spreadsheet. If ID\'s are present, ' . $plural . ' will be updated - otherwise new ' . $plural . ' will be created. To completely replace the existing data set, delete everything before importing.',
             'args' => $this->importArgs($model)
         ];

@@ -33,7 +33,7 @@ class ListModel extends Query
             'first' => Type::int(),
             'page' => Type::int(),
             'where' => Type::get('_' . $model . 'WhereConditions'),
-            'whereMode' => Type::get('_WhereMode'),
+            'whereMode' => Type::whereMode(),
         ];
         foreach (get_object_vars(model($model)) as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -44,8 +44,8 @@ class ListModel extends Query
         $args['orderBy'] = Type::listOf(Type::nonNull(Type::orderByClause($model)));
         $args['search'] = Type::string();
         $args['searchLoosely'] = Type::string();
-        $args['result'] = Type::get('_Result');
-        $args['_timezone'] = Type::get('_TimezoneOffset');
+        $args['result'] = Type::result();
+        $args['_timezone'] = Type::timezoneOffset();
 
         $this->config = [
             'type' => Type::paginatedList($model),
