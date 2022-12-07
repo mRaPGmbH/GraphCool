@@ -15,7 +15,7 @@ class FileType extends InputObjectType
         parent::__construct([
             'name' => '_File',
             'fields' => fn() => [
-                'file' => Type::get('_Upload'),
+                'file' => Type::upload(),
                 'filename' => Type::nonNull(Type::string()),
                 'data_base64' => Type::string(),
             ],

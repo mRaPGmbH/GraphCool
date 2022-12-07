@@ -13,7 +13,7 @@ trait ModelBased
     {
         $model = model($name);
         $args = [
-            'type' => Type::nonNull(Type::get('_ExportFile')),
+            'type' => Type::nonNull(Type::sheetFileEnum()),
             'where' => Type::get('_' . $name . 'WhereConditions'),
             'orderBy' => Type::listOf(Type::nonNull(Type::orderByClause($name ))),
             'search' => Type::string(),
@@ -29,18 +29,18 @@ trait ModelBased
         foreach ($model->relations() as $key => $relation) {
             $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
         }
-        $args['result'] = Type::get('_Result');
-        $args['_timezone'] = Type::get('_TimezoneOffset');
+        $args['result'] = Type::result();
+        $args['_timezone'] = Type::timezoneOffset();
         return $args;
     }
 
     protected function importArgs(string $name): array
     {
         $args = [
-            'file' => Type::get('_Upload'),
+            'file' => Type::upload(),
             'data_base64' => Type::string(),
             'columns' => Type::nonNull(Type::listOf(Type::nonNull(Type::columnMapping($name)))),
-            '_timezone' => Type::get('_TimezoneOffset'),
+            '_timezone' => Type::timezoneOffset(),
         ];
         $model = model($name);
         foreach ($model->relations([Relation::BELONGS_TO_MANY]) as $key => $relation) {

@@ -19,17 +19,17 @@ class ModelPaginator extends ObjectType
         ]);
     }
 
-    protected function fieldConfig(string $typeName): array
+    protected function fieldConfig(string $wrappedType): array
     {
-        if (str_ends_with($typeName, '_Job')) {
-            $typeName = '_'. substr($typeName, 0, -4) . 'Job';
+        if (str_ends_with($wrappedType, '_Job')) {
+            $wrappedType = '_'. substr($wrappedType, 0, -4) . 'Job';
         }
-        if ($typeName === 'History_') {
-            $typeName = '_History';
+        if ($wrappedType === 'History_') {
+            $wrappedType = '_History';
         }
         return [
-            'paginatorInfo' => Type::get('_PaginatorInfo'),
-            'data' => Type::listOf(Type::nonNull(Type::get($typeName)))
+            'paginatorInfo' => Type::paginatorInfo(),
+            'data' => Type::listOf(Type::nonNull(Type::get($wrappedType)))
         ];
     }
 }

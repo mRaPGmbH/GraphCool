@@ -21,7 +21,7 @@ class Token extends Query
             'description' => 'Get a single use JWT for a specific endpoint of this service.',
             'args' => [
                 'endpoint' => Type::get('_Entity'),
-                'operation' => Type::get('_Permission'),
+                'operation' => Type::permissionEnum(),
             ]
         ];
     }

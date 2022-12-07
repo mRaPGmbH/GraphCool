@@ -17,7 +17,7 @@ class EdgeOrderByClause extends InputObjectType
             'name' => '_' . $relation->namekey . 'EdgeOrderByClause',
             'fields' => fn() => [
                 'field' => Type::column($relation),
-                'order' => Type::get('_SortOrder'),
+                'order' => Type::sortOrderEnum(),
             ],
         ]);
     }

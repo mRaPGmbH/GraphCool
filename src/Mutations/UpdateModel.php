@@ -31,7 +31,7 @@ class UpdateModel extends Mutation
             'description' => 'Modify an existing ' . $model . ' entry',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
+                '_timezone' => Type::timezoneOffset(),
                 'data' => Type::nonNull(Type::input($model)),
             ]
         ];

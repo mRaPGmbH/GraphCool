@@ -30,7 +30,7 @@ class ReadModel extends Query
             'description' => 'Get a single ' . $model . ' by it\'s ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
+                '_timezone' => Type::timezoneOffset(),
             ]
         ];
     }

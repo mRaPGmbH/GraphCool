@@ -30,7 +30,7 @@ class RestoreModel extends Mutation
             'description' => 'Restore a previously soft-deleted ' . $model . ' record by ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
+                '_timezone' => Type::timezoneOffset(),
             ]
         ];
     }

@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
+use PhpParser\Node\NullableType;
 
 class JobType extends ObjectType
 {
@@ -15,24 +16,24 @@ class JobType extends ObjectType
         parent::__construct([
             'name' => $name,
             'fields' => fn() => [
-                'created_at' => Type::nonNull(Type::get('_DateTime')),
-                'finished_at' => Type::get('_DateTime'),
+                'created_at' => Type::nonNull(Type::dateTime()),
+                'finished_at' => Type::dateTime(),
                 'id' => Type::nonNull(Type::string()),
-                'model' => Type::get('_Model'),
-                'result' => Type::get($this->getResultType($name)),
-                'run_at' => Type::get('_DateTime'),
-                'started_at' => Type::get('_DateTime'),
+                'model' => Type::modelEnum(),
+                'result' => $this->getResultType($name),
+                'run_at' => Type::dateTime(),
+                'started_at' => Type::dateTime(),
                 'status' => Type::nonNull(Type::get('_Job_Status')),
                 'worker' => Type::nonNull(Type::string()),
             ],
         ]);
     }
 
-    protected function getResultType(string $name): string
+    protected function getResultType(string $name): FileExportType|ImportSummaryType
     {
         return match($name) {
-            '_ImportJob' => '_ImportSummary',
-            '_ExportJob' => '_FileExport',
+            '_ImportJob' => Type::importSummary(),
+            '_ExportJob' => Type::fileExport(),
         };
     }
 

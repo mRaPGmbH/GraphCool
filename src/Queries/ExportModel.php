@@ -30,7 +30,7 @@ class ExportModel extends Query
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get('_FileExport'),
+            'type' => Type::fileExport(),
             'description' => 'Export ' . $plural . ' filtered by given where clauses as a spreadsheet file (XLSX, CSV or ODS).',
             'args' => $this->exportArgs($model),
         ];

@@ -95,40 +95,136 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
+    public static function paginatorInfo(): PaginatorInfoType
+    {
+        return static::cache(new PaginatorInfoType());
+    }
+
+    public static function sqlOperator(): SQLOperatorType
+    {
+        return static::cache(new SQLOperatorType());
+    }
+
+    public static function countryCodeEnum(): CountryCodeEnumType
+    {
+        return static::cache(new CountryCodeEnumType());
+    }
+
+    public static function languageEnum(): LanguageEnumType
+    {
+        return static::cache(new LanguageEnumType());
+    }
+
+    public static function currencyEnum(): CurrencyEnumType
+    {
+        return static::cache(new CurrencyEnumType());
+    }
+
+    public static function localeEnum(): LocaleEnumType
+    {
+        return static::cache(new LocaleEnumType());
+    }
+
+    public static function sortOrderEnum(): SortOrderEnumType
+    {
+        return static::cache(new SortOrderEnumType());
+    }
+
+    public static function fileExport(): FileExportType
+    {
+        return static::cache(new FileExportType());
+    }
+
+    public static function sheetFileEnum(): SheetFileEnumType
+    {
+        return static::cache(new SheetFileEnumType());
+    }
+
+    public static function importSummary(): ImportSummaryType
+    {
+        return static::cache(new ImportSummaryType());
+    }
+
+    public static function importError(): ImportErrorType
+    {
+        return static::cache(new ImportErrorType());
+    }
+
+    public static function result(): ResultType
+    {
+        return static::cache(new ResultType());
+    }
+
+    public static function dateTime(): DateTime
+    {
+        return static::cache(new DateTime());
+    }
+
+    public static function date(): Date
+    {
+        return static::cache(new Date());
+    }
+
+    public static function time(): Time
+    {
+        return static::cache(new Time());
+    }
+
+    public static function timezoneOffset(): TimezoneOffset
+    {
+        return static::cache(new TimezoneOffset());
+    }
+
+    public static function mixed(): MixedScalar
+    {
+        return static::cache(new MixedScalar());
+    }
+
+    public static function updateManyResult(): UpdateManyResult
+    {
+        return static::cache(new UpdateManyResult());
+    }
+
+    public static function relationUpdateModeEnum(): RelationUpdateModeEnum
+    {
+        return static::cache(new RelationUpdateModeEnum());
+    }
+
+    public static function upload(): Upload
+    {
+        return static::cache(new Upload());
+    }
+
+    public static function file(): FileType
+    {
+        return static::cache(new FileType());
+    }
+
+    public static function permissionEnum(): PermissionEnumType
+    {
+        return static::cache(new PermissionEnumType());
+    }
+
+    public static function whereMode(): WhereModeEnumType
+    {
+        return static::cache(new WhereModeEnumType());
+    }
+
+    public static function modelEnum(): ModelEnumType
+    {
+        return static::cache(new ModelEnumType());
+    }
+
 
     protected static function create(string $name): NullableType
     {
         return match($name) {
-            '_PaginatorInfo' => new PaginatorInfoType(),
-            '_SQLOperator' => new SQLOperatorType(),
-            '_CountryCode' => new CountryCodeEnumType(),
-            '_LanguageCode' => new LanguageEnumType(),
-            '_CurrencyCode' => new CurrencyEnumType(),
-            '_LocaleCode' => new LocaleEnumType(),
-            '_SortOrder' => new SortOrderEnumType(),
-            '_FileExport' => new FileExportType(),
-            '_ExportFile' => new SheetFileEnumType(),
-            '_ImportSummary' => new ImportSummaryType(),
-            '_ImportError' => new ImportErrorType(),
-            '_Result' => new ResultType(),
-            '_DateTime' => new DateTime(),
-            '_Date' => new Date(),
-            '_Time' => new Time(),
-            '_TimezoneOffset' => new TimezoneOffset(),
-            'Mixed' => new MixedScalar(),
-            '_UpdateManyResult' => new UpdateManyResult(),
-            '_RelationUpdateMode' => new RelationUpdateModeEnum(),
-            '_Upload' => new Upload(),
-            '_File'=> new FileType(),
             '_Job_Column' => new JobColumnEnumType(),
             '_Job_Status' => new JobStatusEnumType(),
             '_History_Column' => new HistoryColumnEnumType(),
             '_History_ChangeType' => new HistoryChangeTypeEnumType(),
             '_History' => new HistoryType(),
-            '_Permission' => new PermissionEnumType(),
             '_Entity' => new EntityEnumType(),
-            '_WhereMode' => new WhereModeEnumType(),
-            '_Model' => new ModelEnumType(),
             default => static::createDynamic($name),
         };
     }
@@ -214,16 +310,16 @@ abstract class Type extends BaseType implements NullableType
             static::FLOAT, Field::DECIMAL => Type::float(),
             static::ID => Type::id(),
             static::INT, Field::AUTO_INCREMENT => Type::int(),
-            Field::COUNTRY_CODE => self::get('_CountryCode'),
-            Field::CURRENCY_CODE => self::get('_CurrencyCode'),
-            Field::LANGUAGE_CODE => self::get('_LanguageCode'),
-            Field::LOCALE_CODE => self::get('_LocaleCode'),
+            Field::COUNTRY_CODE => self::countryCodeEnum(),
+            Field::CURRENCY_CODE => self::currencyEnum(),
+            Field::LANGUAGE_CODE => self::languageEnum(),
+            Field::LOCALE_CODE => self::localeEnum(),
             Field::ENUM => self::get('_' . $field->namekey . 'Enum'),
-            Field::DATE_TIME, Field::CREATED_AT, Field::DELETED_AT, Field::UPDATED_AT => self::get('_DateTime'),
-            Field::DATE => self::get('_Date'),
-            Field::TIME => self::get('_Time'),
-            Field::TIMEZONE_OFFSET => self::get('_TimezoneOffset'),
-            Field::FILE => $input ? self::get('_File') : self::get('_FileExport'),
+            Field::DATE_TIME, Field::CREATED_AT, Field::DELETED_AT, Field::UPDATED_AT => self::dateTime(),
+            Field::DATE => self::date(),
+            Field::TIME => self::time(),
+            Field::TIMEZONE_OFFSET => self::timezoneOffset(),
+            Field::FILE => $input ? self::file() : self::fileExport(),
         };
         if (
             $field->null === true || $optional === true

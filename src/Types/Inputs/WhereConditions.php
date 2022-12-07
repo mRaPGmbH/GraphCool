@@ -22,8 +22,8 @@ class WhereConditions extends InputObjectType
             'name' => '_' . $wrappedType . 'WhereConditions',
             'fields' => fn() => [
                 'column' => $column,
-                'operator' => Type::get('_SQLOperator'),
-                'value' => Type::get('Mixed'),
+                'operator' => Type::sqlOperator(),
+                'value' => Type::mixed(),
                 'fulltextSearch' => Type::string(),
                 'AND' => Type::listOf($this),
                 'OR' => Type::listOf($this)

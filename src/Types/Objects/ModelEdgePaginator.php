@@ -15,7 +15,7 @@ class ModelEdgePaginator extends ObjectType
             'name' => $wrappedType->name . 's',
             'description' => 'A paginated list of ' . substr($wrappedType->name, 1, -4) . ' relations.',
             'fields' => fn() => [
-                'paginatorInfo' => Type::get('_PaginatorInfo'),
+                'paginatorInfo' => Type::paginatorInfo(),
                 'edges' => Type::listOf(Type::nonNull($wrappedType)),
             ],
         ]);

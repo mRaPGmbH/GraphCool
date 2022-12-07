@@ -17,7 +17,7 @@ class HistoryType extends ObjectType
             'fields' => fn() => [
                 'change_type' => Type::get('_History_ChangeType'),
                 'changes' => Type::nonNull(Type::string()),
-                'created_at' => Type::nonNull(Type::get('_DateTime')),
+                'created_at' => Type::nonNull(Type::dateTime()),
                 'hash' => Type::nonNull(Type::string()),
                 'id' => Type::nonNull(Type::string()),
                 'ip' => Type::string(),

@@ -16,7 +16,7 @@ class ModelOrderByClause extends InputObjectType
             'name' => '_' . $name . 'OrderByClause',
             'fields' => fn() => [
                 'field' => Type::column($name),
-                'order' => Type::get('_SortOrder'),
+                'order' => Type::sortOrderEnum(),
             ],
         ]);
     }
