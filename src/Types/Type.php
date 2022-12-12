@@ -294,7 +294,8 @@ abstract class Type extends BaseType implements NullableType
      * @template T
      * @param  class-string<T> $type
      * @return T
-     */    protected static function cache(BaseType $type): BaseType
+     */
+    public static function cache(BaseType $type): BaseType // TODO: make protected when job and history are models
     {
         if (!isset(static::$types[$type->name])) {
             static::$types[$type->name] = $type;
