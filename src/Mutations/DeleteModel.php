@@ -31,7 +31,7 @@ class DeleteModel extends Mutation
             'description' => 'Delete a ' . $model . ' entry by ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
+                '_timezone' => Type::timezoneOffset(),
             ]
         ];
     }

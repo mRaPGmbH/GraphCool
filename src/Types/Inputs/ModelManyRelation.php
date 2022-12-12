@@ -27,7 +27,7 @@ class ModelManyRelation extends InputObjectType
             'where' => Type::nonNull(Type::whereConditions($relation->name)),
             'search' => Type::string(),
             'searchLoosely' => Type::string(),
-            'mode' => Type::get('_RelationUpdateMode'),
+            'mode' => Type::relationUpdateModeEnum(),
         ];
         foreach (Model::relationFieldsForRelation($relation) as $fieldKey => $field) {
             if ($field->readonly === false) {

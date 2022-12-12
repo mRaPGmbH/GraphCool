@@ -47,7 +47,7 @@ class ModelType extends ObjectType
                     ),
                     'search' => Type::string(),
                     'searchLoosely' => Type::string(),
-                    'result' => Type::get('_Result'),
+                    'result' => Type::result(),
                 ];
             }
         }

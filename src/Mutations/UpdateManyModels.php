@@ -27,7 +27,7 @@ class UpdateManyModels extends Mutation
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get('_UpdateManyResult'),
+            'type' => Type::updateManyResult(),
             'description' => 'Modify multiple existing ' . $model . ' entries, using where.',
             'args' => [
                 'where' => Type::whereConditions($model),

@@ -123,7 +123,7 @@ class QueryType extends ObjectType
             'description' => 'Get a single ' . $name . ' job by id.',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
-                '_timezone' => Type::get('_TimezoneOffset'),
+                '_timezone' => Type::timezoneOffset(),
             ]
         ];
     }
@@ -136,7 +136,7 @@ class QueryType extends ObjectType
             'where' => Type::get('_Job_WhereConditions'),
         ];
         $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_Job_OrderByClause')));
-        $args['_timezone'] = Type::get('_TimezoneOffset');
+        $args['_timezone'] = Type::timezoneOffset();
 
         return [
             'type' => Type::get('_' . $name . '_JobPaginator'),
@@ -153,7 +153,7 @@ class QueryType extends ObjectType
             'where' => Type::get('_History_WhereConditions'),
         ];
         $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_History_OrderByClause')));
-        $args['_timezone'] = Type::get('_TimezoneOffset');
+        $args['_timezone'] = Type::timezoneOffset();
 
         return [
             'type' => Type::get('_History_Paginator'),

@@ -24,7 +24,7 @@ class ImportSummaryType extends ObjectType
                 'affected_ids' => Type::nonNull(Type::listOf(Type::string())),
                 'failed_rows' => Type::nonNull(Type::int()),
                 'failed_row_numbers' => Type::nonNull(Type::listOf(Type::int())),
-                'errors' => Type::listOf(Type::nonNull(Type::get('_ImportError')))
+                'errors' => Type::listOf(Type::nonNull(Type::importError()))
             ],
         ]);
     }
