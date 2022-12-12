@@ -30,7 +30,7 @@ class UpdateManyModels extends Mutation
             'type' => Type::updateManyResult(),
             'description' => 'Modify multiple existing ' . $model . ' entries, using where.',
             'args' => [
-                'where' => Type::get('_' . $model . 'WhereConditions'),
+                'where' => Type::whereConditions($model),
                 // '_timezone' => Type::get('_TimezoneOffset'), // TODO: add this later!
                 'data' => Type::nonNull(Type::input($model)),
             ]

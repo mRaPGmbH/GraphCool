@@ -27,7 +27,7 @@ class DeleteModel extends Mutation
         $this->model = $model;
 
         $this->config = [
-            'type' => Type::get($model),
+            'type' => Type::model($model),
             'description' => 'Delete a ' . $model . ' entry by ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),

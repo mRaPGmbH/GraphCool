@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
 
 class WhereConditions extends InputObjectType
 {
 
-    public function __construct(string $wrappedType)
+    public function __construct(string|Relation $wrappedType)
     {
-        if (str_ends_with($wrappedType, 'Edge')) {
-            // TODO: make this dynamic
-            $column = Type::get('_' . $wrappedType . 'Column');
+        if (is_string($wrappedType)) {
+            $name = '_' . $wrappedType . 'WhereConditions';
         } else {
-            $column = Type::column($wrappedType);
+            $name = '_' . $wrappedType->namekey . 'EdgeWhereConditions';
         }
         parent::__construct([
-            'name' => '_' . $wrappedType . 'WhereConditions',
+            'name' => $name,
             'fields' => fn() => [
-                'column' => $column,
+                'column' => Type::column($wrappedType),
                 'operator' => Type::sqlOperator(),
                 'value' => Type::mixed(),
                 'fulltextSearch' => Type::string(),

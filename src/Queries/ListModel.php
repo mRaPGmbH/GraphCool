@@ -32,14 +32,14 @@ class ListModel extends Query
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => Type::get('_' . $model . 'WhereConditions'),
+            'where' => Type::whereConditions($model),
             'whereMode' => Type::whereMode(),
         ];
         foreach (get_object_vars(model($model)) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;
             }
-            $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
+            $args['where' . ucfirst($key)] = Type::whereConditions($relation->name);
         }
         $args['orderBy'] = Type::listOf(Type::nonNull(Type::orderByClause($model)));
         $args['search'] = Type::string();

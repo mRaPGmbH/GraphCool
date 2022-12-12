@@ -14,7 +14,7 @@ trait ModelBased
         $model = model($name);
         $args = [
             'type' => Type::nonNull(Type::sheetFileEnum()),
-            'where' => Type::get('_' . $name . 'WhereConditions'),
+            'where' => Type::whereConditions($name),
             'orderBy' => Type::listOf(Type::nonNull(Type::orderByClause($name ))),
             'search' => Type::string(),
             'searchLoosely' => Type::string(),
@@ -27,7 +27,7 @@ trait ModelBased
             $args[$key] = Type::listOf(Type::nonNull(Type::edgeSelector($relation)));
         }
         foreach ($model->relations() as $key => $relation) {
-            $args['where' . ucfirst($key)] = Type::get('_' . $relation->name . 'WhereConditions');
+            $args['where' . ucfirst($key)] = Type::whereConditions($relation->name);
         }
         $args['result'] = Type::result();
         $args['_timezone'] = Type::timezoneOffset();
