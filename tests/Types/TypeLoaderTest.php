@@ -9,7 +9,7 @@ use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\ModelColumn;
-use Mrap\GraphCool\Types\Enums\DynamicEnumType;
+use Mrap\GraphCool\Types\Enums\DynamicEnum;
 use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
@@ -241,7 +241,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_DummyModel__enumEnum')();
-        self::assertInstanceOf(DynamicEnumType::class, $result);
+        self::assertInstanceOf(DynamicEnum::class, $result);
     }
 
     public function testCreateInput(): void

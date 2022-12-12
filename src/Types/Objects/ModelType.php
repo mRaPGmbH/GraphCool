@@ -21,7 +21,7 @@ class ModelType extends ObjectType
         $this->model = model($name);
         $config = [
             'name' => $name,
-            'fields' => fn() => $this->fieldConfig($name),
+            'fields' => fn() => $this->fieldConfig(),
             'resolveField' => function ($rootValue, $args, $context, $info) {
                 return $this->resolve($rootValue, $args, $context, $info);
             }
@@ -29,7 +29,7 @@ class ModelType extends ObjectType
         parent::__construct($config);
     }
 
-    protected function fieldConfig(string $name): array
+    protected function fieldConfig(): array
     {
         $fields = [];
         foreach ($this->model->relations() as $key => $relation) {
@@ -41,7 +41,7 @@ class ModelType extends ObjectType
                 $fields[$key]['args'] = [
                     'first' => Type::int(),
                     'page' => Type::int(),
-                    'where' => Type::get('_' . $name . '__' . $key . 'EdgeWhereConditions'),
+                    'where' => Type::whereConditions($relation),
                     'orderBy' => Type::listOf(
                         Type::nonNull(Type::orderByClause($relation))
                     ),

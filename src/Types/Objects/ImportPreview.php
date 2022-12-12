@@ -7,16 +7,15 @@ namespace Mrap\GraphCool\Types\Objects;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
 
-class ImportPreviewType extends ObjectType
+class ImportPreview extends ObjectType
 {
-    public function __construct(string $name)
+    public function __construct(string $model)
     {
-        $typeName = substr($name, 1, -13);
         parent::__construct([
-            'name' => $name,
-            'description' => 'A preview of a ' . $typeName . ' import.',
+            'name' => '_' . $model . 'ImportPreview',
+            'description' => 'A preview of a ' . $model . ' import.',
             'fields' => fn() => [
-                'data' => Type::listOf(Type::nonNull(Type::get($typeName))),
+                'data' => Type::listOf(Type::nonNull(Type::model($model))),
                 'errors' => Type::listOf(Type::nonNull(Type::get('_ImportError')))
             ],
         ]);

@@ -26,7 +26,7 @@ class ReadModel extends Query
         $this->name = lcfirst($model);
         $this->model = $model;
         $this->config = [
-            'type' => Type::get($model),
+            'type' => Type::model($model),
             'description' => 'Get a single ' . $model . ' by it\'s ID',
             'args' => [
                 'id' => Type::nonNull(Type::id()),

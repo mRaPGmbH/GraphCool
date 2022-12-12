@@ -14,7 +14,7 @@ use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
 use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
-use Mrap\GraphCool\Types\Enums\DynamicEnumType;
+use Mrap\GraphCool\Types\Enums\DynamicEnum;
 use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
 use Mrap\GraphCool\Types\Enums\EntityEnumType;
@@ -49,7 +49,7 @@ use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\FileExportType;
 use Mrap\GraphCool\Types\Objects\HistoryType;
 use Mrap\GraphCool\Types\Objects\ImportErrorType;
-use Mrap\GraphCool\Types\Objects\ImportPreviewType;
+use Mrap\GraphCool\Types\Objects\ImportPreview;
 use Mrap\GraphCool\Types\Objects\ImportSummaryType;
 use Mrap\GraphCool\Types\Objects\JobType;
 use Mrap\GraphCool\Types\Objects\ModelType;
@@ -62,7 +62,6 @@ use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use RuntimeException;
-use function Mrap\GraphCool\model;
 
 abstract class Type extends BaseType implements NullableType
 {
@@ -231,24 +230,13 @@ abstract class Type extends BaseType implements NullableType
 
     protected static function createDynamic(string $name): NullableType
     {
-        // TODO: this could probably be wrapped types?
-
-        if (!str_starts_with($name, '_')) {
-            return new ModelType($name);
-        }
 
         // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'Paginator')) {
             return new ModelPaginator(substr($name, 1, -9));
         }
 
-        // TODO: remove this once WhereConditions has been refactored
-        if (str_ends_with($name, 'EdgeColumn')) {
-            $nameParts = explode('__', substr($name, 1, -10), 2);
-            $model = model($nameParts[0]);
-            return static::column($model->{$nameParts[1]});
-        }
-
+        // TODO: probably can be removed after importjob, exportjob and history are models
         if (str_ends_with($name, 'WhereConditions')) {
             return new WhereConditions(substr($name, 1, -15));
         }
@@ -258,34 +246,13 @@ abstract class Type extends BaseType implements NullableType
             return new ModelOrderByClause(substr($name, 1, -13));
         }
 
-
-        if (str_ends_with($name, 'EdgeReducedColumnMapping')) {
-            $nameParts = explode('__', substr($name, 1, -24), 2);
-            $model = model($nameParts[0]);
-            return static::columnMapping($model->{$nameParts[1]}, true);
-        }
-
-
-        // TODO: this can be removed after EdgeSelector has been refactored
-        if (str_ends_with($name, 'EdgeColumnMapping')) {
-            $nameParts = explode('__', substr($name, 1, -17), 2);
-            $model = model($nameParts[0]);
-            return static::columnMapping($model->{$nameParts[1]});
-        }
-
         if (str_ends_with($name, 'Column')) {
             // TODO: remove this once job+history are models
             return static::column(substr($name, 1, -6));
         }
 
-        if (str_ends_with($name, 'Enum')) {
-            return new DynamicEnumType($name);
-        }
         if ($name !== '_Job' && str_ends_with($name, 'Job')) {
             return new JobType($name);
-        }
-        if (str_ends_with($name, 'ImportPreview')) {
-            return new ImportPreviewType($name);
         }
         throw new RuntimeException('Unhandled createDynamic: ' . $name);
     }
@@ -315,7 +282,7 @@ abstract class Type extends BaseType implements NullableType
             Field::CURRENCY_CODE => self::currencyEnum(),
             Field::LANGUAGE_CODE => self::languageEnum(),
             Field::LOCALE_CODE => self::localeEnum(),
-            Field::ENUM => self::get('_' . $field->namekey . 'Enum'),
+            Field::ENUM => self::enum($field),
             Field::DATE_TIME, Field::CREATED_AT, Field::DELETED_AT, Field::UPDATED_AT => self::dateTime(),
             Field::DATE => self::date(),
             Field::TIME => self::time(),
@@ -401,6 +368,31 @@ abstract class Type extends BaseType implements NullableType
             return static::cache(new EdgeReducedSelector($relation));
         }
         return static::cache(new EdgeSelector($relation));
+    }
+
+    public static function whereConditions(string|Relation $wrappedType): WhereConditions
+    {
+        return static::cache(new WhereConditions($wrappedType));
+    }
+
+    public static function model(string $name): ModelType|NullableType
+    {
+        if (str_starts_with($name, '_')) {
+            // TODO: remove this after jobs+history are models
+            return static::cache(static::create($name));
+        }
+
+        return static::cache(new ModelType($name));
+    }
+
+    public static function enum(Field $field): DynamicEnum
+    {
+        return static::cache(new DynamicEnum($field));
+    }
+
+    public static function importPreview(string $model): ImportPreview
+    {
+        return static::cache(new ImportPreview($model));
     }
 
 }
