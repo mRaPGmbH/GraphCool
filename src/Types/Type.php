@@ -17,7 +17,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnum;
 use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
-use Mrap\GraphCool\Types\Enums\EntityEnumType;
+use Mrap\GraphCool\Types\Enums\EntityEnum;
 use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
 use Mrap\GraphCool\Types\Enums\HistoryColumnEnumType;
 use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
@@ -223,7 +223,6 @@ abstract class Type extends BaseType implements NullableType
             '_History_Column' => new HistoryColumnEnumType(),
             '_History_ChangeType' => new HistoryChangeTypeEnumType(),
             '_History' => new HistoryType(),
-            '_Entity' => new EntityEnumType(),
             default => static::createDynamic($name),
         };
     }
@@ -393,6 +392,11 @@ abstract class Type extends BaseType implements NullableType
     public static function importPreview(string $model): ImportPreview
     {
         return static::cache(new ImportPreview($model));
+    }
+
+    public static function entity(): EntityEnum
+    {
+        return static::cache(new EntityEnum());
     }
 
 }

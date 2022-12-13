@@ -7,7 +7,7 @@ namespace Mrap\GraphCool\Types\Enums;
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Utils\ClassFinder;
 
-class EntityEnumType extends EnumType
+class EntityEnum extends EnumType
 {
     public function __construct()
     {
