@@ -21,15 +21,15 @@ class ModelPaginator extends ObjectType
 
     protected function fieldConfig(string $wrappedType): array
     {
-        if (str_ends_with($wrappedType, '_Job')) {
-            $wrappedType = '_'. substr($wrappedType, 0, -4) . 'Job';
-        }
-        if ($wrappedType === 'History_') {
-            $wrappedType = '_History';
-        }
+        $type = match($wrappedType) {
+            'Import_Job' => Type::job('Import'),
+            'Export_Job' => Type::job('Export'),
+            'History_' => Type::history(),
+            default => Type::model($wrappedType)
+        };
         return [
             'paginatorInfo' => Type::paginatorInfo(),
-            'data' => Type::listOf(Type::nonNull(Type::get($wrappedType)))
+            'data' => Type::listOf(Type::nonNull($type))
         ];
     }
 }

@@ -9,13 +9,13 @@ use Mrap\GraphCool\Types\Type;
 class DummyQuery extends Query
 {
 
-    public function __construct()
+    public function __construct(?string $model = null)
     {
         $this->name = 'DummyQuery';
         $this->config = [
             'type' => Type::string(),
             'args' => [
-                'arg' => Type::get('Mixed')
+                'arg' => Type::mixed()
             ]
         ];
     }

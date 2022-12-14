@@ -16,7 +16,7 @@ class ImportPreview extends ObjectType
             'description' => 'A preview of a ' . $model . ' import.',
             'fields' => fn() => [
                 'data' => Type::listOf(Type::nonNull(Type::model($model))),
-                'errors' => Type::listOf(Type::nonNull(Type::get('_ImportError')))
+                'errors' => Type::listOf(Type::nonNull(Type::importError())),
             ],
         ]);
     }

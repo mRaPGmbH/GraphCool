@@ -15,7 +15,7 @@ class HistoryType extends ObjectType
         parent::__construct([
             'name' => '_History',
             'fields' => fn() => [
-                'change_type' => Type::get('_History_ChangeType'),
+                'change_type' => Type::historyChangeType(),
                 'changes' => Type::nonNull(Type::string()),
                 'created_at' => Type::nonNull(Type::dateTime()),
                 'hash' => Type::nonNull(Type::string()),

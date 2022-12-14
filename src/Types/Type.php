@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Types;
 
-use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\NullableType;
 use GraphQL\Type\Definition\Type as BaseType;
@@ -17,7 +16,7 @@ use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
 use Mrap\GraphCool\Types\Enums\DynamicEnum;
 use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
-use Mrap\GraphCool\Types\Enums\EntityEnumType;
+use Mrap\GraphCool\Types\Enums\EntityEnum;
 use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
 use Mrap\GraphCool\Types\Enums\HistoryColumnEnumType;
 use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
@@ -70,7 +69,7 @@ abstract class Type extends BaseType implements NullableType
     public static function get(string $name): NullableType
     {
         if (!isset(static::$types[$name])) {
-            static::$types[$name] = static::create($name);
+            throw new RuntimeException('Unknown type:' . $name);
         }
         return static::$types[$name];
     }
@@ -214,49 +213,6 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new ModelEnumType());
     }
 
-
-    protected static function create(string $name): NullableType
-    {
-        return match($name) {
-            '_Job_Column' => new JobColumnEnumType(),
-            '_Job_Status' => new JobStatusEnumType(),
-            '_History_Column' => new HistoryColumnEnumType(),
-            '_History_ChangeType' => new HistoryChangeTypeEnumType(),
-            '_History' => new HistoryType(),
-            '_Entity' => new EntityEnumType(),
-            default => static::createDynamic($name),
-        };
-    }
-
-    protected static function createDynamic(string $name): NullableType
-    {
-
-        // TODO: probably can be removed after importjob, exportjob and history are models
-        if (str_ends_with($name, 'Paginator')) {
-            return new ModelPaginator(substr($name, 1, -9));
-        }
-
-        // TODO: probably can be removed after importjob, exportjob and history are models
-        if (str_ends_with($name, 'WhereConditions')) {
-            return new WhereConditions(substr($name, 1, -15));
-        }
-
-        // TODO: probably can be removed after importjob, exportjob and history are models
-        if (str_ends_with($name, 'OrderByClause')) {
-            return new ModelOrderByClause(substr($name, 1, -13));
-        }
-
-        if (str_ends_with($name, 'Column')) {
-            // TODO: remove this once job+history are models
-            return static::column(substr($name, 1, -6));
-        }
-
-        if ($name !== '_Job' && str_ends_with($name, 'Job')) {
-            return new JobType($name);
-        }
-        throw new RuntimeException('Unhandled createDynamic: ' . $name);
-    }
-
     /**
      * @template T
      * @param  class-string<T> $type
@@ -308,15 +264,13 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new ModelInput($name));
     }
 
-    public static function column(BaseType|string|Relation $wrappedType, bool $reduced = false): ModelColumn|EnumType|NullableType|EdgeColumn
+    public static function column(BaseType|string|Relation $wrappedType, bool $reduced = false): ModelColumn|EdgeColumn|EdgeReducedColumn|JobColumnEnumType|HistoryColumnEnumType
     {
-        if ($wrappedType === 'Job_') {
-            // TODO: remove once importjob and exportjob are models
-            return static::get('_Job_Column');
+        if ($wrappedType === 'Job_') { // special case, because Job is not a regular model (yet)
+            return static::cache(new JobColumnEnumType());
         }
-        if ($wrappedType === 'History_') {
-            // TODO: remove once history is a model
-            return static::get('_History_Column');
+        if ($wrappedType === 'History_') {  // special case, because History is not a regular model (yet)
+            return static::cache(new HistoryColumnEnumType());
         }
         if ($wrappedType instanceof Relation) {
             if ($reduced === true) {
@@ -377,11 +331,6 @@ abstract class Type extends BaseType implements NullableType
 
     public static function model(string $name): ModelType|NullableType
     {
-        if (str_starts_with($name, '_')) {
-            // TODO: remove this after jobs+history are models
-            return static::cache(static::create($name));
-        }
-
         return static::cache(new ModelType($name));
     }
 
@@ -393,6 +342,34 @@ abstract class Type extends BaseType implements NullableType
     public static function importPreview(string $model): ImportPreview
     {
         return static::cache(new ImportPreview($model));
+    }
+
+    public static function entity(): EntityEnum
+    {
+        return static::cache(new EntityEnum());
+    }
+
+    public static function job(string $type): JobType
+    {
+        return match($type) {
+            'Import', 'Export' => static::cache(new JobType($type)),
+            default => throw new RuntimeException('Unknown Job-Type: ' . $type),
+        };
+    }
+
+    public static function history(): HistoryType
+    {
+        return static::cache(new HistoryType());
+    }
+
+    public static function historyChangeType(): HistoryChangeTypeEnumType
+    {
+        return static::cache(new HistoryChangeTypeEnumType());
+    }
+
+    public static function jobStatus(): JobStatusEnumType
+    {
+        return static::cache(new JobStatusEnumType());
     }
 
 }
