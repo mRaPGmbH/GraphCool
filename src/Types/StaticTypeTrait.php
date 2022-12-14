@@ -11,11 +11,6 @@ trait StaticTypeTrait
         return static::staticName();
     }
 
-    public static function getStrippedName(): string
-    {
-        return static::staticName();
-    }
-
     public static function nameMatches(string $name): bool
     {
         return $name === static::staticName();

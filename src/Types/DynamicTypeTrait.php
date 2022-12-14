@@ -19,7 +19,7 @@ trait DynamicTypeTrait
 
     public static function nameMatches(string $name): bool
     {
-        return str_starts_with($name, static::$prefix) && str_ends_with($name, static::$postfix);
+        return str_starts_with($name, static::prefix()) && str_ends_with($name, static::postfix());
     }
 
 }

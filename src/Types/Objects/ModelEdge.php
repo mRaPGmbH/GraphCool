@@ -7,14 +7,28 @@ namespace Mrap\GraphCool\Types\Objects;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
 class ModelEdge extends ObjectType
 {
+
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Edge';
+    }
+
     public function __construct(Relation $relation)
     {
         parent::__construct([
-            'name' => '_' . $relation->namekey . 'Edge',
+            'name' => static::getFullName($relation->namekey),
             'description' => 'A single ' . $relation->namekey . ' relation.',
             'fields' => fn() => $this->fieldConfig($relation),
         ]);

@@ -31,6 +31,7 @@ use Mrap\GraphCool\Types\Enums\SheetFile;
 use Mrap\GraphCool\Types\Enums\SortOrder;
 use Mrap\GraphCool\Types\Enums\SQLOperator;
 use Mrap\GraphCool\Types\Enums\WhereMode;
+use Mrap\GraphCool\Types\Inputs\EdgeWhereConditions;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
@@ -61,6 +62,7 @@ use Mrap\GraphCool\Types\Scalars\Time;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Scalars\Upload;
 use RuntimeException;
+use function Mrap\GraphCool\model;
 
 abstract class Type extends BaseType implements NullableType
 {
@@ -69,9 +71,187 @@ abstract class Type extends BaseType implements NullableType
     public static function get(string $name): NullableType
     {
         if (!isset(static::$types[$name])) {
-            throw new RuntimeException('Unknown type:' . $name);
+            static::$types[$name] = static::create($name);
         }
         return static::$types[$name];
+    }
+
+    protected static function create(string $name): NullableType
+    {
+        return match ($name) {
+            '_PaginatorInfo' => static::paginatorInfo(),
+            '_SQLOperator' => static::sqlOperator(),
+            '_CountryCode' => static::countryCodeEnum(),
+            '_LanguageCode' => static::languageEnum(),
+            '_CurrencyCode' => static::currencyEnum(),
+            '_LocaleCode' => static::localeEnum(),
+            '_SortOrder' => static::sortOrderEnum(),
+            '_FileExport' => static::fileExport(),
+            '_ExportFile' => static::sheetFileEnum(),
+            '_ImportSummary' => static::importSummary(),
+            '_ImportError' => static::importError(),
+            '_Result' => static::result(),
+            '_DateTime' => static::dateTime(),
+            '_Date' => static::date(),
+            '_Time' => static::time(),
+            '_TimezoneOffset' => static::timezoneOffset(),
+            'Mixed' => static::mixed(),
+            '_UpdateManyResult' => static::updateManyResult(),
+            '_RelationUpdateMode' => static::relationUpdateModeEnum(),
+            '_Upload' => static::upload(),
+            '_File' => static::file(),
+            '_Job_Column' => static::column('Job_'),
+            '_Job_Status' => static::jobStatus(),
+            '_History_Column' => static::column('History_'),
+            '_History_ChangeType' => static::historyChangeType(),
+            '_History' => static::history(),
+            '_Permission' => static::permissionEnum(),
+            '_Entity' => static::entity(),
+            '_WhereMode' => static::whereMode(),
+            '_Model' => static::modelEnum(),
+            default => static::createDynamic($name),
+        };
+    }
+
+    protected static function createDynamic(string $name): NullableType
+    {
+        // WARNING: order of matching is partially important below!
+        // p.ex.: _<something>EdgeColumn has to be matched before _<something>Column!
+
+        if (str_contains($name, '__')) { // if it does not, skip all these checks
+
+            // _<model>__<field>Enum || _<model>__<relation>__<field>Enum
+            if (DynamicEnum::nameMatches($name)) {
+                return static::enum(static::getField(DynamicEnum::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>Edges
+            if (ModelEdgePaginator::nameMatches($name)) {
+                return static::edge(static::getRelation(ModelEdgePaginator::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>Edge
+            if (ModelEdge::nameMatches($name)) {
+                return static::edge(static::getRelation(ModelEdge::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>EdgeOrderByClause
+            if (EdgeOrderByClause::nameMatches($name)) {
+                return static::orderByClause(static::getRelation(EdgeOrderByClause::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>EdgeReducedColumn
+            if (EdgeReducedColumn::nameMatches($name)) {
+                return static::column(static::getRelation(EdgeReducedColumn::getStrippedName($name)), true);
+            }
+
+            // _<model>__<relation>EdgeColumn
+            if (EdgeColumn::nameMatches($name)) {
+                return static::column(static::getRelation(EdgeColumn::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>EdgeWhereConditions
+            if (EdgeWhereConditions::nameMatches($name)) {
+                return static::whereConditions(static::getRelation(EdgeWhereConditions::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>EdgeReducedSelector
+            if (EdgeReducedSelector::nameMatches($name)) {
+                return static::edgeSelector(static::getRelation(EdgeReducedSelector::getStrippedName($name)), true);
+            }
+
+            // _<model>__<relation>EdgeSelector
+            if (EdgeSelector::nameMatches($name)) {
+                return static::edgeSelector(static::getRelation(EdgeSelector::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>EdgeReducedColumnMapping
+            if (EdgeReducedColumnMapping::nameMatches($name)) {
+                return static::columnMapping(static::getRelation(EdgeReducedColumnMapping::getStrippedName($name)), true);
+            }
+
+            // _<model>__<relation>EdgeColumnMapping
+            if (EdgeColumnMapping::nameMatches($name)) {
+                return static::columnMapping(static::getRelation(EdgeColumnMapping::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>ManyRelation
+            if (ModelManyRelation::nameMatches($name)) {
+                return static::relation(static::getRelation(ModelManyRelation::getStrippedName($name)));
+            }
+
+            // _<model>__<relation>Relation
+            if (ModelRelation::nameMatches($name)) {
+                return static::relation(static::getRelation(ModelRelation::getStrippedName($name)));
+            }
+
+        }
+
+        // _<model>Paginator
+        if (ModelPaginator::nameMatches($name)) {
+            return static::paginatedList(ModelPaginator::getStrippedName($name));
+        }
+
+        // _<model>WhereConditions
+        if (WhereConditions::nameMatches($name)) {
+            return self::whereConditions(WhereConditions::getStrippedName($name));
+        }
+
+        // _<model>OrderByClause
+        if (ModelOrderByClause::nameMatches($name)) {
+            return static::orderByClause(ModelOrderByClause::getStrippedName($name));
+        }
+
+        // _<model>ColumnMapping
+        if (ModelColumnMapping::nameMatches($name)) {
+            return static::columnMapping(ModelColumnMapping::getStrippedName($name));
+        }
+
+        // _<model>Column
+        if (ModelColumn::nameMatches($name)) {
+            return static::columnMapping(ModelColumn::getStrippedName($name));
+        }
+
+        // _<model>Input
+        if (ModelInput::nameMatches($name)) {
+            return static::input(ModelInput::getStrippedName($name));
+        }
+
+        // _<entity>Job
+        if (Job::nameMatches($name)) {
+            return static::job(Job::getStrippedName($name));
+        }
+
+        // _<model>ImportPreview
+        if (ImportPreview::nameMatches($name)) {
+            return static::importPreview(ImportPreview::getStrippedName($name));
+        }
+
+        return static::model($name);
+    }
+
+    protected static function getRelation(string $name): Relation
+    {
+        $parts = explode('__', $name, 2);
+        $relation = model($parts[0])->{$parts[1]} ?? null;
+        if (!$relation instanceof Relation) {
+            throw new RuntimeException('Unknown relation: ' . $name);
+        }
+        return $relation;
+    }
+
+    protected static function getField(string $name): Field
+    {
+        $parts = explode('__', $name, 3);
+        if (count($parts) === 3) {
+            $field = static::getRelation($parts[0] . '__' . $parts[1])->{$parts[2]} ?? null;
+        } else {
+            $field = model($parts[0])->{$parts[1]} ?? null;
+        }
+        if (!$field instanceof Field) {
+            throw new RuntimeException('Unknown Field: ' . $name);
+        }
+        return $field;
     }
 
     public static function paginatedList(BaseType|string $wrappedType): ModelPaginator
@@ -324,9 +504,12 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new EdgeSelector($relation));
     }
 
-    public static function whereConditions(string|Relation $wrappedType): WhereConditions
+    public static function whereConditions(string|Relation $wrappedType): WhereConditions|EdgeWhereConditions
     {
-        return static::cache(new WhereConditions($wrappedType));
+        if (is_string($wrappedType)) {
+            return static::cache(new WhereConditions($wrappedType));
+        }
+        return static::cache(new EdgeWhereConditions($wrappedType));
     }
 
     public static function model(string $name): ModelObject|NullableType
