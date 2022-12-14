@@ -6,11 +6,10 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
-use PhpParser\Node\NullableType;
+use Mrap\GraphCool\Types\TypeTrait;
 
 class JobType extends ObjectType
 {
-
     public function __construct(string $name)
     {
         parent::__construct([
@@ -23,7 +22,7 @@ class JobType extends ObjectType
                 'result' => $this->getResultType($name),
                 'run_at' => Type::dateTime(),
                 'started_at' => Type::dateTime(),
-                'status' => Type::nonNull(Type::get('_Job_Status')),
+                'status' => Type::nonNull(Type::jobStatus()),
                 'worker' => Type::nonNull(Type::string()),
             ],
         ]);
@@ -32,8 +31,8 @@ class JobType extends ObjectType
     protected function getResultType(string $name): FileExportType|ImportSummaryType
     {
         return match($name) {
-            '_ImportJob' => Type::importSummary(),
-            '_ExportJob' => Type::fileExport(),
+            'Import' => Type::importSummary(),
+            'Export' => Type::fileExport(),
         };
     }
 

@@ -119,7 +119,7 @@ class QueryType extends ObjectType
     protected function job(string $name): array
     {
         return [
-            'type' => Type::get('_'. $name .'Job'),
+            'type' => Type::job($name),
             'description' => 'Get a single ' . $name . ' job by id.',
             'args' => [
                 'id' => Type::nonNull(Type::id()),
@@ -133,13 +133,13 @@ class QueryType extends ObjectType
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => Type::get('_Job_WhereConditions'),
+            'where' => Type::whereConditions('Job_'),
         ];
-        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_Job_OrderByClause')));
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::orderByClause('Job_')));
         $args['_timezone'] = Type::timezoneOffset();
 
         return [
-            'type' => Type::get('_' . $name . '_JobPaginator'),
+            'type' => Type::paginatedList($name . '_Job'),
             'description' => 'Get a paginated list of ' . $name . ' jobs filtered by given where clauses.',
             'args' => $args
         ];
@@ -150,13 +150,13 @@ class QueryType extends ObjectType
         $args = [
             'first' => Type::int(),
             'page' => Type::int(),
-            'where' => Type::get('_History_WhereConditions'),
+            'where' => Type::whereConditions('History_'),
         ];
-        $args['orderBy'] = Type::listOf(Type::nonNull(Type::get('_History_OrderByClause')));
+        $args['orderBy'] = Type::listOf(Type::nonNull(Type::orderByClause('History_')));
         $args['_timezone'] = Type::timezoneOffset();
 
         return [
-            'type' => Type::get('_History_Paginator'),
+            'type' => Type::paginatedList('History_'),
             'description' => 'Get a paginated list of history logs filtered by given where clauses.',
             'args' => $args
         ];
