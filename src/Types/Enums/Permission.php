@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class PermissionEnumType extends EnumType
+class Permission extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Permission';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_Permission',
+            'name' => static::getFullName(),
             'description' => 'Endpoint operation permissions.',
             'values' => [
                 'READ' => ['value' => 'READ', 'description' => 'Load a single entity.'],

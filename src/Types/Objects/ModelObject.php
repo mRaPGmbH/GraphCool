@@ -12,7 +12,7 @@ use Mrap\GraphCool\Types\Type;
 use stdClass;
 use function Mrap\GraphCool\model;
 
-class ModelType extends ObjectType
+class ModelObject extends ObjectType
 {
     protected Model $model;
 

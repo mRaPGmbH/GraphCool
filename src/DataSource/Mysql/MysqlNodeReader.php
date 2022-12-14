@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Utils\StopWatch;
 use RuntimeException;
 use stdClass;
@@ -18,7 +18,7 @@ class MysqlNodeReader
         ?string $tenantId,
         string $name,
         string $id,
-        ?string $resultType = ResultType::DEFAULT
+        ?string $resultType = Result::DEFAULT
     ): ?stdClass {
         $nodes = $this->fetchNodes($tenantId, [$id], $name, $resultType);
         if ($nodes === null || count($nodes) === 0) {
@@ -52,7 +52,7 @@ class MysqlNodeReader
         ?string $tenantId,
         string $name,
         array $ids,
-        ?string $resultType = ResultType::DEFAULT
+        ?string $resultType = Result::DEFAULT
     ): array {
         StopWatch::start(__METHOD__);
         $nodes = $this->fetchNodes($tenantId, $ids, $name, $resultType);
@@ -92,7 +92,7 @@ class MysqlNodeReader
         return $nodes;
     }
 
-    protected function fetchNodes(?string $tenantId, array $ids, string $name, ?string $resultType = ResultType::DEFAULT): ?array
+    protected function fetchNodes(?string $tenantId, array $ids, string $name, ?string $resultType = Result::DEFAULT): ?array
     {
         StopWatch::start(__METHOD__);
         $model = model($name);

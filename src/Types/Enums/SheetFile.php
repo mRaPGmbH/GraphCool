@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class SheetFileEnumType extends EnumType
+class SheetFile extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_ExportFile';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_ExportFile',
+            'name' => static::getFullName(),
             'description' => 'The format and file type that should be exported.',
             'values' => [
                 'XLSX' => ['value' => 'xlsx', 'description' => 'Microsoft Excel Spreadsheet'],

@@ -5,10 +5,18 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Utils\ClassFinder;
 
-class ModelEnumType extends EnumType
+class ModelEnum extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Model';
+    }
 
     public function __construct()
     {
@@ -18,7 +26,7 @@ class ModelEnumType extends EnumType
             $values[$label] = ['value' => $name, 'description' => $name];
         }
         $config = [
-            'name' => '_Model',
+            'name' => static::getFullName(),
             'description' => 'List of model names',
             'values' => $values
         ];

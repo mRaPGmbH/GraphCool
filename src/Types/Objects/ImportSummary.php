@@ -5,15 +5,23 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
-class ImportSummaryType extends ObjectType
+class ImportSummary extends ObjectType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_ImportSummary';
+    }
 
     public function __construct()
     {
         parent::__construct([
-            'name' => '_ImportSummary',
+            'name' => static::getFullName(),
             'description' => 'Summary of import results, including newly created (inserted), modified existing (updated) and the sum of both (affected).',
             'fields' => fn() => [
                 'inserted_rows' => Type::nonNull(Type::int()),

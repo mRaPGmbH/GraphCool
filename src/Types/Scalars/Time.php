@@ -9,11 +9,19 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Utils\TimeZone;
 use Throwable;
 
 class Time extends ScalarType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Time';
+    }
 
     public $name = '_Time';
     public $description = 'A Time string in ISO 8601 format: "11:54:04+00:00" or "11:54:04Z"';

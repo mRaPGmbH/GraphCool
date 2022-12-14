@@ -6,14 +6,13 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeTrait;
 
-class JobType extends ObjectType
+class Job extends ObjectType
 {
     public function __construct(string $name)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => '_' . $name . 'Job',
             'fields' => fn() => [
                 'created_at' => Type::nonNull(Type::dateTime()),
                 'finished_at' => Type::dateTime(),
@@ -28,7 +27,7 @@ class JobType extends ObjectType
         ]);
     }
 
-    protected function getResultType(string $name): FileExportType|ImportSummaryType
+    protected function getResultType(string $name): FileExport|ImportSummary
     {
         return match($name) {
             'Import' => Type::importSummary(),

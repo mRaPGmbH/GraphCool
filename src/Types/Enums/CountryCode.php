@@ -5,13 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class CountryCodeEnumType extends EnumType
+class CountryCode extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_CountryCode';
+    }
+
     public function __construct()
     {
         $config = [
-            'name' => '_CountryCode',
+            'name' => static::getFullName(),
             'description' => '2-letter country codes as defined in ISO 3166-1 alpha-2',
             'values' => [
                 'AD' => ['value' => 'AD', 'description' => 'Andorra'],

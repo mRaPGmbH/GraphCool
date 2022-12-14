@@ -5,9 +5,17 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class RelationUpdateModeEnum extends EnumType
+class RelationUpdateMode extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_RelationUpdateMode';
+    }
 
     public const REPLACE = 'REPLACE';
     public const ADD = 'ADD';
@@ -16,7 +24,7 @@ class RelationUpdateModeEnum extends EnumType
     public function __construct()
     {
         $config = [
-            'name' => '_RelationUpdateMode',
+            'name' => static::getFullName(),
             'description' => 'Define the way in which relations should be updated. Default = ADD',
             'values' => [
                 static::REPLACE => [

@@ -16,9 +16,9 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlQueryBuilder;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
-use Mrap\GraphCool\Types\Enums\LanguageEnumType;
-use Mrap\GraphCool\Types\Enums\LocaleEnumType;
+use Mrap\GraphCool\Types\Enums\Currency;
+use Mrap\GraphCool\Types\Enums\LanguageCode;
+use Mrap\GraphCool\Types\Enums\LocaleCode;
 use Mrap\GraphCool\Types\Scalars\TimezoneOffset;
 use Mrap\GraphCool\Types\Type;
 use RuntimeException;
@@ -452,13 +452,13 @@ class FileImport2
                 $type = new TimezoneOffset();
                 return $type->parseValue($value);
             case Field::LOCALE_CODE:
-                $type = new LocaleEnumType();
+                $type = new LocaleCode();
                 return $type->parseValue($value);
             case Field::CURRENCY_CODE:
-                $type = new CurrencyEnumType();
+                $type = new Currency();
                 return $type->parseValue($value);
             case Field::LANGUAGE_CODE:
-                $type = new LanguageEnumType();
+                $type = new LanguageCode();
                 return $type->parseValue($value);
             case Field::ENUM:
                 foreach ($field->enumValues as $enumValue) {

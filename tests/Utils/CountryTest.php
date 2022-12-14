@@ -5,7 +5,7 @@ namespace Mrap\GraphCool\Tests\Utils;
 
 
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
+use Mrap\GraphCool\Types\Enums\CountryCode;
 use Mrap\GraphCool\Utils\Country;
 
 class CountryTest extends TestCase
@@ -984,7 +984,7 @@ class CountryTest extends TestCase
 
     public function testAlpha2(): void
     {
-        $codes = new CountryCodeEnumType();
+        $codes = new CountryCode();
         foreach ($codes->getValues() as $value) {
             self::assertSame($value->value, Country::parse($value->value));
         }
@@ -1000,7 +1000,7 @@ class CountryTest extends TestCase
 
     public function testAlpha3(): void
     {
-        $codes = new CountryCodeEnumType();
+        $codes = new CountryCode();
         foreach ($codes->getValues() as $value) {
             if ($value->value === 'XK') {
                 self::assertNull(Country::convertToAlpha3($value->value));

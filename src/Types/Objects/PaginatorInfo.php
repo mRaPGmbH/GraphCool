@@ -6,15 +6,24 @@ namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Types\Type;
 use stdClass;
 
-class PaginatorInfoType extends ObjectType
+class PaginatorInfo extends ObjectType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_PaginatorInfo';
+    }
+
     public function __construct()
     {
         parent::__construct([
-            'name' => '_PaginatorInfo',
+            'name' => static::getFullName(),
             'description' => 'Pagination information about the corresponding list of items.',
             'fields' => fn() => [
                 'count' => Type::nonNull(Type::int()),

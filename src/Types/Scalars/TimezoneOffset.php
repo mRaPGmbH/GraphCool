@@ -9,11 +9,19 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Utils\TimeZone;
 use Throwable;
 
 class TimezoneOffset extends ScalarType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_TimezoneOffset';
+    }
 
     public $name = '_TimezoneOffset';
     public $description = 'A Timezone offset string in ISO 8601 format: "+00:00" or "Z"';

@@ -5,10 +5,19 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Utils\ClassFinder;
 
-class EntityEnum extends EnumType
+class Entity extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Entity';
+    }
+
     public function __construct()
     {
         $values = [
@@ -23,7 +32,7 @@ class EntityEnum extends EnumType
         }
         ksort($values);
         $config = [
-            'name' => '_Entity',
+            'name' => static::getFullName(),
             'description' => 'List of available entities.',
             'values' => $values
         ];

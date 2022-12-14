@@ -5,18 +5,25 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class ResultType extends EnumType
+class Result extends EnumType
 {
+    use StaticTypeTrait;
+
     public const DEFAULT = 'DEFAULT';
     public const WITH_TRASHED = 'WITH_TRASHED';
     public const ONLY_SOFT_DELETED = 'ONLY_SOFT_DELETED';
 
+    public static function staticName(): string
+    {
+        return '_Result';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_Result',
+            'name' => static::getFullName(),
             'description' => 'Should soft-deleted records be included in the result?',
             'values' => [
                 static::DEFAULT => [

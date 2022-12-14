@@ -5,13 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class SQLOperatorType extends EnumType
+class SQLOperator extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_SQLOperator';
+    }
+
     public function __construct()
     {
         $config = [
-            'name' => '_SQLOperator',
+            'name' => static::getFullName(),
             'description' => 'The available SQL operators that are used to filter query results',
             'values' => [
                 'EQ' => [

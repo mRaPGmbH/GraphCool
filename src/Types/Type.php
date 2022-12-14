@@ -11,26 +11,26 @@ use MLL\GraphQLScalars\MixedScalar;
 use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Types\Enums\ModelColumn;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\Enums\CountryCodeEnumType;
-use Mrap\GraphCool\Types\Enums\CurrencyEnumType;
+use Mrap\GraphCool\Types\Enums\CountryCode;
+use Mrap\GraphCool\Types\Enums\Currency;
 use Mrap\GraphCool\Types\Enums\DynamicEnum;
 use Mrap\GraphCool\Types\Enums\EdgeColumn;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
-use Mrap\GraphCool\Types\Enums\EntityEnum;
-use Mrap\GraphCool\Types\Enums\HistoryChangeTypeEnumType;
-use Mrap\GraphCool\Types\Enums\HistoryColumnEnumType;
-use Mrap\GraphCool\Types\Enums\JobColumnEnumType;
-use Mrap\GraphCool\Types\Enums\JobStatusEnumType;
-use Mrap\GraphCool\Types\Enums\LanguageEnumType;
-use Mrap\GraphCool\Types\Enums\LocaleEnumType;
-use Mrap\GraphCool\Types\Enums\ModelEnumType;
-use Mrap\GraphCool\Types\Enums\PermissionEnumType;
-use Mrap\GraphCool\Types\Enums\RelationUpdateModeEnum;
-use Mrap\GraphCool\Types\Enums\ResultType;
-use Mrap\GraphCool\Types\Enums\SheetFileEnumType;
-use Mrap\GraphCool\Types\Enums\SortOrderEnumType;
-use Mrap\GraphCool\Types\Enums\SQLOperatorType;
-use Mrap\GraphCool\Types\Enums\WhereModeEnumType;
+use Mrap\GraphCool\Types\Enums\Entity;
+use Mrap\GraphCool\Types\Enums\HistoryChangeType;
+use Mrap\GraphCool\Types\Enums\HistoryColumn;
+use Mrap\GraphCool\Types\Enums\JobColumn;
+use Mrap\GraphCool\Types\Enums\JobStatus;
+use Mrap\GraphCool\Types\Enums\LanguageCode;
+use Mrap\GraphCool\Types\Enums\LocaleCode;
+use Mrap\GraphCool\Types\Enums\ModelEnum;
+use Mrap\GraphCool\Types\Enums\Permission;
+use Mrap\GraphCool\Types\Enums\RelationUpdateMode;
+use Mrap\GraphCool\Types\Enums\Result;
+use Mrap\GraphCool\Types\Enums\SheetFile;
+use Mrap\GraphCool\Types\Enums\SortOrder;
+use Mrap\GraphCool\Types\Enums\SQLOperator;
+use Mrap\GraphCool\Types\Enums\WhereMode;
 use Mrap\GraphCool\Types\Inputs\ModelColumnMapping;
 use Mrap\GraphCool\Types\Inputs\EdgeColumnMapping;
 use Mrap\GraphCool\Types\Inputs\ModelRelation;
@@ -45,14 +45,14 @@ use Mrap\GraphCool\Types\Inputs\ModelOrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
-use Mrap\GraphCool\Types\Objects\FileExportType;
-use Mrap\GraphCool\Types\Objects\HistoryType;
-use Mrap\GraphCool\Types\Objects\ImportErrorType;
+use Mrap\GraphCool\Types\Objects\FileExport;
+use Mrap\GraphCool\Types\Objects\History;
+use Mrap\GraphCool\Types\Objects\ImportError;
 use Mrap\GraphCool\Types\Objects\ImportPreview;
-use Mrap\GraphCool\Types\Objects\ImportSummaryType;
-use Mrap\GraphCool\Types\Objects\JobType;
-use Mrap\GraphCool\Types\Objects\ModelType;
-use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Objects\ImportSummary;
+use Mrap\GraphCool\Types\Objects\Job;
+use Mrap\GraphCool\Types\Objects\ModelObject;
+use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\Objects\UpdateManyResult;
 use Mrap\GraphCool\Types\Scalars\Date;
@@ -93,64 +93,64 @@ abstract class Type extends BaseType implements NullableType
         return $type;
     }
 
-    public static function paginatorInfo(): PaginatorInfoType
+    public static function paginatorInfo(): PaginatorInfo
     {
-        return static::cache(new PaginatorInfoType());
+        return static::cache(new PaginatorInfo());
     }
 
-    public static function sqlOperator(): SQLOperatorType
+    public static function sqlOperator(): SQLOperator
     {
-        return static::cache(new SQLOperatorType());
+        return static::cache(new SQLOperator());
     }
 
-    public static function countryCodeEnum(): CountryCodeEnumType
+    public static function countryCodeEnum(): CountryCode
     {
-        return static::cache(new CountryCodeEnumType());
+        return static::cache(new CountryCode());
     }
 
-    public static function languageEnum(): LanguageEnumType
+    public static function languageEnum(): LanguageCode
     {
-        return static::cache(new LanguageEnumType());
+        return static::cache(new LanguageCode());
     }
 
-    public static function currencyEnum(): CurrencyEnumType
+    public static function currencyEnum(): Currency
     {
-        return static::cache(new CurrencyEnumType());
+        return static::cache(new Currency());
     }
 
-    public static function localeEnum(): LocaleEnumType
+    public static function localeEnum(): LocaleCode
     {
-        return static::cache(new LocaleEnumType());
+        return static::cache(new LocaleCode());
     }
 
-    public static function sortOrderEnum(): SortOrderEnumType
+    public static function sortOrderEnum(): SortOrder
     {
-        return static::cache(new SortOrderEnumType());
+        return static::cache(new SortOrder());
     }
 
-    public static function fileExport(): FileExportType
+    public static function fileExport(): FileExport
     {
-        return static::cache(new FileExportType());
+        return static::cache(new FileExport());
     }
 
-    public static function sheetFileEnum(): SheetFileEnumType
+    public static function sheetFileEnum(): SheetFile
     {
-        return static::cache(new SheetFileEnumType());
+        return static::cache(new SheetFile());
     }
 
-    public static function importSummary(): ImportSummaryType
+    public static function importSummary(): ImportSummary
     {
-        return static::cache(new ImportSummaryType());
+        return static::cache(new ImportSummary());
     }
 
-    public static function importError(): ImportErrorType
+    public static function importError(): ImportError
     {
-        return static::cache(new ImportErrorType());
+        return static::cache(new ImportError());
     }
 
-    public static function result(): ResultType
+    public static function result(): Result
     {
-        return static::cache(new ResultType());
+        return static::cache(new Result());
     }
 
     public static function dateTime(): DateTime
@@ -183,9 +183,9 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new UpdateManyResult());
     }
 
-    public static function relationUpdateModeEnum(): RelationUpdateModeEnum
+    public static function relationUpdateModeEnum(): RelationUpdateMode
     {
-        return static::cache(new RelationUpdateModeEnum());
+        return static::cache(new RelationUpdateMode());
     }
 
     public static function upload(): Upload
@@ -198,19 +198,19 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new FileType());
     }
 
-    public static function permissionEnum(): PermissionEnumType
+    public static function permissionEnum(): Permission
     {
-        return static::cache(new PermissionEnumType());
+        return static::cache(new Permission());
     }
 
-    public static function whereMode(): WhereModeEnumType
+    public static function whereMode(): WhereMode
     {
-        return static::cache(new WhereModeEnumType());
+        return static::cache(new WhereMode());
     }
 
-    public static function modelEnum(): ModelEnumType
+    public static function modelEnum(): ModelEnum
     {
-        return static::cache(new ModelEnumType());
+        return static::cache(new ModelEnum());
     }
 
     /**
@@ -264,13 +264,13 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new ModelInput($name));
     }
 
-    public static function column(BaseType|string|Relation $wrappedType, bool $reduced = false): ModelColumn|EdgeColumn|EdgeReducedColumn|JobColumnEnumType|HistoryColumnEnumType
+    public static function column(BaseType|string|Relation $wrappedType, bool $reduced = false): ModelColumn|EdgeColumn|EdgeReducedColumn|JobColumn|HistoryColumn
     {
         if ($wrappedType === 'Job_') { // special case, because Job is not a regular model (yet)
-            return static::cache(new JobColumnEnumType());
+            return static::cache(new JobColumn());
         }
         if ($wrappedType === 'History_') {  // special case, because History is not a regular model (yet)
-            return static::cache(new HistoryColumnEnumType());
+            return static::cache(new HistoryColumn());
         }
         if ($wrappedType instanceof Relation) {
             if ($reduced === true) {
@@ -329,9 +329,9 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new WhereConditions($wrappedType));
     }
 
-    public static function model(string $name): ModelType|NullableType
+    public static function model(string $name): ModelObject|NullableType
     {
-        return static::cache(new ModelType($name));
+        return static::cache(new ModelObject($name));
     }
 
     public static function enum(Field $field): DynamicEnum
@@ -344,32 +344,32 @@ abstract class Type extends BaseType implements NullableType
         return static::cache(new ImportPreview($model));
     }
 
-    public static function entity(): EntityEnum
+    public static function entity(): Entity
     {
-        return static::cache(new EntityEnum());
+        return static::cache(new Entity());
     }
 
-    public static function job(string $type): JobType
+    public static function job(string $type): Job
     {
         return match($type) {
-            'Import', 'Export' => static::cache(new JobType($type)),
+            'Import', 'Export' => static::cache(new Job($type)),
             default => throw new RuntimeException('Unknown Job-Type: ' . $type),
         };
     }
 
-    public static function history(): HistoryType
+    public static function history(): History
     {
-        return static::cache(new HistoryType());
+        return static::cache(new History());
     }
 
-    public static function historyChangeType(): HistoryChangeTypeEnumType
+    public static function historyChangeType(): HistoryChangeType
     {
-        return static::cache(new HistoryChangeTypeEnumType());
+        return static::cache(new HistoryChangeType());
     }
 
-    public static function jobStatus(): JobStatusEnumType
+    public static function jobStatus(): JobStatus
     {
-        return static::cache(new JobStatusEnumType());
+        return static::cache(new JobStatus());
     }
 
 }
