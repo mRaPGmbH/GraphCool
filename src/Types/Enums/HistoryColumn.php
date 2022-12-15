@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class HistoryColumnEnumType extends EnumType
+class HistoryColumn extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_History_Column';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_History_Column',
+            'name' => static::getFullName(),
             'description' => 'List of column names of `History` type.',
             'values' => [
                 'ID' => ['value' => 'id', 'description' => null],

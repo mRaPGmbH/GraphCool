@@ -9,10 +9,18 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Throwable;
 
 class Date extends ScalarType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Date';
+    }
 
     public $name = '_Date';
     public $description = 'A Date string in ISO 8601 format: "2021-03-11"';

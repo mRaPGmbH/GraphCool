@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class CurrencyEnumType extends EnumType
+class Currency extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_CurrencyCode';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_CurrencyCode',
+            'name' => static::getFullName(),
             'description' => '3-letter currency code as defined in ISO 4217',
             'values' => [
                 'AED' => ['value' => 'AED', 'description' => 'United Arab Emirates dirham'],

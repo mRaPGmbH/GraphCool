@@ -6,7 +6,7 @@ use Mrap\GraphCool\DataSource\Mysql\Mysql;
 use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\DataSource\Mysql\MysqlNodeReader;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Types\Enums\Result;
 use RuntimeException;
 use stdClass;
 
@@ -28,7 +28,7 @@ class MysqlNodeReaderTest extends TestCase
         $this->mockLoad();
 
         $reader = new MysqlNodeReader();
-        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', ResultType::ONLY_SOFT_DELETED);
+        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', Result::ONLY_SOFT_DELETED);
 
         self::assertEquals('Huber', $result->last_name);
     }
@@ -38,7 +38,7 @@ class MysqlNodeReaderTest extends TestCase
         $this->mockLoad();
 
         $reader = new MysqlNodeReader();
-        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', ResultType::WITH_TRASHED);
+        $result = $reader->load('hc123', 'DummyModel', 'asdf123123', Result::WITH_TRASHED);
 
         self::assertEquals('Huber', $result->last_name);
     }

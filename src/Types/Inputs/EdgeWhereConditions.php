@@ -9,7 +9,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
-class EdgeOrderByClause extends InputObjectType
+class EdgeWhereConditions extends InputObjectType
 {
 
     use DynamicTypeTrait;
@@ -21,16 +21,20 @@ class EdgeOrderByClause extends InputObjectType
 
     public static function postfix(): string
     {
-        return 'EdgeOrderByClause';
+        return 'EdgeWhereConditions';
     }
 
-    public function __construct(Relation $relation)
+    public function __construct(Relation $wrappedType)
     {
         parent::__construct([
-            'name' => static::getFullName($relation->namekey),
+            'name' => static::getFullName($wrappedType->namekey),
             'fields' => fn() => [
-                'field' => Type::column($relation),
-                'order' => Type::sortOrderEnum(),
+                'column' => Type::column($wrappedType),
+                'operator' => Type::sqlOperator(),
+                'value' => Type::mixed(),
+                'fulltextSearch' => Type::string(),
+                'AND' => Type::listOf($this),
+                'OR' => Type::listOf($this)
             ],
         ]);
     }

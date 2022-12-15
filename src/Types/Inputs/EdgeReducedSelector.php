@@ -6,10 +6,23 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
 class EdgeReducedSelector extends InputObjectType
 {
+
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'EdgeReducedSelector';
+    }
 
     public function __construct(Relation $relation)
     {

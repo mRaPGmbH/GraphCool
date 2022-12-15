@@ -25,9 +25,9 @@ use Mrap\GraphCool\Types\Inputs\ModelOrderByClause;
 use Mrap\GraphCool\Types\Inputs\WhereConditions;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
-use Mrap\GraphCool\Types\Objects\ImportSummaryType;
-use Mrap\GraphCool\Types\Objects\JobType;
-use Mrap\GraphCool\Types\Objects\ModelType;
+use Mrap\GraphCool\Types\Objects\ImportSummary;
+use Mrap\GraphCool\Types\Objects\Job;
+use Mrap\GraphCool\Types\Objects\ModelObject;
 use Mrap\GraphCool\Types\Objects\ModelPaginator;
 use Mrap\GraphCool\Types\TypeLoader;
 
@@ -51,7 +51,7 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $model = $typeLoader->load('DummyModel')();
-        self::assertInstanceOf(ModelType::class, $model);
+        self::assertInstanceOf(ModelObject::class, $model);
     }
 
 
@@ -262,14 +262,14 @@ class TypeLoaderTest extends TestCase
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_ImportSummary')();
-        self::assertInstanceOf(ImportSummaryType::class, $result);
+        self::assertInstanceOf(ImportSummary::class, $result);
     }
 
     public function testCreateImportJob(): void
     {
         $typeLoader = new TypeLoader();
         $result = $typeLoader->load('_ImportJob')();
-        self::assertInstanceOf(JobType::class, $result);
+        self::assertInstanceOf(Job::class, $result);
     }
 
 

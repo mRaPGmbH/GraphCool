@@ -5,15 +5,28 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
 class ModelPaginator extends ObjectType
 {
 
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Paginator';
+    }
+
     public function __construct(string $wrappedType)
     {
         parent::__construct([
-            'name' => '_' . $wrappedType . 'Paginator',
+            'name' => static::getFullName($wrappedType),
             'description' => 'A paginated list of ' . $wrappedType . ' items.',
             'fields' => fn() => $this->fieldConfig($wrappedType),
         ]);

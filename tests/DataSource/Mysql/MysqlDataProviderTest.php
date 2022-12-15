@@ -14,7 +14,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlNodeReader;
 use Mrap\GraphCool\DataSource\Mysql\MysqlNodeWriter;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Types\Enums\Result;
 use PDO;
 use stdClass;
 
@@ -73,7 +73,7 @@ class MysqlDataProviderTest extends TestCase
             'perPage' => 10,
             'total' => 1
         ];
-        foreach ([ResultType::DEFAULT, ResultType::WITH_TRASHED, ResultType::ONLY_SOFT_DELETED] as $resultType) {
+        foreach ([Result::DEFAULT, Result::WITH_TRASHED, Result::ONLY_SOFT_DELETED] as $resultType) {
             $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
             self::assertEquals($expected, $result->paginatorInfo, 'Pagination Info does not match expectation for ' . $resultType);
             self::assertEquals([$node], ($result->data)(), 'Data does not match expectation for ' . $resultType);

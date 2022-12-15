@@ -5,13 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class WhereModeEnumType extends EnumType
+class WhereMode extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_WhereMode';
+    }
+
     public function __construct()
     {
         $config = [
-            'name' => '_WhereMode',
+            'name' => static::getFullName(),
             'description' => 'Define how `where` and `whereHas` are combined. Default: AND',
             'values' => [
                 'AND' => ['value' => 'AND', 'description' => 'require all wheres to match'],

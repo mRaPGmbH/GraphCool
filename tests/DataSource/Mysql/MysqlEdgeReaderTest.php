@@ -10,7 +10,7 @@ use Mrap\GraphCool\DataSource\Mysql\MysqlConnector;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\DataSource\Mysql\MysqlEdgeReader;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Enums\ResultType;
+use Mrap\GraphCool\Types\Enums\Result;
 use stdClass;
 
 class MysqlEdgeReaderTest extends TestCase
@@ -157,7 +157,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = $reader->loadEdges($node, 'DummyModel');
         $closure = $node->belongs_to;
 
-        $args['result'] = ResultType::ONLY_SOFT_DELETED;
+        $args['result'] = Result::ONLY_SOFT_DELETED;
         $result = $closure($args);
 
         self::assertEquals($expected, $result);
@@ -212,7 +212,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = $reader->loadEdges($node, 'DummyModel');
         $closure = $node->belongs_to;
 
-        $args['result'] = ResultType::WITH_TRASHED;
+        $args['result'] = Result::WITH_TRASHED;
         $result = $closure($args);
 
         self::assertEquals($expected, $result);

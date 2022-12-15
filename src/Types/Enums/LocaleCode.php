@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
-class LocaleEnumType extends EnumType
+class LocaleCode extends EnumType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_LocaleCode';
+    }
 
     public function __construct()
     {
         $config = [
-            'name' => '_LocaleCode',
+            'name' => static::getFullName(),
             'description' => 'Locales TODO',
             'values' => [
                 'de_AT' => ['value' => 'de_AT', 'description' => 'German (Austria)'],

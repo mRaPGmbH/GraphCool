@@ -7,9 +7,17 @@ namespace Mrap\GraphCool\Types\Scalars;
 use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 
 class Upload extends ScalarType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_Upload';
+    }
 
     public $name = '_Upload';
     public $description = 'A file to be uploaded (as multipart/blob).';

@@ -9,11 +9,19 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\Node;
 use GraphQL\Language\AST\StringValueNode;
 use GraphQL\Type\Definition\ScalarType;
+use Mrap\GraphCool\Types\StaticTypeTrait;
 use Mrap\GraphCool\Utils\TimeZone;
 use Throwable;
 
 class DateTime extends ScalarType
 {
+
+    use StaticTypeTrait;
+
+    public static function staticName(): string
+    {
+        return '_DateTime';
+    }
 
     public $name = '_DateTime';
     public $description = 'A DateTime string with timezone in following ISO 8601 format: "2021-03-11T11:54:04.123+00:00". When used as input several other ISO 8601 variants are accepted as well.';

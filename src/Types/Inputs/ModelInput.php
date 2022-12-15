@@ -6,16 +6,29 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 use function Mrap\GraphCool\model;
 
 class ModelInput extends InputObjectType
 {
 
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Input';
+    }
+
     public function __construct(string $wrappedType)
     {
         parent::__construct([
-            'name' => '_' . $wrappedType . 'Input',
+            'name' => static::getFullName($wrappedType),
             'description' => 'Input for creating or updating a ' . $wrappedType . '.',
             'fields' => fn() => $this->fieldConfig($wrappedType),
         ]);

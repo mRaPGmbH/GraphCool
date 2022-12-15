@@ -5,15 +5,28 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
-use Mrap\GraphCool\Types\TypeTrait;
 
-class JobType extends ObjectType
+class Job extends ObjectType
 {
+
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Job';
+    }
+
     public function __construct(string $name)
     {
         parent::__construct([
-            'name' => $name,
+            'name' => static::getFullName($name),
             'fields' => fn() => [
                 'created_at' => Type::nonNull(Type::dateTime()),
                 'finished_at' => Type::dateTime(),
@@ -28,7 +41,7 @@ class JobType extends ObjectType
         ]);
     }
 
-    protected function getResultType(string $name): FileExportType|ImportSummaryType
+    protected function getResultType(string $name): FileExport|ImportSummary
     {
         return match($name) {
             'Import' => Type::importSummary(),

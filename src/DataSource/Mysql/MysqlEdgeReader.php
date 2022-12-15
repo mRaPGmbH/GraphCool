@@ -9,8 +9,8 @@ use Closure;
 use GraphQL\Error\Error;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\Enums\ResultType;
-use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Enums\Result;
+use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
 use RuntimeException;
@@ -67,7 +67,7 @@ class MysqlEdgeReader
         $search = $args['search'] ?? null;
         $searchLoosely = $args['searchLoosely'] ?? null;
         $orderBy = $args['orderBy'] ?? [];
-        $resultType = $args['result'] ?? ResultType::DEFAULT;
+        $resultType = $args['result'] ?? Result::DEFAULT;
 
         $query = MysqlQueryBuilder::forRelation($relation, [$id]);
         $query
@@ -163,7 +163,7 @@ class MysqlEdgeReader
         if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
             $count = count($edges);
             return [
-                'paginatorInfo' => PaginatorInfoType::create($count, $page, $limit, $total),
+                'paginatorInfo' => PaginatorInfo::create($count, $page, $limit, $total),
                 'edges' => $edges,
             ];
         }
@@ -174,7 +174,7 @@ class MysqlEdgeReader
         ?string $tenantId,
         string $parentId,
         string $childId,
-        ?string $resultType = ResultType::DEFAULT
+        ?string $resultType = Result::DEFAULT
     ): ?stdClass {
         StopWatch::start(__METHOD__);
         $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';

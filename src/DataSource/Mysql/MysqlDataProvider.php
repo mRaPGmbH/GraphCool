@@ -15,8 +15,8 @@ use Mrap\GraphCool\Definition\Field;
 use Mrap\GraphCool\Definition\Job;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
-use Mrap\GraphCool\Types\Enums\ResultType;
-use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Enums\Result;
+use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Types\Type;
 use stdClass;
 
@@ -54,7 +54,7 @@ class MysqlDataProvider implements DataProvider
             throw new Error('First cannot be less than 1');
         }
         $offset = ($page - 1) * $limit;
-        $resultType = $args['result'] ?? ResultType::DEFAULT;
+        $resultType = $args['result'] ?? Result::DEFAULT;
 
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
@@ -95,7 +95,7 @@ class MysqlDataProvider implements DataProvider
         $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
 
         $result = new stdClass();
-        $result->paginatorInfo = PaginatorInfoType::create(count($ids), $page, $limit, $total);
+        $result->paginatorInfo = PaginatorInfo::create(count($ids), $page, $limit, $total);
         $result->data = function() use($tenantId, $name, $ids, $resultType) {return $this->loadAll($tenantId, $name, $ids, $resultType);};
         $result->ids = $ids;
         return $result;
@@ -177,7 +177,7 @@ class MysqlDataProvider implements DataProvider
         ?string $tenantId,
         string $name,
         array $ids,
-        ?string $resultType = ResultType::DEFAULT
+        ?string $resultType = Result::DEFAULT
     ): array {
         $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
         foreach ($results as $key => $result) {
@@ -190,7 +190,7 @@ class MysqlDataProvider implements DataProvider
         ?string $tenantId,
         string $name,
         string $id,
-        ?string $resultType = ResultType::DEFAULT
+        ?string $resultType = Result::DEFAULT
     ): ?stdClass {
         $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
         if ($data !== null) {
@@ -244,7 +244,7 @@ class MysqlDataProvider implements DataProvider
         //Mysql::beginTransaction();
         try {
             $model = model($name);
-            $oldNode = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+            $oldNode = $this->load($tenantId, $name, $data['id'], Result::WITH_TRASHED);
             if ($oldNode === null) {
                 throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
             }
@@ -269,7 +269,7 @@ class MysqlDataProvider implements DataProvider
 
             Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
 
-            $loaded = $this->load($tenantId, $name, $data['id'], ResultType::WITH_TRASHED);
+            $loaded = $this->load($tenantId, $name, $data['id'], Result::WITH_TRASHED);
             if ($loaded !== null) {
                 $model->afterUpdate($loaded);
                 Mysql::history()->recordUpdate($oldNode, $loaded, $history);
@@ -295,7 +295,7 @@ class MysqlDataProvider implements DataProvider
         try {
             $model = model($name);
             $updateData = $data['data'] ?? [];
-            $resultType = $data['result'] ?? ResultType::DEFAULT;
+            $resultType = $data['result'] ?? Result::DEFAULT;
             $this->checkNull($model, $updateData);
             $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'] ?? null, $resultType);
             $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
@@ -315,7 +315,7 @@ class MysqlDataProvider implements DataProvider
     {
         Mysql::beginTransaction();
         try {
-            $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
+            $node = $this->load($tenantId, $name, $id, Result::WITH_TRASHED);
             if ($node === null) {
                 Mysql::rollBack();
                 return null;
@@ -339,7 +339,7 @@ class MysqlDataProvider implements DataProvider
         try {
             $model = model($name);
             $model->beforeRestore($tenantId, $id);
-            $node = $this->load($tenantId, $name, $id, ResultType::WITH_TRASHED);
+            $node = $this->load($tenantId, $name, $id, Result::WITH_TRASHED);
             if ($node === null) {
                 throw new Error($name . ' with ID ' . $id . ' not found.');
             }
@@ -503,7 +503,7 @@ class MysqlDataProvider implements DataProvider
         $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());
 
         $result = new stdClass();
-        $result->paginatorInfo = PaginatorInfoType::create(count($jobs), $page, $limit, $total);
+        $result->paginatorInfo = PaginatorInfo::create(count($jobs), $page, $limit, $total);
         $result->data = $jobs;
         return $result;
     }
@@ -538,7 +538,7 @@ class MysqlDataProvider implements DataProvider
         $total = (int)Mysql::fetchColumn($builder->toCountSql(), $builder->getParameters());
 
         $result = new stdClass();
-        $result->paginatorInfo = PaginatorInfoType::create(count($history), $page, $limit, $total);
+        $result->paginatorInfo = PaginatorInfo::create(count($history), $page, $limit, $total);
         $result->data = $history;
         return $result;
     }
@@ -612,8 +612,8 @@ class MysqlDataProvider implements DataProvider
             ->select(['id'])
             ->where($where ?? null);
         match ($resultType) {
-            ResultType::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-            ResultType::WITH_TRASHED => $query->withTrashed(),
+            Result::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            Result::WITH_TRASHED => $query->withTrashed(),
             default => null
         };
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {

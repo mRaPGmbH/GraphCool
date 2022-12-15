@@ -7,14 +7,14 @@ namespace Mrap\GraphCool\Tests\Types\Objects;
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Objects\ModelEdge;
-use Mrap\GraphCool\Types\Objects\PaginatorInfoType;
+use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Types\TypeLoader;
 
 class PaginatorInfoTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $object = new PaginatorInfoType();
+        $object = new PaginatorInfo();
         self::assertInstanceOf(ObjectType::class, $object);
     }
 
@@ -30,7 +30,7 @@ class PaginatorInfoTypeTest extends TestCase
         $expected->perPage = 10;
         $expected->total = 101;
 
-        $result = PaginatorInfoType::create(3, 1, 10, 101);
+        $result = PaginatorInfo::create(3, 1, 10, 101);
 
         self::assertEquals($expected, $result);
     }
@@ -47,7 +47,7 @@ class PaginatorInfoTypeTest extends TestCase
         $expected->perPage = 10;
         $expected->total = 0;
 
-        $result = PaginatorInfoType::create(0, 1, 10, 0);
+        $result = PaginatorInfo::create(0, 1, 10, 0);
 
         self::assertEquals($expected, $result);
     }

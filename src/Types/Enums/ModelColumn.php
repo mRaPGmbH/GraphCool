@@ -5,17 +5,30 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use function Mrap\GraphCool\model;
 
 class ModelColumn extends EnumType
 {
 
-    public function __construct(string $wrappedType)
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Column';
+    }
+
+    public function __construct(string $model)
     {
         parent::__construct([
-            'name' => '_' . $wrappedType . 'Column',
-            'description' => 'List of column names of `' . $wrappedType . '` type.',
-            'values' => $this->values($wrappedType),
+            'name' => '_' . $model . 'Column',
+            'description' => 'List of column names of `' . $model . '` type.',
+            'values' => $this->values($model),
         ]);
     }
 

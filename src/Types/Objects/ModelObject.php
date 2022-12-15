@@ -8,19 +8,33 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\Model;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 use stdClass;
 use function Mrap\GraphCool\model;
 
-class ModelType extends ObjectType
+class ModelObject extends ObjectType
 {
+
+    use DynamicTypeTrait;
+
     protected Model $model;
+
+    public static function prefix(): string
+    {
+        return '';
+    }
+
+    public static function postfix(): string
+    {
+        return '';
+    }
 
     public function __construct(string $name)
     {
         $this->model = model($name);
         $config = [
-            'name' => $name,
+            'name' => static::getFullName($name),
             'fields' => fn() => $this->fieldConfig(),
             'resolveField' => function ($rootValue, $args, $context, $info) {
                 return $this->resolve($rootValue, $args, $context, $info);

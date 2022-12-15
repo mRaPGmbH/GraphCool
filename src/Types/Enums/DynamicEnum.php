@@ -6,13 +6,27 @@ namespace Mrap\GraphCool\Types\Enums;
 
 use GraphQL\Type\Definition\EnumType;
 use Mrap\GraphCool\Definition\Field;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 
 class DynamicEnum extends EnumType
 {
+
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'Enum';
+    }
+
     public function __construct(Field $field)
     {
         parent::__construct([
-            'name' => '_' . $field->namekey . 'Enum',
+            'name' => static::getFullName($field->namekey),
             'description' => 'Allowed values for ' . $field->namekey,
             'values' => $this->values($field),
         ]);

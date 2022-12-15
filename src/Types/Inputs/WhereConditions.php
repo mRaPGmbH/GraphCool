@@ -6,20 +6,28 @@ namespace Mrap\GraphCool\Types\Inputs;
 
 use GraphQL\Type\Definition\InputObjectType;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
 class WhereConditions extends InputObjectType
 {
 
+    use DynamicTypeTrait;
+
+    public static function prefix(): string
+    {
+        return '_';
+    }
+
+    public static function postfix(): string
+    {
+        return 'WhereConditions';
+    }
+
     public function __construct(string|Relation $wrappedType)
     {
-        if (is_string($wrappedType)) {
-            $name = '_' . $wrappedType . 'WhereConditions';
-        } else {
-            $name = '_' . $wrappedType->namekey . 'EdgeWhereConditions';
-        }
         parent::__construct([
-            'name' => $name,
+            'name' => static::getFullName($wrappedType),
             'fields' => fn() => [
                 'column' => Type::column($wrappedType),
                 'operator' => Type::sqlOperator(),
