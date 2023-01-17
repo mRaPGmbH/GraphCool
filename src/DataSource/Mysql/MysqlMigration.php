@@ -141,6 +141,26 @@ class MysqlMigration
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
         Mysql::executeRaw($sql);
 
+        $sql = 'CREATE TABLE IF NOT EXISTS `job` ( 
+            `id` char(36) NOT NULL, 
+            `tenant_id` varchar(255) NOT NULL, 
+            `worker` varchar(255) NOT NULL, 
+            `model` varchar(255) DEFAULT NULL, 
+            `status` varchar(255) NOT NULL, 
+            `data` longtext, 
+            `result` longtext, 
+            `run_at` datetime DEFAULT NULL, 
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+            `started_at` datetime DEFAULT NULL, 
+            `finished_at` datetime DEFAULT NULL, 
+            PRIMARY KEY (`id`), 
+            KEY `status_created_at` (`status`,`created_at`), 
+            KEY `tenant_id_status_worker` (`tenant_id`,`status`,`worker`), 
+            KEY `tenant_id_worker_created_at` (`tenant_id`,`worker`,`created_at`), 
+            KEY `tenant_id_model_created_at` (`tenant_id`,`model`,`created_at`) 
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        Mysql::executeRaw($sql);
+
         $sql = 'SET sql_notes = 1';
         Mysql::executeRaw($sql);
     }
