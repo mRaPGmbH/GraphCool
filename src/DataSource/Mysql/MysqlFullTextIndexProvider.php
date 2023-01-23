@@ -36,7 +36,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
     public function shutdown(): void
     {
         foreach ($this->needIndexing as $tenantId => $models) {
-            $this->updateIndex($tenantId, $models);
+            $this->updateIndex((string)$tenantId, $models);
         }
         $this->needIndexing = [];
         if (count($this->needDeletion) > 0) {
@@ -75,7 +75,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                 $result[] = $row->node_id;
             }
         } catch (Throwable $e) {
-            $new = new Exception('Fulltext search SQL failed: ' . $sql, 0, $e);
+            $new = new \Exception('Fulltext search SQL failed: ' . $sql, 0, $e);
             ErrorHandler::sentryCapture($new);
         }
         return $result;
@@ -129,9 +129,8 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
                 `n`.`model`,
                 GROUP_CONCAT(COALESCE(`p`.`value_string`, `p`.`value_int`, `p`.`value_float`, \'\') SEPARATOR \' \') AS `text`
             FROM `node` AS `n`
-            LEFT JOIN `node_property` AS `p` ON `p`.`node_id` = `n`.`id`
-            WHERE `p`.`property` IN ' . $this->quoteArray($props) . '
-                AND `n`.`model` = ' . Mysql::getPdo()->quote($model) . '
+            LEFT JOIN `node_property` AS `p` ON (`p`.`node_id` = `n`.`id` AND `p`.`property` IN ' . $this->quoteArray($props) . ')
+            WHERE `n`.`model` = ' . Mysql::getPdo()->quote($model) . '
                 AND `p`.`deleted_at` IS NULL
                 AND `n`.`deleted_at` IS NULL
                 AND `n`.`tenant_id` = ' . Mysql::getPdo()->quote( $tenantId ) . '
