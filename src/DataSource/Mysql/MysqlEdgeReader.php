@@ -21,7 +21,7 @@ class MysqlEdgeReader
 {
     public function loadEdges(stdClass $node, string $name): stdClass
     {
-        $model = model($name);
+        $model = model($node->model);
         foreach (get_object_vars($model) as $key => $relation) {
             if (!$relation instanceof Relation) {
                 continue;

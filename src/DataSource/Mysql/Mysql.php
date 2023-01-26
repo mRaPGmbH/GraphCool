@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
-use Mrap\GraphCool\GraphCool;
 use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 
@@ -17,17 +16,31 @@ class Mysql
     protected static ?MysqlEdgeReader $edgeReader;
     protected static ?MysqlEdgeWriter $edgeWriter;
     protected static ?MysqlHistory $history;
-    protected static array $batches = [];
-    protected static bool $shutdownRegistered = false;
+    protected static ?string $tenantId = null;
 
-    public static function reset(): void
+    public static function reset(bool $partial = false): void
     {
-        static::$connector = null;
+        if ($partial === false) {
+            static::$connector = null;
+        }
         static::$nodeReader = null;
         static::$nodeWriter = null;
         static::$edgeReader = null;
         static::$edgeWriter = null;
-        static::$batches = [];
+        static::$tenantId = null;
+    }
+
+    public static function checkTenantId(string $tenantId): void
+    {
+        if (static::$tenantId !== null && static::$tenantId !== $tenantId) {
+            throw new \RuntimeException('TenantId changed from: ' . static::$tenantId . ' to: ' . $tenantId);
+        }
+        static::$tenantId = $tenantId;
+    }
+
+    public static function tenantId(): ?string
+    {
+        return static::$tenantId;
     }
 
     public static function setConnector(MysqlConnector $connector): void
@@ -188,55 +201,6 @@ class Mysql
     public static function rollBack(): void
     {
         static::get()->pdo()->rollBack();
-    }
-
-    public static function addBatch(string $sql, array $data): void
-    {
-        static::registerShutdown();
-        if (!isset(static::$batches[$sql])) {
-            static::$batches[$sql] = [];
-        }
-        static::$batches[$sql][] = $data;
-    }
-
-    public static function shutdown(): void
-    {
-        foreach (static::$batches as $sql => $data) {
-            static::executeBatch($sql, $data);
-        }
-    }
-
-    protected static function registerShutdown(): void
-    {
-        // TODO: move this to trait?
-        if (static::$shutdownRegistered === true) {
-            return;
-        }
-        GraphCool::onShutdown(function(){
-            Mysql::shutdown();
-        });
-        static::$shutdownRegistered = true;
-    }
-
-    protected static function executeBatch(string $sql, array $data): void
-    {
-        $params = [];
-        $rows = [];
-        foreach ($data as $row) {
-            $keys = [];
-            foreach ($row as $value) {
-                $keys[] = static::addParam($params, $value);
-            }
-            $rows[] = '(' . implode(',', $keys) . ')';
-        }
-        static::execute($sql . implode(',', $rows), $params);
-    }
-
-    protected static function addParam(array &$params, $value): string
-    {
-        $key = 'p' . (count($params) + 1);
-        $params[$key] = $value;
-        return ':' . $key;
     }
 
 }

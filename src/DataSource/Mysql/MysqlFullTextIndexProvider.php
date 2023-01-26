@@ -7,7 +7,6 @@ namespace Mrap\GraphCool\DataSource\Mysql;
 use Mrap\GraphCool\DataSource\FullTextIndexProvider;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\ErrorHandler;
-use PHPUnit\Util\Xml\Exception;
 use Throwable;
 use function Mrap\GraphCool\model;
 
