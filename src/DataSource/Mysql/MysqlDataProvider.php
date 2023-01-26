@@ -45,6 +45,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function findAll(?string $tenantId, string $name, array $args): stdClass
     {
+        Mysql::checkTenantId($tenantId);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
         if ($page < 1) {
@@ -103,6 +104,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
+        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
@@ -132,6 +134,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getSum(?string $tenantId, string $name, string $key): float|bool|int|string
     {
+        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
@@ -160,6 +163,7 @@ class MysqlDataProvider implements DataProvider
 
     public function getCount(?string $tenantId, string $name): int
     {
+        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
         return (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
@@ -179,6 +183,7 @@ class MysqlDataProvider implements DataProvider
         array $ids,
         ?string $resultType = Result::DEFAULT
     ): array {
+        Mysql::checkTenantId($tenantId);
         $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
         foreach ($results as $key => $result) {
             $results[$key] = $this->retrieveFiles($name, $result, $result->id);
@@ -192,6 +197,7 @@ class MysqlDataProvider implements DataProvider
         string $id,
         ?string $resultType = Result::DEFAULT
     ): ?stdClass {
+        Mysql::checkTenantId($tenantId);
         $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
         if ($data !== null) {
             $data = $this->retrieveFiles($name, $data, $id);
@@ -208,6 +214,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function insert(string $tenantId, string $name, array $data): ?stdClass
     {
+        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -241,6 +248,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
+        Mysql::checkTenantId($tenantId);
         //Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -269,6 +277,7 @@ class MysqlDataProvider implements DataProvider
 
             Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
 
+            Mysql::reset(true);
             $loaded = $this->load($tenantId, $name, $data['id'], Result::WITH_TRASHED);
             if ($loaded !== null) {
                 $model->afterUpdate($loaded);
@@ -291,6 +300,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
+        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -313,6 +323,7 @@ class MysqlDataProvider implements DataProvider
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
+        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $node = $this->load($tenantId, $name, $id, Result::WITH_TRASHED);
@@ -335,6 +346,7 @@ class MysqlDataProvider implements DataProvider
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
+        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -358,6 +370,7 @@ class MysqlDataProvider implements DataProvider
 
     public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
+        Mysql::checkTenantId($tenantId);
         return Mysql::increment($tenantId, $key, $min, $transaction);
     }
 
@@ -377,6 +390,7 @@ class MysqlDataProvider implements DataProvider
      */
     public function addJob(string $tenantId, string $worker, ?string $model, ?array $data = null): string
     {
+        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             if ($data !== null) {

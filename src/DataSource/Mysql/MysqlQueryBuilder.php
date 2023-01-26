@@ -24,7 +24,6 @@ class MysqlQueryBuilder
     /** @var string[] */
     protected array $orderBys = [];
     protected string $resultType;
-    protected Model $model;
     protected Relation $relation;
     protected string $limit = '';
     protected string $parameterPrefix = 'p';
@@ -63,8 +62,6 @@ class MysqlQueryBuilder
             throw new RuntimeException('Unknown relation type: ' . $relation->type);
         }
         $builder->relation = $relation;
-        $classname = $relation->classname;
-        $builder->model = new $classname();
         $builder->resultType = ' AND ' . $builder->fieldName('_deleted_at') . ' IS NULL';
         $builder->resultType .= ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
         return $builder;
@@ -427,8 +424,8 @@ class MysqlQueryBuilder
         if (in_array($where['column'], $this->getBaseColumns())) {
             $sql = $this->fieldName($where['column']);
         } else {
-            $sql = $this->join($where['column']);
-            $sql .= '.' . $this->getFieldType($where['column']);
+            $col = $this->join($where['column']);
+            $sql = 'COALESCE(' . $col . '.value_int, ' . $col . '.value_string, ' . $col . '.value_float)';
         }
         $sql .= ' ' . $where['operator'] ?? '=';
         if ($where['operator'] !== 'IS NULL' && $where['operator'] !== 'IS NOT NULL') {
@@ -476,21 +473,6 @@ class MysqlQueryBuilder
         return $sql ?? '`node`.`id` IN (null)';
     }
 
-    protected function getFieldType(string $property): string
-    {
-        if (str_starts_with($property, '_')) {
-            $key = substr($property, 1);
-            $field = $this->relation->$key;
-        } else {
-            $field = $this->model->$property;
-        }
-        return match ($field->type) {
-            Type::BOOLEAN, Type::INT, Field::TIME, Field::DATE_TIME, Field::DATE, Field::TIMEZONE_OFFSET, Field::DECIMAL, Field::AUTO_INCREMENT => '`value_int`',
-            Type::FLOAT => '`value_float`',
-            default => '`value_string`'
-        };
-    }
-
     /**
      * @param string[] $fields
      * @return $this
@@ -522,13 +504,14 @@ class MysqlQueryBuilder
         return $this;
     }
 
-    public static function forModel(Model $model, string $name, string $parameterPrefix = 'p'): MysqlQueryBuilder
+    public static function forModel(?Model $model, ?string $name, string $parameterPrefix = 'p'): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
         $builder->parameterPrefix = $parameterPrefix;
         $builder->name = 'node';
-        $builder->where[] = $builder->fieldName('model') . ' = ' . $builder->parameter($name);
-        $builder->model = $model;
+        if ($name !== null) {
+            $builder->where[] = $builder->fieldName('model') . ' = ' . $builder->parameter($name);
+        }
         $builder->resultType = ' AND ' . $builder->fieldName('deleted_at') . ' IS NULL';
         return $builder;
     }
