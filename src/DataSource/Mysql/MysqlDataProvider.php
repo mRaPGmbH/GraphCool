@@ -184,7 +184,7 @@ class MysqlDataProvider implements DataProvider
         ?string $resultType = Result::DEFAULT
     ): array {
         Mysql::checkTenantId($tenantId);
-        $results = Mysql::nodeReader()->loadMany($tenantId, $name, $ids, $resultType);
+        $results = Mysql::nodeReader()->loadMany($name, $ids, $resultType);
         foreach ($results as $key => $result) {
             $results[$key] = $this->retrieveFiles($name, $result, $result->id);
         }
@@ -198,7 +198,7 @@ class MysqlDataProvider implements DataProvider
         ?string $resultType = Result::DEFAULT
     ): ?stdClass {
         Mysql::checkTenantId($tenantId);
-        $data = Mysql::nodeReader()->load($tenantId, $name, $id, $resultType);
+        $data = Mysql::nodeReader()->load($name, $id, $resultType);
         if ($data !== null) {
             $data = $this->retrieveFiles($name, $data, $id);
         }
