@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Carbon\Carbon;
-use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Utils\StopWatch;
-use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -21,6 +19,29 @@ class MysqlNodeReader
     /** @var stdClass[] */
     protected array $loadedNodes = [];
 
+    public function load(
+        string $name,
+        string $id,
+        ?string $resultType = Result::DEFAULT
+    ): ?stdClass {
+        $this->addNode($id);
+        $this->loadNodes();
+        return $this->filterNode($id, $name, $resultType);
+    }
+
+    public function loadMany(
+        string $name,
+        array $ids,
+        ?string $resultType = Result::DEFAULT
+    ): array {
+        StopWatch::start(__METHOD__);
+        foreach ($ids as $id) {
+            $this->addNode($id);
+        }
+        $this->loadNodes();
+        return $this->filterNodes($ids, $name, $resultType);
+    }
+
     protected function addNode(string $id): void
     {
         if (!array_key_exists($id, $this->loadedNodes)) {
@@ -30,9 +51,12 @@ class MysqlNodeReader
 
     protected function loadNodes(): void
     {
+        if (count($this->nodeIds) === 0) {
+            return;
+        }
         StopWatch::start(__METHOD__);
         $nodes = [];
-        foreach ($this->fetchNodes2($this->nodeIds) as $id => $node) {
+        foreach ($this->fetchNodes($this->nodeIds) as $id => $node) {
             $nodes[$id] = Mysql::edgeReader()->loadEdges($node, $node->model);
         }
         foreach ($this->fetchNodeProperties($this->nodeIds) as $property) {
@@ -80,98 +104,7 @@ class MysqlNodeReader
         return true;
     }
 
-    public function load(
-        ?string $tenantId,
-        string $name,
-        string $id,
-        ?string $resultType = Result::DEFAULT
-    ): ?stdClass {
-        if (!array_key_exists($id, $this->loadedNodes)) {
-            $this->addNode($id);
-            $this->loadNodes();
-        }
-        return $this->filterNode($id, $name, $resultType);
-    }
-
-    public function loadMany(
-        ?string $tenantId,
-        string $name,
-        array $ids,
-        ?string $resultType = Result::DEFAULT
-    ): array {
-        StopWatch::start(__METHOD__);
-        $nodes = $this->fetchNodes($tenantId, $ids, $name, $resultType);
-        if ($nodes === null || count($nodes) === 0) {
-            // @codeCoverageIgnoreStart
-            return [];
-            // @codeCoverageIgnoreEnd
-        }
-        $model = model($name);
-        $map = [];
-        foreach ($nodes as $key => $node) {
-            if ($node->model !== $name) {
-                throw new RuntimeException(
-                    'Class mismatch: expected "' . $name . '" but found "'
-                    . $node->model . '" instead (id:"' . $node->id . '")'
-                );
-            }
-            $nodes[$key] = Mysql::edgeReader()->loadEdges($node, $name);
-            $map[$node->id] = $key;
-        }
-        foreach ($this->fetchNodeProperties($ids) as $property) {
-            $key = $property->property;
-            if (!property_exists($model, $key)) {
-                continue;
-            }
-            $field = $model->$key;
-            if ($field instanceof Relation) {
-                continue;
-            }
-            $i = $map[$property->node_id] ?? null;
-            if ($i === null) {
-                continue;
-            }
-            $nodes[$i]->$key = MysqlConverter::convertDatabaseTypeToOutput($field, $property);
-        }
-        StopWatch::stop(__METHOD__);
-        return $nodes;
-    }
-
-    protected function fetchNodes(?string $tenantId, array $ids, string $name, ?string $resultType = Result::DEFAULT): ?array
-    {
-        StopWatch::start(__METHOD__);
-        $model = model($name);
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
-
-        $query->select(['*'])
-            ->where(['column' => 'id', 'operator' => 'IN', 'value' => $ids]);
-        match ($resultType) {
-            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
-            'WITH_TRASHED' => $query->withTrashed(),
-            default => null
-        };
-
-        $dates = ['updated_at', 'created_at', 'deleted_at'];
-        $sorted = array_flip($ids);
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $node) {
-            foreach ($dates as $date) {
-                if ($node->$date !== null) {
-                    $dateTime = Carbon::parse($node->$date);
-                    $node->$date = $dateTime->getPreciseTimestamp(3);
-                }
-            }
-            $sorted[$node->id] = $node;
-        }
-        foreach ($sorted as $i => $node) {
-            if (!$node instanceof stdClass) {
-                unset($sorted[$i]);
-            }
-        }
-        StopWatch::stop(__METHOD__);
-        return array_values($sorted);
-    }
-
-    protected function fetchNodes2(array $ids): ?array
+    protected function fetchNodes(array $ids): ?array
     {
         StopWatch::start(__METHOD__);
         $query = MysqlQueryBuilder::forModel(null, null)
