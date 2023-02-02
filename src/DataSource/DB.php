@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
+use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Utils\StopWatch;
 use Ramsey\Uuid\Uuid;
 use stdClass;
@@ -21,10 +22,10 @@ class DB
         static::$provider = $provider;
     }
 
-    public static function load(?string $tenantId, string $name, string $id): ?stdClass
+    public static function load(?string $tenantId, string $name, string $id, ?string $resultType = Result::DEFAULT): ?stdClass
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->load($tenantId, $name, $id);
+        $result = static::get()->load($tenantId, $id, $resultType);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -80,6 +81,22 @@ class DB
         StopWatch::stop(__METHOD__);
         return $result;
     }
+
+
+    /**
+     * @param string|null $tenantId
+     * @param string $name
+     * @param mixed[] $args
+     * @return stdClass
+     */
+    public static function loadAll(?string $tenantId, array $ids): array
+    {
+        StopWatch::start(__METHOD__);
+        $result = self::get()->loadAll($tenantId, $ids);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
 
     /**
      * @param string $tenantId

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\ModelBased;
+use Mrap\GraphCool\Definition\NodeCaching;
 use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
@@ -16,6 +16,7 @@ use RuntimeException;
 class ReadModel extends Query
 {
     use ModelBased;
+    use NodeCaching;
 
     public function __construct(?string $model = null)
     {
@@ -38,6 +39,7 @@ class ReadModel extends Query
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         Authorization::authorize('read', $this->model);
-        return DB::load(JwtAuthentication::tenantId(), $this->model, $args['id']);
+        //return DB::load(JwtAuthentication::tenantId(), $this->model, $args['id']);
+        return $this->load(JwtAuthentication::tenantId(), $this->model, $args['id']);
     }
 }

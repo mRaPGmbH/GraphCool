@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource\Mysql;
 
 use Mrap\GraphCool\Utils\StopWatch;
-use RuntimeException;
 use stdClass;
 
 class Mysql
@@ -17,7 +16,6 @@ class Mysql
     protected static ?MysqlEdgeReader $edgeReader;
     protected static ?MysqlEdgeWriter $edgeWriter;
     protected static ?MysqlHistory $history;
-    protected static ?string $tenantId = null;
 
     public static function reset(bool $partial = false): void
     {
@@ -28,20 +26,6 @@ class Mysql
         static::$nodeWriter = null;
         static::$edgeReader = null;
         static::$edgeWriter = null;
-        static::$tenantId = null;
-    }
-
-    public static function checkTenantId(string $tenantId): void
-    {
-        if (static::$tenantId !== null && static::$tenantId !== $tenantId) {
-            throw new RuntimeException('TenantId changed from: ' . static::$tenantId . ' to: ' . $tenantId);
-        }
-        static::$tenantId = $tenantId;
-    }
-
-    public static function tenantId(): ?string
-    {
-        return static::$tenantId;
     }
 
     public static function setConnector(MysqlConnector $connector): void

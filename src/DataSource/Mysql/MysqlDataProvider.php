@@ -45,7 +45,6 @@ class MysqlDataProvider implements DataProvider
      */
     public function findAll(?string $tenantId, string $name, array $args): stdClass
     {
-        Mysql::checkTenantId($tenantId);
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
         if ($page < 1) {
@@ -97,14 +96,13 @@ class MysqlDataProvider implements DataProvider
 
         $result = new stdClass();
         $result->paginatorInfo = PaginatorInfo::create(count($ids), $page, $limit, $total);
-        $result->data = function() use($tenantId, $name, $ids, $resultType) {return $this->loadAll($tenantId, $name, $ids, $resultType);};
+        $result->data = function() use($tenantId, $ids, $resultType) {return $this->loadAll($tenantId, $ids, $resultType);};
         $result->ids = $ids;
         return $result;
     }
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
-        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
@@ -134,7 +132,6 @@ class MysqlDataProvider implements DataProvider
 
     public function getSum(?string $tenantId, string $name, string $key): float|bool|int|string
     {
-        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
@@ -163,7 +160,6 @@ class MysqlDataProvider implements DataProvider
 
     public function getCount(?string $tenantId, string $name): int
     {
-        Mysql::checkTenantId($tenantId);
         $model = model($name);
         $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
         return (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
@@ -171,36 +167,22 @@ class MysqlDataProvider implements DataProvider
 
 
     /**
-     * @param string|null $tenantId
-     * @param string $name
      * @param string[] $ids
      * @param string|null $resultType
      * @return stdClass[]
      */
-    public function loadAll(
-        ?string $tenantId,
-        string $name,
-        array $ids,
-        ?string $resultType = Result::DEFAULT
-    ): array {
-        Mysql::checkTenantId($tenantId);
-        $results = Mysql::nodeReader()->loadMany($name, $ids, $resultType);
+    public function loadAll(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array {
+        $results = Mysql::nodeReader()->loadMany($tenantId, $ids, $resultType);
         foreach ($results as $key => $result) {
-            $results[$key] = $this->retrieveFiles($name, $result, $result->id);
+            $results[$key] = $this->retrieveFiles($result);
         }
         return $results;
     }
 
-    public function load(
-        ?string $tenantId,
-        string $name,
-        string $id,
-        ?string $resultType = Result::DEFAULT
-    ): ?stdClass {
-        Mysql::checkTenantId($tenantId);
-        $data = Mysql::nodeReader()->load($name, $id, $resultType);
+    public function load(?string $tenantId, string $id, ?string $resultType = Result::DEFAULT): ?stdClass {
+        $data = Mysql::nodeReader()->load($tenantId, $id, $resultType);
         if ($data !== null) {
-            $data = $this->retrieveFiles($name, $data, $id);
+            $data = $this->retrieveFiles($data);
         }
         return $data;
     }
@@ -214,7 +196,6 @@ class MysqlDataProvider implements DataProvider
      */
     public function insert(string $tenantId, string $name, array $data): ?stdClass
     {
-        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -226,7 +207,7 @@ class MysqlDataProvider implements DataProvider
 
             Mysql::nodeWriter()->insert($tenantId, $name, $id, $data);
 
-            $loaded = $this->load($tenantId, $name, $id);
+            $loaded = $this->load($tenantId, $id);
             if ($loaded !== null) {
                 $model->afterInsert($loaded);
                 Mysql::history()->recordCreate($loaded, $model->getPropertyNamesForHistory($data));
@@ -248,11 +229,10 @@ class MysqlDataProvider implements DataProvider
      */
     public function update(string $tenantId, string $name, array $data): ?stdClass
     {
-        Mysql::checkTenantId($tenantId);
         //Mysql::beginTransaction();
         try {
             $model = model($name);
-            $oldNode = $this->load($tenantId, $name, $data['id'], Result::WITH_TRASHED);
+            $oldNode = $this->load($tenantId, $data['id'], Result::WITH_TRASHED);
             if ($oldNode === null) {
                 throw new Error($name . ' with ID ' . $data['id'] . ' not found.');
             }
@@ -278,7 +258,7 @@ class MysqlDataProvider implements DataProvider
             Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
 
             Mysql::reset(true);
-            $loaded = $this->load($tenantId, $name, $data['id'], Result::WITH_TRASHED);
+            $loaded = $this->load($tenantId, $data['id'], Result::WITH_TRASHED);
             if ($loaded !== null) {
                 $model->afterUpdate($loaded);
                 Mysql::history()->recordUpdate($oldNode, $loaded, $history);
@@ -300,7 +280,6 @@ class MysqlDataProvider implements DataProvider
      */
     public function updateMany(string $tenantId, string $name, array $data): stdClass
     {
-        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
@@ -323,10 +302,9 @@ class MysqlDataProvider implements DataProvider
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass
     {
-        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
-            $node = $this->load($tenantId, $name, $id, Result::WITH_TRASHED);
+            $node = $this->load($tenantId, $id, Result::WITH_TRASHED);
             if ($node === null) {
                 Mysql::rollBack();
                 return null;
@@ -346,12 +324,11 @@ class MysqlDataProvider implements DataProvider
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
-        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             $model = model($name);
             $model->beforeRestore($tenantId, $id);
-            $node = $this->load($tenantId, $name, $id, Result::WITH_TRASHED);
+            $node = $this->load($tenantId, $id, Result::WITH_TRASHED);
             if ($node === null) {
                 throw new Error($name . ' with ID ' . $id . ' not found.');
             }
@@ -370,7 +347,6 @@ class MysqlDataProvider implements DataProvider
 
     public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
-        Mysql::checkTenantId($tenantId);
         return Mysql::increment($tenantId, $key, $min, $transaction);
     }
 
@@ -390,7 +366,6 @@ class MysqlDataProvider implements DataProvider
      */
     public function addJob(string $tenantId, string $worker, ?string $model, ?array $data = null): string
     {
-        Mysql::checkTenantId($tenantId);
         Mysql::beginTransaction();
         try {
             if ($data !== null) {
@@ -600,8 +575,8 @@ class MysqlDataProvider implements DataProvider
      */
     protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
     {
-        return function () use ($tenantId, $name, $ids, $resultType) {
-            return $this->loadAll($tenantId, $name, $ids, $resultType);
+        return function () use ($tenantId, $ids, $resultType) {
+            return $this->loadAll($tenantId, $ids, $resultType);
         };
     }
 
@@ -732,9 +707,9 @@ class MysqlDataProvider implements DataProvider
         return $property->value_string ?? null;
     }
 
-    protected function retrieveFiles(string $name, stdClass $data, string $id): stdClass
+    protected function retrieveFiles(stdClass $data): stdClass
     {
-        $model = model($name);
+        $model = model($data->model);
         foreach (get_object_vars($model) as $key => $item) {
             if (
                 !$item instanceof Field
@@ -746,7 +721,7 @@ class MysqlDataProvider implements DataProvider
             //can't use closure here, because there are subfields - graphql-php only allows closures at leaf-nodes
             //$value = $data->$key;
             //$data->$key = function() use($name, $id, $key, $value) {File::retrieve($name, $id, $key, $value);};
-            $data->$key = File::retrieve($name, $id, $key, $data->$key);
+            $data->$key = File::retrieve($data->model, $data->id, $key, $data->$key);
         }
         return $data;
     }
