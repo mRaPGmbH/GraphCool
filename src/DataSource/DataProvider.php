@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\Definition\Job;
+use Mrap\GraphCool\Types\Enums\Result;
 use stdClass;
 
 interface DataProvider
 {
     public function migrate(): void;
 
-    public function load(?string $tenantId, string $name, string $id, ?string $resultType = 'DEFAULT'): ?stdClass;
+    public function load(?string $tenantId, string $id, ?string $resultType = Result::DEFAULT): ?stdClass;
 
     /**
      * @param string|null $tenantId
-     * @param string $name
      * @param string[] $ids
      * @param string|null $resultType
      * @return mixed[]
      */
-    public function loadAll(?string $tenantId, string $name, array $ids, ?string $resultType = 'DEFAULT'): array;
+    public function loadAll(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array;
 
     /**
      * @param string $tenantId

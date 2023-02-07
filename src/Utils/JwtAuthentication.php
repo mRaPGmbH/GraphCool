@@ -15,7 +15,6 @@ use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Mrap\GraphCool\DataSource\DB;
-use Ramsey\Uuid\Uuid;
 
 class JwtAuthentication
 {
