@@ -43,19 +43,19 @@ class MysqlQueryBuilder
 
     /**
      * @param Relation $relation
-     * @param string[] $parentIds
+     * @param string[] $nodeIds
      * @return MysqlQueryBuilder
      */
-    public static function forRelation(Relation $relation, array $parentIds): MysqlQueryBuilder
+    public static function forRelation(Relation $relation, array $nodeIds): MysqlQueryBuilder
     {
         $builder = new MysqlQueryBuilder();
         $builder->name = 'edge';
         if ($relation->type === Relation::HAS_ONE || $relation->type === Relation::HAS_MANY) {
-            $builder->where[] = $builder->fieldName('_parent_id') . ' IN ' . $builder->parameterArray($parentIds);
+            $builder->where[] = $builder->fieldName('_parent_id') . ' IN ' . $builder->parameterArray($nodeIds);
             $builder->where[] = $builder->fieldName('_child') . ' = ' . $builder->parameter($relation->name);
             $builder->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $builder->fieldName('_child_id');
         } elseif ($relation->type === Relation::BELONGS_TO || $relation->type === Relation::BELONGS_TO_MANY) {
-            $builder->where[] = $builder->fieldName('_child_id') . ' IN ' . $builder->parameterArray($parentIds);
+            $builder->where[] = $builder->fieldName('_child_id') . ' IN ' . $builder->parameterArray($nodeIds);
             $builder->where[] = $builder->fieldName('_parent') . ' = ' . $builder->parameter($relation->name);
             $builder->joins[] = 'LEFT JOIN `node` ON `node`.`id` = ' . $builder->fieldName('_parent_id');
         } else {

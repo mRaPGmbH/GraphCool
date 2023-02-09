@@ -21,7 +21,7 @@ class Exporter
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $jwt;
 
-        $data = DB::findAll($job->tenantId, $name, $args)->data;
+        $data = DB::findNodes($job->tenantId, $name, $args)->data;
         if ($data instanceof Closure) {
             $data = $data();
         }

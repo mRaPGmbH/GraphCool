@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\Definition\Job;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\Result;
 use stdClass;
 
@@ -20,7 +21,9 @@ interface DataProvider
      * @param string|null $resultType
      * @return mixed[]
      */
-    public function loadAll(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array;
+    public function loadNodes(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array;
+
+    public function loadEdges(?string $tenantId, array $ids): array;
 
     /**
      * @param string $tenantId
@@ -52,7 +55,9 @@ interface DataProvider
      * @param mixed[] $args
      * @return stdClass
      */
-    public function findAll(?string $tenantId, string $name, array $args): stdClass;
+    public function findNodes(?string $tenantId, string $name, array $args): stdClass;
+
+    public function findEdges(?string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass;
 
     public function delete(string $tenantId, string $name, string $id): ?stdClass;
 

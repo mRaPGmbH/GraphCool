@@ -39,7 +39,6 @@ class ReadModel extends Query
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         Authorization::authorize('read', $this->model);
-        //return DB::load(JwtAuthentication::tenantId(), $this->model, $args['id']);
-        return $this->load(JwtAuthentication::tenantId(), $this->model, $args['id']);
+        return $this->loadNodeDeferred(JwtAuthentication::tenantId(), $this->model, $args['id']);
     }
 }

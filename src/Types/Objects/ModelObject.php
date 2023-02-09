@@ -7,9 +7,12 @@ namespace Mrap\GraphCool\Types\Objects;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\Model;
+use Mrap\GraphCool\Definition\NodeCaching;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
+use Mrap\GraphCool\Utils\JwtAuthentication;
+use Mrap\GraphCool\Utils\StopWatch;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -17,6 +20,7 @@ class ModelObject extends ObjectType
 {
 
     use DynamicTypeTrait;
+    use NodeCaching;
 
     protected Model $model;
 
@@ -86,8 +90,11 @@ class ModelObject extends ObjectType
     {
         $field = $this->model->{$info->fieldName} ?? null;
         if ($field instanceof Relation) {
-            $closure = $modelData->{$info->fieldName};
-            return $closure($args);
+            StopWatch::start('RESOLVE RELATION');
+            StopWatch::stop('RESOLVE RELATION');
+            return $this->findEdgesDeferred(JwtAuthentication::tenantId(), $modelData, $field, $args);
+            //$closure = $modelData->{$info->fieldName};
+            //return $closure($args);
         }
         return $modelData->{$info->fieldName} ?? null;
     }

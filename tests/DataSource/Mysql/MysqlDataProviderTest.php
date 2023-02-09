@@ -26,7 +26,7 @@ class MysqlDataProviderTest extends TestCase
         require_once($this->dataPath().'/app/Models/DummyModel.php');
         $this->expectException(Error::class);
         $provider = new MysqlDataProvider();
-        $provider->findAll('a12f', 'DummyModel', ['page' => 0]);
+        $provider->findNodes('a12f', 'DummyModel', ['page' => 0]);
     }
 
     public function testFindAll(): void
@@ -74,7 +74,7 @@ class MysqlDataProviderTest extends TestCase
             'total' => 1
         ];
         foreach ([Result::DEFAULT, Result::WITH_TRASHED, Result::ONLY_SOFT_DELETED] as $resultType) {
-            $result = $provider->findAll('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
+            $result = $provider->findNodes('a12f', 'DummyModel', ['where' => ['column' => 'last_name', 'operator' => '=', 'value' => 'b'], 'result' => $resultType]);
             self::assertEquals($expected, $result->paginatorInfo, 'Pagination Info does not match expectation for ' . $resultType);
             self::assertEquals([$node], ($result->data)(), 'Data does not match expectation for ' . $resultType);
         }
@@ -761,7 +761,7 @@ class MysqlDataProviderTest extends TestCase
         File::setFileProvider($mock);
 
         $provider = new MysqlDataProvider();
-        $result = $provider->load('a12f', 'DummyModel', 'y5');
+        $result = $provider->load('a12f', 'y5');
 
         self::assertSame('SGVsbG8gV29ybGQh', $result->file->data_base64);
         self::assertSame('test.txt', $result->file->filename);
