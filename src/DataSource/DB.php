@@ -6,6 +6,7 @@ namespace Mrap\GraphCool\DataSource;
 
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Definition\Job;
+use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Utils\StopWatch;
 use Ramsey\Uuid\Uuid;
@@ -74,10 +75,10 @@ class DB
      * @param mixed[] $args
      * @return stdClass
      */
-    public static function findAll(?string $tenantId, string $name, array $args): stdClass
+    public static function findNodes(?string $tenantId, string $name, array $args): stdClass
     {
         StopWatch::start(__METHOD__);
-        $result = self::get()->findAll($tenantId, $name, $args);
+        $result = self::get()->findNodes($tenantId, $name, $args);
         StopWatch::stop(__METHOD__);
         return $result;
     }
@@ -89,13 +90,30 @@ class DB
      * @param mixed[] $args
      * @return stdClass
      */
-    public static function loadAll(?string $tenantId, array $ids): array
+    public static function loadNodes(?string $tenantId, array $ids): array
     {
         StopWatch::start(__METHOD__);
-        $result = self::get()->loadAll($tenantId, $ids);
+        $result = self::get()->loadNodes($tenantId, $ids);
         StopWatch::stop(__METHOD__);
         return $result;
     }
+
+    public static function findEdges(?string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass
+    {
+        StopWatch::start(__METHOD__);
+        $result = self::get()->findEdges($tenantId, $nodeId, $relation, $args);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
+    public static function loadEdges(?string $tenantId, array $ids): array
+    {
+        StopWatch::start(__METHOD__);
+        $result = self::get()->loadEdges($tenantId, $ids);
+        StopWatch::stop(__METHOD__);
+        return $result;
+    }
+
 
 
     /**

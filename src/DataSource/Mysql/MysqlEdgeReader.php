@@ -13,7 +13,6 @@ use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Utils\StopWatch;
 use Mrap\GraphCool\Utils\TimeZone;
-use RuntimeException;
 use stdClass;
 use function Mrap\GraphCool\model;
 
@@ -43,6 +42,69 @@ class MysqlEdgeReader
             }
             return $result;
         };
+    }
+
+    public function findEdges(string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass
+    {
+        $limit = $args['first'] ?? 10;
+        $page = $args['page'] ?? 1;
+        if ($page < 1) {
+            throw new Error('Page cannot be less than 1');
+        }
+        $offset = ($page - 1) * $limit;
+        $whereNode = $args['where'] ?? null;
+        $whereEdge = $args['whereEdge'] ?? null;
+        $search = $args['search'] ?? null;
+        $searchLoosely = $args['searchLoosely'] ?? null;
+        $orderBy = $args['orderBy'] ?? [];
+        $resultType = $args['result'] ?? Result::DEFAULT;
+
+        $query = MysqlQueryBuilder::forRelation($relation, [$nodeId]);
+        $query
+            ->tenant($tenantId)
+            ->select(['_parent_id', '_child_id', '_child', '_parent', '_updated_at', '_created_at', '_deleted_at'])
+            ->limit($limit, $offset)
+            ->where($whereEdge)
+            ->whereRelated($whereNode)
+            ->orderBy($orderBy)
+            ->search($search)
+            ->searchLoosely($searchLoosely);
+        match ($resultType) {
+            Result::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            Result::WITH_TRASHED => $query->withTrashed(),
+            'NONTRASHED_EDGES_OF_ANY_NODES' => $query->nontrashedEdgesOfAnyNodes(),
+            default => null
+        };
+        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+
+        $edges = Mysql::fetchAll($query->toSql(), $query->getParameters());
+        foreach ($edges as $edge) {
+            foreach (['updated_at', 'created_at', 'deleted_at'] as $date) {
+                $edge->$date = Carbon::parse($edge->$date)->setTimezone(TimeZone::get())->format('Y-m-d\TH:i:s.vp');
+            }
+            $edge->__relation = $relation; // workaround to be able to get pivot-property fields later
+        }
+
+        if ($relation->type === Relation::HAS_MANY || $relation->type === Relation::BELONGS_TO_MANY) {
+            $count = count($edges);
+            return (object)[
+                'paginatorInfo' => PaginatorInfo::create($count, $page, $limit, $total),
+                'edges' => $edges,
+            ];
+        }
+        return $edges;
+    }
+
+    public function loadEdges2(string $tenantId, array $edgeIds): array
+    {
+        foreach ($this->fetchEdgePropertiesMulti($edgeIds) as $property) {
+            $combined = $property->parent_id . '.' . $property->child_id;
+            $props = MysqlConverter::convertProperties([$property], $edgeIds[$combined]->__relation);
+            foreach ($props as $key => $value) {
+                $edgeIds[$combined]->$key = $value;
+            }
+        }
+        return $edgeIds;
     }
 
     /**
@@ -149,7 +211,7 @@ class MysqlEdgeReader
         StopWatch::start('related loadNodes');
         if (count($nodeIds) > 0) {
             $nodes = [];
-            $closure = DB::findAll($tenantId, $relation->name, ['first' => 99999, 'where' => ['column' => 'id', 'operator' => 'IN', 'value' => $nodeIds]])->data;
+            $closure = DB::findNodes($tenantId, $relation->name, ['first' => 99999, 'where' => ['column' => 'id', 'operator' => 'IN', 'value' => $nodeIds]])->data;
             foreach($closure() as $node) {
                 $nodes[$node->id] = $node;
             }

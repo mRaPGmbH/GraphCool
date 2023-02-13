@@ -42,7 +42,7 @@ class DBTest extends TestCase
             ->with('a','b',['c'])
             ->willReturn($expected);
         DB::setProvider($mock);
-        $result = DB::findAll('a','b',['c']);
+        $result = DB::findNodes('a','b',['c']);
         self::assertSame($expected, $result);
     }
 

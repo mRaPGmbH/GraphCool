@@ -43,7 +43,7 @@ class MysqlDataProvider implements DataProvider
      * @return stdClass
      * @throws Error
      */
-    public function findAll(?string $tenantId, string $name, array $args): stdClass
+    public function findNodes(?string $tenantId, string $name, array $args): stdClass
     {
         $limit = $args['first'] ?? 10;
         $page = $args['page'] ?? 1;
@@ -96,10 +96,11 @@ class MysqlDataProvider implements DataProvider
 
         $result = new stdClass();
         $result->paginatorInfo = PaginatorInfo::create(count($ids), $page, $limit, $total);
-        $result->data = function() use($tenantId, $ids, $resultType) {return $this->loadAll($tenantId, $ids, $resultType);};
+        $result->data = function() use($tenantId, $ids, $resultType) {return $this->loadNodes($tenantId, $ids, $resultType);};
         $result->ids = $ids;
         return $result;
     }
+
 
     public function getMax(?string $tenantId, string $name, string $key): float|bool|int|string
     {
@@ -171,7 +172,7 @@ class MysqlDataProvider implements DataProvider
      * @param string|null $resultType
      * @return stdClass[]
      */
-    public function loadAll(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array {
+    public function loadNodes(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array {
         $results = Mysql::nodeReader()->loadMany($tenantId, $ids, $resultType);
         foreach ($results as $key => $result) {
             $results[$key] = $this->retrieveFiles($result);
@@ -576,7 +577,7 @@ class MysqlDataProvider implements DataProvider
     protected function getClosure(string $tenantId, string $name, array $ids, string $resultType)
     {
         return function () use ($tenantId, $ids, $resultType) {
-            return $this->loadAll($tenantId, $ids, $resultType);
+            return $this->loadNodes($tenantId, $ids, $resultType);
         };
     }
 
@@ -755,4 +756,13 @@ class MysqlDataProvider implements DataProvider
     }
 
 
+    public function loadEdges(?string $tenantId, array $ids): array
+    {
+        return Mysql::edgeReader()->loadEdges2($tenantId, $ids);
+    }
+
+    public function findEdges(?string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass
+    {
+        return Mysql::edgeReader()->findEdges($tenantId, $nodeId, $relation, $args);
+    }
 }

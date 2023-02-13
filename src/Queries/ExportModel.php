@@ -43,7 +43,7 @@ class ExportModel extends Query
         $type = $args['type'] ?? 'xlsx';
         $args['first'] = 1048575; // max number of rows allowed in excel - 1 (for headers)
 
-        $data = DB::findAll(JwtAuthentication::tenantId(), $this->model, $args)->data;
+        $data = DB::findNodes(JwtAuthentication::tenantId(), $this->model, $args)->data;
         if ($data instanceof \Closure) {
             $data = $data();
         }

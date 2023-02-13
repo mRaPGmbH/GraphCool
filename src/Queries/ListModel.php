@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
-use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Definition\NodeCaching;
 use Mrap\GraphCool\Definition\Query;
@@ -59,7 +58,6 @@ class ListModel extends Query
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         Authorization::authorize('find', $this->model);
-        return DB::findAll(JwtAuthentication::tenantId(), $this->model , $args);
-        //return $this->findAll(JwtAuthentication::tenantId(), $this->model , $args);
+        return $this->findNodesDeferred(JwtAuthentication::tenantId(), $this->model , $args);
     }
 }
