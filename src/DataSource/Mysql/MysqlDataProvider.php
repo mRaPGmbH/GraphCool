@@ -168,6 +168,7 @@ class MysqlDataProvider implements DataProvider
 
 
     /**
+     * @param string|null $tenantId
      * @param string[] $ids
      * @param string|null $resultType
      * @return stdClass[]
@@ -258,7 +259,6 @@ class MysqlDataProvider implements DataProvider
 
             Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
 
-            Mysql::reset(true);
             $loaded = $this->load($tenantId, $data['id'], Result::WITH_TRASHED);
             if ($loaded !== null) {
                 $model->afterUpdate($loaded);
@@ -349,17 +349,6 @@ class MysqlDataProvider implements DataProvider
     public function increment(string $tenantId, string $key, int $min = 0, bool $transaction = true): int
     {
         return Mysql::increment($tenantId, $key, $min, $transaction);
-    }
-
-    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
-    {
-        $query = MysqlQueryBuilder::forModel($model, $name)
-            ->tenant($tenantId)
-            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
-            ->withTrashed();
-        if ((int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters()) === 0) {
-            throw new Error($name . ' with ID ' . $id . ' not found.');
-        }
     }
 
     /**
@@ -756,9 +745,9 @@ class MysqlDataProvider implements DataProvider
     }
 
 
-    public function loadEdges(?string $tenantId, array $ids): array
+    public function loadEdges(array $ids): array
     {
-        return Mysql::edgeReader()->loadEdges2($tenantId, $ids);
+        return Mysql::edgeReader()->loadEdges($ids);
     }
 
     public function findEdges(?string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass

@@ -106,10 +106,10 @@ class DB
         return $result;
     }
 
-    public static function loadEdges(?string $tenantId, array $ids): array
+    public static function loadEdges(array $ids): array
     {
         StopWatch::start(__METHOD__);
-        $result = self::get()->loadEdges($tenantId, $ids);
+        $result = self::get()->loadEdges($ids);
         StopWatch::stop(__METHOD__);
         return $result;
     }

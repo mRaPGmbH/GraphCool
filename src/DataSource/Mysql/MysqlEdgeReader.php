@@ -18,7 +18,7 @@ use function Mrap\GraphCool\model;
 
 class MysqlEdgeReader
 {
-    public function loadEdges(stdClass $node, string $name): stdClass
+    public function injectEdgeClosures(stdClass $node): stdClass
     {
         $model = model($node->model);
         foreach (get_object_vars($model) as $key => $relation) {
@@ -95,7 +95,7 @@ class MysqlEdgeReader
         return $edges;
     }
 
-    public function loadEdges2(string $tenantId, array $edgeIds): array
+    public function loadEdges(array $edgeIds): array
     {
         foreach ($this->fetchEdgePropertiesMulti($edgeIds) as $property) {
             $combined = $property->parent_id . '.' . $property->child_id;
@@ -230,63 +230,6 @@ class MysqlEdgeReader
             ];
         }
         return $edges;
-    }
-
-    protected function fetchEdge(
-        ?string $tenantId,
-        string $parentId,
-        string $childId,
-        ?string $resultType = Result::DEFAULT
-    ): ?stdClass {
-        StopWatch::start(__METHOD__);
-        $sql = 'SELECT * FROM `edge` WHERE `parent_id` = :parent_id AND `child_id` = :child_id ';
-        $parameters = [
-            ':parent_id' => $parentId,
-            ':child_id' => $childId
-        ];
-
-        if ($tenantId !== null) {
-            $sql .= 'AND `tenant_id` = :tenant_id ';
-            $parameters[':tenant_id'] = $tenantId;
-        }
-        $sql .= match ($resultType) {
-            'ONLY_SOFT_DELETED' => 'AND `deleted_at` IS NOT NULL ',
-            'WITH_TRASHED', 'NONTRASHED_EDGES_OF_ANY_NODES' => '',
-            default => 'AND `deleted_at` IS NULL ',
-        };
-
-        $edge = Mysql::fetch($sql, $parameters);
-        if ($edge === null) {
-            return null;
-        }
-        $dates = ['updated_at', 'created_at', 'deleted_at'];
-        foreach ($dates as $date) {
-            if ($edge->$date !== null) {
-                $dateTime = Carbon::parse($edge->$date);
-                $dateTime->setTimezone(TimeZone::get());
-                $edge->$date = $dateTime->format('Y-m-d\TH:i:s.vp');
-            }
-        }
-        StopWatch::stop(__METHOD__);
-        return $edge;
-    }
-
-    /**
-     * @param string $parentId
-     * @param string $childId
-     * @return stdClass[]
-     */
-    protected function fetchEdgeProperties(string $parentId, string $childId): array
-    {
-        StopWatch::start(__METHOD__);
-        $sql = 'SELECT * FROM `edge_property` WHERE `parent_id` = :parent_id AND `child_id` = :child_id AND `deleted_at` IS NULL';
-        $params = [
-            ':parent_id' => $parentId,
-            ':child_id' => $childId
-        ];
-        $result =  Mysql::fetchAll($sql, $params);
-        StopWatch::stop(__METHOD__);
-        return $result;
     }
 
     protected function fetchEdgePropertiesMulti(array $idGroups): array

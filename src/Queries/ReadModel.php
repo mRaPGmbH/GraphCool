@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\ModelBased;
-use Mrap\GraphCool\Definition\NodeCaching;
+use Mrap\GraphCool\Definition\DeferredBatching;
 use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
@@ -16,7 +16,7 @@ use RuntimeException;
 class ReadModel extends Query
 {
     use ModelBased;
-    use NodeCaching;
+    use DeferredBatching;
 
     public function __construct(?string $model = null)
     {
