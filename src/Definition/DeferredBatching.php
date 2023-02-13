@@ -8,7 +8,7 @@ use Mrap\GraphCool\Types\Enums\Result;
 use RuntimeException;
 use stdClass;
 
-trait NodeCaching
+trait DeferredBatching
 {
 
     private static ?string $tenantId = null;
@@ -36,18 +36,6 @@ trait NodeCaching
         });
     }
 
-    protected function loadNodesDeferred(string $tenantId, string $name, array $ids, ?string $resultType = Result::DEFAULT): Deferred
-    {
-        $this->checkTenantId($tenantId);
-        foreach ($ids as $id) {
-            $this->addNodeId($id);
-        }
-        return new Deferred(function () use ($name, $ids, $resultType) {
-            $this->loadNodes();
-            return $this->filterNodes($ids, $name, $resultType);
-        });
-    }
-
     protected function findNodesDeferred(?string $tenantId, string $name, array $args): Deferred
     {
         $this->checkTenantId($tenantId);
@@ -68,7 +56,7 @@ trait NodeCaching
 
     private function findEdgesDeferred(?string $tenantId, stdClass $modelData, Relation $relation, array $args): Deferred
     {
-        $this->checkTenantId($tenantId, 'Edge');
+        $this->checkTenantId($tenantId);
         $result = DB::findEdges($tenantId, $modelData->id, $relation, $args);
         if (is_array($result)) {
             $edgeIds = $result;
@@ -156,10 +144,10 @@ trait NodeCaching
         return true;
     }
 
-    private function checkTenantId(string $tenantId, string $errorText = 'Node'): void
+    private function checkTenantId(string $tenantId): void
     {
         if (self::$tenantId !== null && static::$tenantId !== $tenantId) {
-            throw new RuntimeException('Cannot change TenantId when using ' . $errorText . 'Caching: ' . static::$tenantId . ' => ' . $tenantId);
+            throw new RuntimeException('Cannot change TenantId when using DeferredLoading: ' . static::$tenantId . ' => ' . $tenantId);
         }
         self::$tenantId = $tenantId;
     }
@@ -169,7 +157,7 @@ trait NodeCaching
         if (count(static::$edgeIds) === 0) {
             return;
         }
-        static::$loadedEdges = array_merge(self::$loadedEdges, DB::loadEdges(self::$tenantId, self::$edgeIds));
+        static::$loadedEdges = array_merge(self::$loadedEdges, DB::loadEdges(self::$edgeIds));
         static::$edgeIds = [];
     }
 

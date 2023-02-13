@@ -38,7 +38,7 @@ class CreateModel extends Mutation
         foreach ($modelObj->relations() as $key => $relation) {
             $relationType = Type::relation($relation);
             if ($relationType !== null) {
-                if ($relation->null === false || $relation->type === Relation::BELONGS_TO_MANY) {
+                if ($relation->null === false || $relation->type === Relation::BELONGS_TO_MANY) { // TODO: should this be BELONGS_TO ?
                     $relationType = Type::nonNull($relationType);
                 }
                 if ($relation->type === Relation::BELONGS_TO_MANY) {
@@ -46,19 +46,6 @@ class CreateModel extends Mutation
                 }
                 $args[$key] = $relationType;
             }
-
-            /*
-            if ($relation->type === Relation::BELONGS_TO) {
-                if ($relation->null) {
-                    $args[$key] = Type::get('_' . $model . '__' . $key . 'Relation');
-                } else {
-                    $args[$key] = Type::nonNull(Type::get('_' . $model . '__' . $key . 'Relation'));
-                }
-            } elseif ($relation->type === Relation::BELONGS_TO_MANY) {
-                $args[$key] = Type::listOf(
-                    Type::nonNull(Type::get('_' . $model . '__' . $key . 'ManyRelation'))
-                );
-            }*/
         }
         $args['_timezone'] = Type::timezoneOffset();
         ksort($args);

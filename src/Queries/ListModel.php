@@ -6,7 +6,7 @@ namespace Mrap\GraphCool\Queries;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\ModelBased;
-use Mrap\GraphCool\Definition\NodeCaching;
+use Mrap\GraphCool\Definition\DeferredBatching;
 use Mrap\GraphCool\Definition\Query;
 use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Type;
@@ -19,7 +19,7 @@ use function Mrap\GraphCool\model;
 class ListModel extends Query
 {
     use ModelBased;
-    use NodeCaching;
+    use DeferredBatching;
 
     public function __construct(?string $model = null)
     {

@@ -23,7 +23,7 @@ interface DataProvider
      */
     public function loadNodes(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array;
 
-    public function loadEdges(?string $tenantId, array $ids): array;
+    public function loadEdges(array $ids): array;
 
     /**
      * @param string $tenantId

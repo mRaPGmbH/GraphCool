@@ -24,7 +24,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $result = $reader->loadEdges($node, 'DummyModel');
+        $result = $reader->injectEdgeClosures($node);
 
         self::assertInstanceOf(Closure::class, $result->belongs_to);
         self::assertInstanceOf(Closure::class, $result->belongs_to2);
@@ -84,7 +84,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
 
         $args = [];
@@ -101,7 +101,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
 
         $args = ['page' => 0];
@@ -154,7 +154,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
 
         $args['result'] = Result::ONLY_SOFT_DELETED;
@@ -209,7 +209,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
 
         $args['result'] = Result::WITH_TRASHED;
@@ -264,7 +264,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
 
         $args['result'] = 'NONTRASHED_EDGES_OF_ANY_NODES';
@@ -319,7 +319,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to_many;
 
         $args = [];
@@ -387,7 +387,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->has_one;
 
         $args = [];
@@ -442,7 +442,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
 
-        $node = $reader->loadEdges($node, 'DummyModel');
+        $node = $reader->injectEdgeClosures($node);
         $closure = $node->has_one;
 
         $args = [];

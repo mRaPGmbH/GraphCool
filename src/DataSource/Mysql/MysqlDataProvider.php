@@ -351,17 +351,6 @@ class MysqlDataProvider implements DataProvider
         return Mysql::increment($tenantId, $key, $min, $transaction);
     }
 
-    protected function checkIfNodeExists(string $tenantId, Model $model, string $name, string $id): void
-    {
-        $query = MysqlQueryBuilder::forModel($model, $name)
-            ->tenant($tenantId)
-            ->where(['column' => 'id', 'operator' => '=', 'value' => $id])
-            ->withTrashed();
-        if ((int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters()) === 0) {
-            throw new Error($name . ' with ID ' . $id . ' not found.');
-        }
-    }
-
     /**
      * @throws JsonException
      */
@@ -756,9 +745,9 @@ class MysqlDataProvider implements DataProvider
     }
 
 
-    public function loadEdges(?string $tenantId, array $ids): array
+    public function loadEdges(array $ids): array
     {
-        return Mysql::edgeReader()->loadEdges2($tenantId, $ids);
+        return Mysql::edgeReader()->loadEdges($ids);
     }
 
     public function findEdges(?string $tenantId, string $nodeId, Relation $relation, array $args): array|stdClass

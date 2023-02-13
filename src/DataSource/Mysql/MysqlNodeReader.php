@@ -34,7 +34,7 @@ class MysqlNodeReader
         }
         $nodes = [];
         foreach ($this->fetchNodes($tenantId, $ids, $resultType) as $id => $node) {
-            $nodes[$id] = Mysql::edgeReader()->loadEdges($node, $node->model);
+            $nodes[$id] = Mysql::edgeReader()->injectEdgeClosures($node);
         }
         if (count($nodes) === 0) {
             StopWatch::stop(__METHOD__);
@@ -72,7 +72,7 @@ class MysqlNodeReader
                     $node->$date = $dateTime->getPreciseTimestamp(3);
                 }
             }
-            $nodes[$node->id] = Mysql::edgeReader()->loadEdges($node, 'sdf');
+            $nodes[$node->id] = Mysql::edgeReader()->injectEdgeClosures($node);
         }
         StopWatch::stop(__METHOD__);
         return Sorter::sortNodesByIdOrder($nodes, $ids);
