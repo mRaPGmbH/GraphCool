@@ -9,15 +9,10 @@ use Mrap\GraphCool\Types\TypeLoader;
 class PublicMutation extends Mutation
 {
 
-    public function __construct(TypeLoader $typeLoader)
+    public function __construct(?string $model = null)
     {
-        $this->noAuthentication();
         $this->name = 'PublicMutation';
         $this->config = [];
-    }
-
-    public function authorize(): void
-    {
     }
 
     public function resolve(array $rootValue, array $args, $context, ResolveInfo $info)

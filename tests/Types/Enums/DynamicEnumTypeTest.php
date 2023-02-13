@@ -7,14 +7,15 @@ use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\EnumValueDefinition;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\DynamicEnum;
-use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class DynamicEnumTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $enum = new DynamicEnum('_DummyModel__enumEnum', new TypeLoader());
+        $model = model('DummyModel');
+        $enum = new DynamicEnum($model->enum);
         self::assertInstanceOf(EnumType::class, $enum);
 
         $columns = [];
@@ -33,7 +34,8 @@ class DynamicEnumTypeTest extends TestCase
     public function testPivotEnum(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $enum = new DynamicEnum('_DummyModel__belongs_to_many__pivot_enumEnum', new TypeLoader());
+        $model = model('DummyModel');
+        $enum = new DynamicEnum($model->belongs_to_many->pivot_enum);
         self::assertInstanceOf(EnumType::class, $enum);
 
         $columns = [];

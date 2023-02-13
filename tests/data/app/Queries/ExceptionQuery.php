@@ -10,16 +10,12 @@ use RuntimeException;
 class ExceptionQuery extends Query
 {
 
-    public function __construct()
+    public function __construct(?string $model = null)
     {
         $this->name = 'ExceptionQuery';
         $this->config = [
             'type' => Type::string()
         ];
-    }
-
-    public function authorize(): void
-    {
     }
 
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
