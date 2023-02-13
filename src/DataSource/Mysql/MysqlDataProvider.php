@@ -168,6 +168,7 @@ class MysqlDataProvider implements DataProvider
 
 
     /**
+     * @param string|null $tenantId
      * @param string[] $ids
      * @param string|null $resultType
      * @return stdClass[]
@@ -258,7 +259,6 @@ class MysqlDataProvider implements DataProvider
 
             Mysql::nodeWriter()->update($tenantId, $name, $data['id'], $updates);
 
-            Mysql::reset(true);
             $loaded = $this->load($tenantId, $data['id'], Result::WITH_TRASHED);
             if ($loaded !== null) {
                 $model->afterUpdate($loaded);
