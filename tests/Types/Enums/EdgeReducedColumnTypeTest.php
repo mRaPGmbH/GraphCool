@@ -7,14 +7,15 @@ use GraphQL\Type\Definition\EnumType;
 use GraphQL\Type\Definition\EnumValueDefinition;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\Enums\EdgeReducedColumn;
-use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class EdgeReducedColumnTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');
-        $enum = new EdgeReducedColumn('_DummyModel__belongs_to_manyEdgeReducedColumn', new TypeLoader());
+        $model = model('DummyModel');
+        $enum = new EdgeReducedColumn($model->belongs_to_many);
         self::assertInstanceOf(EnumType::class, $enum);
 
         $columns = [];

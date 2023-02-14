@@ -23,6 +23,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $result = $reader->injectEdgeClosures($node);
 
@@ -75,7 +76,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -83,6 +84,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
@@ -100,6 +102,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
@@ -145,7 +148,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -153,6 +156,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
@@ -199,7 +203,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -208,6 +212,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
@@ -254,7 +259,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -263,6 +268,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to;
@@ -310,7 +316,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -318,6 +324,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->belongs_to_many;
@@ -371,7 +378,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -386,6 +393,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->has_one;
@@ -433,7 +441,7 @@ class MysqlEdgeReaderTest extends TestCase
         $dummyNode->id = 'node-id';
         $mock2 = $this->createMock(MysqlDataProvider::class);
         $mock2->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->willReturn((object)['data' => function() use ($dummyNode){return ['node-id' => $dummyNode];}]);
         DB::setProvider($mock2);
 
@@ -441,6 +449,7 @@ class MysqlEdgeReaderTest extends TestCase
         $node = new stdClass();
         $node->id = 'asdf123123';
         $node->tenant_id = 'hc123';
+        $node->model = 'DummyModel';
 
         $node = $reader->injectEdgeClosures($node);
         $closure = $node->has_one;

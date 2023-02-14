@@ -20,10 +20,6 @@ class DummyQuery extends Query
         ];
     }
 
-    public function authorize(): void
-    {
-    }
-
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         return $args['arg'] ?? 'dummy-query-resolve';

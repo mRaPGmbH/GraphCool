@@ -12,7 +12,6 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\MutationType;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\FileImport2;
 
@@ -23,7 +22,7 @@ class MutationTypeTest extends TestCase
     {
         require_once($this->dataPath().'/app/Mutations/DummyMutation.php');
         ClassFinder::setRootPath($this->dataPath());
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         self::assertInstanceOf(ObjectType::class, $query);
     }
 
@@ -31,7 +30,7 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         ClassFinder::setRootPath($this->dataPath());
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'DummyMutation';
@@ -42,7 +41,7 @@ class MutationTypeTest extends TestCase
     public function testResolveCreate(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'createClassname';
@@ -69,7 +68,7 @@ class MutationTypeTest extends TestCase
     public function testResolveUpdateMany(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'updateManyClassnames';
@@ -93,7 +92,7 @@ class MutationTypeTest extends TestCase
     public function testResolveUpdate(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'updateClassname';
@@ -120,7 +119,7 @@ class MutationTypeTest extends TestCase
     public function testResolveDelete(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'deleteClassname';
@@ -147,7 +146,7 @@ class MutationTypeTest extends TestCase
     public function testResolveRestore(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'restoreClassname';
@@ -174,7 +173,7 @@ class MutationTypeTest extends TestCase
     public function testResolveImport(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'importClassnames';
@@ -208,7 +207,7 @@ class MutationTypeTest extends TestCase
     public function testResolveImport2(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'importClassnames';
@@ -250,7 +249,7 @@ class MutationTypeTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'not-a-known-mutation';
@@ -261,7 +260,7 @@ class MutationTypeTest extends TestCase
     public function testResolveImportAsync(): void
     {
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'importClassnamesAsync';
@@ -287,7 +286,7 @@ class MutationTypeTest extends TestCase
         $this->expectException(Error::class);
 
         $this->provideJwt();
-        $query = new MutationType(new TypeLoader());
+        $query = new MutationType();
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'importClassnamesAsync';

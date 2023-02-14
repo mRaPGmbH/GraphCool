@@ -38,7 +38,7 @@ class DBTest extends TestCase
         $mock = $this->createMock(MysqlDataProvider::class);
         $expected = (object)['d'];
         $mock->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->with('a','b',['c'])
             ->willReturn($expected);
         DB::setProvider($mock);
