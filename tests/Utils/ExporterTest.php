@@ -30,7 +30,7 @@ class ExporterTest extends TestCase
 
         $dbMock = $this->createMock(MysqlDataProvider::class);
         $dbMock->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->withAnyParameters()
             ->willReturn((object)['data' => function(){return[];}]);
         DB::setProvider($dbMock);

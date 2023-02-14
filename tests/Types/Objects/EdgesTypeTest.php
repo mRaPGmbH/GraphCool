@@ -6,14 +6,17 @@ namespace Mrap\GraphCool\Tests\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Tests\TestCase;
+use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\ModelEdgePaginator;
-use Mrap\GraphCool\Types\TypeLoader;
+use function Mrap\GraphCool\model;
 
 class EdgesTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $object = new ModelEdgePaginator('_DummyModel__belongs_to_manyEdges', new TypeLoader());
+        $model = model('DummyModel');
+        $edge = new ModelEdge($model->belongs_to_many);
+        $object = new ModelEdgePaginator($edge);
         self::assertInstanceOf(ObjectType::class, $object);
     }
 }
