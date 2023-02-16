@@ -34,7 +34,7 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
     public function shutdown(): void
     {
         if (count($this->needIndexing) > 0) {
-            Mysql::getPdo()->exec('SET SESSION group_concat_max_len =  4294967295');
+            Mysql::getPdo()->exec('SET SESSION group_concat_max_len = 4294967295');
             foreach ($this->needIndexing as $tenantId => $models) {
                 $this->updateIndex((string)$tenantId, $models);
             }
