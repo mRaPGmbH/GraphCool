@@ -31,6 +31,7 @@ class MutationTypeTest extends TestCase
         $this->provideJwt();
         ClassFinder::setRootPath($this->dataPath());
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'DummyMutation';
@@ -42,9 +43,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'createClassname';
+        $info->fieldName = 'createDummyModel';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->once())
             ->method('toString')
@@ -69,9 +71,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'updateManyClassnames';
+        $info->fieldName = 'updateManyDummyModels';
         $info->returnType = $this->createMock(Type::class);
 
         $mock = $this->createMock(MysqlDataProvider::class);
@@ -80,7 +83,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('updateMany')
-            ->with('1', 'Classname', ['id' => 'some-id-string'])
+            ->with('1', 'DummyModel', ['id' => 'some-id-string'])
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -93,9 +96,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'updateClassname';
+        $info->fieldName = 'updateDummyModel';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->once())
             ->method('toString')
@@ -120,13 +124,14 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'deleteClassname';
+        $info->fieldName = 'deleteDummyModel';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->atLeast(1))
             ->method('toString')
-            ->willReturn('classname');
+            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -134,7 +139,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('delete')
-            ->with(1, 'classname', 'some-id-string')
+            ->with(1, 'DummyModel', 'some-id-string')
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -147,13 +152,14 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'restoreClassname';
+        $info->fieldName = 'restoreDummyModel';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->atLeast(1))
             ->method('toString')
-            ->willReturn('classname');
+            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -161,7 +167,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('restore')
-            ->with(1, 'classname', 'some-id-string')
+            ->with(1, 'DummyModel', 'some-id-string')
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -174,9 +180,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'importClassnames';
+        $info->fieldName = 'importDummyModels';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->name = '_FileImport';
         $mock = $this->createMock(FileImport2::class);
@@ -195,7 +202,7 @@ class MutationTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('import')
-            ->with('Classname', [])
+            ->with('DummyModel', [])
             ->willReturn($return);
 
         File::setImporter($mock);
@@ -208,9 +215,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'importClassnames';
+        $info->fieldName = 'importDummyModels';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->name = '_FileImport';
         $mock = $this->createMock(FileImport2::class);
@@ -228,7 +236,7 @@ class MutationTypeTest extends TestCase
         ];
         $mock->expects($this->once())
             ->method('import')
-            ->with('Classname', [])
+            ->with('DummyModel', [])
             ->willReturn($return);
 
         File::setImporter($mock);
@@ -250,6 +258,7 @@ class MutationTypeTest extends TestCase
 
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'not-a-known-mutation';
@@ -261,9 +270,10 @@ class MutationTypeTest extends TestCase
     {
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'importClassnamesAsync';
+        $info->fieldName = 'importDummyModelsAsync';
         $info->returnType = $this->createMock(Type::class);
 
         $mock = $this->createMock(MysqlDataProvider::class);
@@ -287,9 +297,10 @@ class MutationTypeTest extends TestCase
 
         $this->provideJwt();
         $query = new MutationType();
+        $query->config['fields'](); // has to be called, to prime the setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
-        $info->fieldName = 'importClassnamesAsync';
+        $info->fieldName = 'importDummyModelsAsync';
         $info->returnType = $this->createMock(Type::class);
 
         $closure([], [], [], $info);

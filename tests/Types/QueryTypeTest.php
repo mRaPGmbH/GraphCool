@@ -11,7 +11,6 @@ use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Tests\TestCase;
 use Mrap\GraphCool\Types\QueryType;
-use Mrap\GraphCool\Types\TypeLoader;
 use Mrap\GraphCool\Utils\ClassFinder;
 use Mrap\GraphCool\Utils\FileExport;
 
@@ -22,22 +21,23 @@ class QueryTypeTest extends TestCase
     {
         require_once($this->dataPath().'/app/Queries/DummyQuery.php');
         ClassFinder::setRootPath($this->dataPath());
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
         self::assertInstanceOf(ObjectType::class, $query);
     }
 
     public function testResolve(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->expects($this->once())
             ->method('toString')
-            ->willReturn('classname');
-        $info->returnType->name = 'name';
-        $info->fieldName = 'test';
+            ->willReturn('DummyQuery');
+        $info->returnType->name = 'DummyQuery';
+        $info->fieldName = 'DummyQuery';
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -45,7 +45,7 @@ class QueryTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('load')
-            ->with(1, 'classname', 'some-id-string')
+            ->with(1, 'DummyQuery', 'some-id-string')
             ->willReturn($object);
 
         DB::setProvider($mock);
@@ -57,7 +57,8 @@ class QueryTypeTest extends TestCase
     public function testCustomResolver(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'DummyQuery';
@@ -68,18 +69,20 @@ class QueryTypeTest extends TestCase
     public function testResolvePaginator(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->name = '_classnamePaginator';
+        $info->fieldName = 'dummyModels';
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
         $object = (object) ['id'=>123, 'last_name'=>'test'];
 
         $mock->expects($this->once())
-            ->method('findAll')
+            ->method('findNodes')
             ->with(1, 'classname', [])
             ->willReturn($object);
 
@@ -93,7 +96,8 @@ class QueryTypeTest extends TestCase
     {
         // TODO: mock DB::findAll
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'exportClassnames';
@@ -116,7 +120,8 @@ class QueryTypeTest extends TestCase
     public function testResolveDiagram(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = '_classDiagram';
@@ -131,7 +136,8 @@ ENUM pivot_enum!';
     public function testResolveToken(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = '_Token';
@@ -148,7 +154,8 @@ ENUM pivot_enum!';
     public function testResolveJobPaginator(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->returnType = $this->createMock(Type::class);
@@ -170,7 +177,8 @@ ENUM pivot_enum!';
     public function testResolveExportAsync(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'exportDummyModelsAsync';
@@ -193,7 +201,8 @@ ENUM pivot_enum!';
     public function testResolveExportJob(): void
     {
         $this->provideJwt();
-        $query = new QueryType(new TypeLoader());
+        $query = new QueryType();
+        $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = '_ImportJob';

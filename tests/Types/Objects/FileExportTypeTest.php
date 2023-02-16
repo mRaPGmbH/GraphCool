@@ -12,7 +12,7 @@ class FileExportTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $enum = new FileExport();
-        self::assertInstanceOf(ObjectType::class, $enum);
+        $export = new FileExport();
+        self::assertInstanceOf(ObjectType::class, $export);
     }
 }

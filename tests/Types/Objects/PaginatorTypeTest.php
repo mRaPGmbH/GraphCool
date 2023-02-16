@@ -6,21 +6,19 @@ namespace Mrap\GraphCool\Tests\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\ModelPaginator;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class PaginatorTypeTest extends TestCase
 {
     public function testConstructor(): void
     {
-        $object = new ModelPaginator('_DummyModelPaginator', new TypeLoader());
+        $object = new ModelPaginator('DummyModel');
         self::assertInstanceOf(ObjectType::class, $object);
     }
 
     public function testConstructorJob(): void
     {
-        $object = new ModelPaginator('_Import_JobPaginator', new TypeLoader());
+        $object = new ModelPaginator('Import_Job');
         self::assertInstanceOf(ObjectType::class, $object);
     }
 }

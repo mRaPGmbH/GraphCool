@@ -4,7 +4,6 @@ namespace App\Mutations;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\Mutation;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class DummyMutation extends Mutation
 {

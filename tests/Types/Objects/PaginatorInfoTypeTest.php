@@ -6,9 +6,7 @@ namespace Mrap\GraphCool\Tests\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
 use Mrap\GraphCool\Tests\TestCase;
-use Mrap\GraphCool\Types\Objects\ModelEdge;
 use Mrap\GraphCool\Types\Objects\PaginatorInfo;
-use Mrap\GraphCool\Types\TypeLoader;
 
 class PaginatorInfoTypeTest extends TestCase
 {
