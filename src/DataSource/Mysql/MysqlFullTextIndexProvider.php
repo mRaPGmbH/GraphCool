@@ -33,10 +33,13 @@ class MysqlFullTextIndexProvider implements FullTextIndexProvider
 
     public function shutdown(): void
     {
-        foreach ($this->needIndexing as $tenantId => $models) {
-            $this->updateIndex((string)$tenantId, $models);
+        if (count($this->needIndexing) > 0) {
+            Mysql::getPdo()->exec('SET SESSION group_concat_max_len = 4294967295');
+            foreach ($this->needIndexing as $tenantId => $models) {
+                $this->updateIndex((string)$tenantId, $models);
+            }
+            $this->needIndexing = [];
         }
-        $this->needIndexing = [];
         if (count($this->needDeletion) > 0) {
             $sql = 'DELETE FROM `fulltext` WHERE `node_id` IN '. $this->quoteArray($this->needDeletion);
             Mysql::getPdo()->exec($sql);
