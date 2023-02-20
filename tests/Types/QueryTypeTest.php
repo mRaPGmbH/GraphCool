@@ -83,7 +83,7 @@ class QueryTypeTest extends TestCase
 
         $mock->expects($this->once())
             ->method('findNodes')
-            ->with(1, 'classname', [])
+            ->with(1, 'DummyModel', [])
             ->willReturn($object);
 
         DB::setProvider($mock);

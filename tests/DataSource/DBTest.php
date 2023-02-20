@@ -5,6 +5,7 @@ namespace Mrap\GraphCool\Tests\DataSource;
 use Mrap\GraphCool\DataSource\DB;
 use Mrap\GraphCool\DataSource\Mysql\MysqlDataProvider;
 use Mrap\GraphCool\Tests\TestCase;
+use Mrap\GraphCool\Types\Enums\Result;
 
 class DBTest extends TestCase
 {
@@ -14,7 +15,7 @@ class DBTest extends TestCase
         $expected = (object)['d'];
         $mock->expects($this->once())
             ->method('load')
-            ->with('a','b','c')
+            ->with('a', 'c', Result::DEFAULT) // name "b" is unused now
             ->willReturn($expected);
         DB::setProvider($mock);
         $result = DB::load('a','b','c');
