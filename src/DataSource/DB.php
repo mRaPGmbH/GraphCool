@@ -90,10 +90,10 @@ class DB
      * @param mixed[] $args
      * @return stdClass
      */
-    public static function loadNodes(?string $tenantId, array $ids): array
+    public static function loadNodes(?string $tenantId, array $ids, ?string $resultType = Result::DEFAULT): array
     {
         StopWatch::start(__METHOD__);
-        $result = self::get()->loadNodes($tenantId, $ids);
+        $result = self::get()->loadNodes($tenantId, $ids, $resultType);
         StopWatch::stop(__METHOD__);
         return $result;
     }

@@ -105,7 +105,7 @@ trait DeferredBatching
         if (count(static::$nodeIds) === 0) {
             return;
         }
-        static::$loadedNodes = array_merge(self::$loadedNodes, DB::loadNodes(self::$tenantId, self::$nodeIds));
+        static::$loadedNodes = array_merge(self::$loadedNodes, DB::loadNodes(static::$tenantId, static::$nodeIds, Result::WITH_TRASHED));
         static::$nodeIds = [];
     }
 
