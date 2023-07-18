@@ -209,7 +209,7 @@ abstract class Type extends BaseType implements NullableType
 
         // _<model>Column
         if (ModelColumn::nameMatches($name)) {
-            return static::columnMapping(ModelColumn::getStrippedName($name));
+            return static::column(ModelColumn::getStrippedName($name));
         }
 
         // _<model>Input
