@@ -107,6 +107,8 @@ class MysqlQueryBuilder
             if ($this->name === 'edge') {
                 $this->where[] = '`edge`.`tenant_id` = ' . $this->parameter($tenantId);
             }
+        } else {
+            $this->where[] = 'true';
         }
         return $this;
     }
