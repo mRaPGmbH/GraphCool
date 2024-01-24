@@ -36,7 +36,7 @@ class FileExport
      * @throws \Box\Spout\Common\Exception\IOException
      * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
      */
-    public function export(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
+    public function export(string $name, array $data, array $args, string $type = 'xlsx', string $postFix = ''): stdClass
     {
         $model = model($name);
 
@@ -46,11 +46,11 @@ class FileExport
         $result = new stdClass();
         if ($type === 'csv_excel') {
             /** @var Writer $writer */
-            $result->filename = $name . '-Export_' . date('Y-m-d') . '.csv';
+            $result->filename = $name . '-Export_' . date('Y-m-d') . $postFix . '.csv';
             $writer->setFieldDelimiter(';');
             $writer->setFieldEnclosure('"');
         } else {
-            $result->filename = $name . '-Export_' . date('Y-m-d') . '.' . $type;
+            $result->filename = $name . '-Export_' . date('Y-m-d') . $postFix . '.' . $type;
         }
 
         $file = tempnam(sys_get_temp_dir(), 'export');
@@ -66,20 +66,21 @@ class FileExport
         $this->excelDateTimeStyle = (new StyleBuilder())->setFormat('dd/mm/yyyy hh:mm')->build();
         $this->excelTimeStyle = (new StyleBuilder())->setFormat('hh:mm')->build();
 
-        foreach ($data as $row) {
+        foreach ($data as $i => $row) {
             $writer->addRow(WriterEntityFactory::createRow($this->getRowCells($model, $args, $row)));
+            unset($data[$i], $row);
         }
         $writer->close();
 
         $result->mime_type = $this->getMimeType($type);
         $contents = file_get_contents($file);
+        unlink($file);
         if ($contents === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Export failed to get contents from file ' . $file);
             // @codeCoverageIgnoreEnd
         }
         $result->data_base64 = base64_encode($contents);
-        unlink($file);
         return $result;
     }
 

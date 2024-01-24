@@ -22,7 +22,7 @@
     }
   },
   "require": {
-    "php": ">=8.0",
+    "php": ">=8.3",
     "webonyx/graphql-php": "^14.4",
     "ext-json": "^8.0",
     "vlucas/phpdotenv": "^5.2",
