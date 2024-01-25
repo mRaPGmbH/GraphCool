@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\Queries;
 
-use Closure;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\File;
@@ -15,7 +14,6 @@ use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\Exporter;
 use Mrap\GraphCool\Utils\JwtAuthentication;
 use RuntimeException;
-use stdClass;
 
 use function Mrap\GraphCool\pluralize;
 
