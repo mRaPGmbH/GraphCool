@@ -92,7 +92,7 @@ class Exporter
                     }
                     $data[] = $row;
                 }
-                if (memory_get_peak_usage() > 104857600) { // 100 MB
+                if ($page < $pages && memory_get_peak_usage() > 104857600) { // 100 MB
                     $startAt = $page+1;
                     throw new OutOfMemoryException();
                 }
