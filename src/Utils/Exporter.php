@@ -68,7 +68,7 @@ class Exporter
         $data = [];
         $unsets = null;
         $args['first'] = 100;
-        $pages = DB::findNodes(JwtAuthentication::tenantId(), $name, $args)->paginatorInfo->lastPage;
+        $pages = DB::findNodes($tenantId, $name, $args)->paginatorInfo->lastPage;
 
         try {
             for ($page = $startAt; $page <= $pages; $page++) {
