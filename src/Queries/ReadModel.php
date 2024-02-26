@@ -8,6 +8,7 @@ use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Definition\DeferredBatching;
 use Mrap\GraphCool\Definition\Query;
+use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
@@ -32,6 +33,7 @@ class ReadModel extends Query
             'args' => [
                 'id' => Type::nonNull(Type::id()),
                 '_timezone' => Type::timezoneOffset(),
+                'result' => Type::result(),
             ]
         ];
     }
@@ -39,6 +41,6 @@ class ReadModel extends Query
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         Authorization::authorize('read', $this->model);
-        return $this->loadNodeDeferred(JwtAuthentication::tenantId(), $this->model, $args['id']);
+        return $this->loadNodeDeferred(JwtAuthentication::tenantId(), $this->model, $args['id'], $args['result'] ?? Result::DEFAULT);
     }
 }
