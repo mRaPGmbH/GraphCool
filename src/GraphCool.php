@@ -76,7 +76,12 @@ class GraphCool
         if (empty($raw)) {
             StopWatch::stop(__METHOD__);
             throw new Error('Syntax Error: Unexpected <EOF>');
-        } 
+        }
+        $encoding = mb_detect_encoding($raw, mb_detect_order(), true);
+        if ($encoding !== 'UTF-8') {
+            $raw = mb_convert_encoding($raw, 'UTF-8', $encoding);
+        }
+        $raw = iconv('UTF-8', 'UTF-8', $raw);
         try {
             $request = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
