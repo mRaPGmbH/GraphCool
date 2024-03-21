@@ -316,6 +316,7 @@ class MysqlDataProvider implements DataProvider
             $model->afterDelete($node);
             Mysql::history()->recordDelete($node, $model->getPropertyNamesForHistory());
             Mysql::commit();
+            $node->deleted_at = date('Y-m-d H:i:s');
             return $node;
         } catch (\Throwable $e) {
             Mysql::rollBack();
