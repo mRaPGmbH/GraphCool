@@ -601,7 +601,6 @@ class MysqlDataProvider implements DataProvider
         }
 
         $query->select(['id'])
-            ->limit($limit, $offset)
             ->where($args['where'] ?? null)
             ->whereMode($args['whereMode'] ?? 'AND')
             ->orderBy($args['orderBy'] ?? [])

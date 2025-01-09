@@ -185,10 +185,10 @@ class DB
         return $result;
     }
 
-    public static function deleteMany(string $tenantId, string $modelName, array $ids): bool
+    public static function deleteMany(string $tenantId, string $modelName, array $data): bool
     {
         StopWatch::start(__METHOD__);
-        $result = static::get()->deleteMany($tenantId, $modelName, $ids);
+        $result = static::get()->deleteMany($tenantId, $modelName, $data);
         if ($result->success) {
             foreach ($result->ids as $id) {
                 FullTextIndex::delete($tenantId, $modelName, $id);
