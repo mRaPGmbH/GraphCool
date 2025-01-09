@@ -21,8 +21,9 @@ class Deleter
         $args = $job->data['args'];
         $jwt = $job->data['jwt'];
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $jwt;
+        JwtAuthentication::overrideTenantId($job->tenantId);
 
-        $success = DB::deleteMany($job->tenant_id, $name, $args);
+        $success = DB::deleteMany($job->tenantId, $name, $args);
 
         return [
             'success' => $success,
