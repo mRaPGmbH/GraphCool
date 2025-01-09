@@ -23,6 +23,7 @@ class Entity extends EnumType
         $values = [
             '_EXPORTJOB' => ['value' => '_ExportJob', 'description' => '_ExportJob'],
             '_IMPORTJOB' => ['value' => '_ImportJob', 'description' => '_ImportJob'],
+            '_DELETEJOB' => ['value' => '_DeleteJob', 'description' => '_DeleteJob'],
         ];
         foreach (ClassFinder::models() as $name => $classname) {
             $values[strtoupper($name)] = [

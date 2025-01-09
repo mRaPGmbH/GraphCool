@@ -37,6 +37,7 @@ class ModelPaginator extends ObjectType
         $type = match($wrappedType) {
             'Import_Job' => Type::job('Import'),
             'Export_Job' => Type::job('Export'),
+            'Delete_Job' => Type::job('Delete'),
             'History_' => Type::history(),
             default => Type::model($wrappedType)
         };

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mrap\GraphCool\Types\Objects;
 
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\ScalarType;
 use Mrap\GraphCool\Types\DynamicTypeTrait;
 use Mrap\GraphCool\Types\Type;
 
@@ -41,11 +42,12 @@ class Job extends ObjectType
         ]);
     }
 
-    protected function getResultType(string $name): FileExport|ImportSummary
+    protected function getResultType(string $name): FileExport|ImportSummary|ScalarType
     {
         return match($name) {
             'Import' => Type::importSummary(),
             'Export' => Type::fileExport(),
+            'Delete' => Type::boolean(),
         };
     }
 
