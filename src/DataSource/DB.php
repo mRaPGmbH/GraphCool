@@ -185,6 +185,19 @@ class DB
         return $result;
     }
 
+    public static function deleteMany(string $tenantId, string $modelName, array $ids): bool
+    {
+        StopWatch::start(__METHOD__);
+        $result = static::get()->deleteMany($tenantId, $modelName, $ids);
+        if ($result->success) {
+            foreach ($result->ids as $id) {
+                FullTextIndex::delete($tenantId, $modelName, $id);
+            }
+        }
+        StopWatch::stop(__METHOD__);
+        return $result->success;
+    }
+
     public static function restore(string $tenantId, string $modelName, string $id): stdClass
     {
         StopWatch::start(__METHOD__);

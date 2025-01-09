@@ -181,6 +181,14 @@ class MysqlNodeWriter
         $this->deleteEdgesForNodeId($tenantId, $id);
     }
 
+    public function deleteMany(string $tenantId, array $ids): void
+    {
+        $this->deleteNodes($tenantId, $ids);
+        foreach ($ids as $id) {
+            $this->deleteEdgesForNodeId($tenantId, $id);
+        }
+    }
+
     protected function deleteNode(?string $tenantId, string $id): bool
     {
         $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` = :id';
@@ -189,6 +197,23 @@ class MysqlNodeWriter
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
+        return Mysql::execute($sql, $params) > 0;
+    }
+
+    protected function deleteNodes(?string $tenantId, array $ids): bool
+    {
+        $params = [];
+        $sqlParts = [];
+        foreach (array_values($ids) as $i => $id) {
+            $sqlParts[] = ':id' . $i;
+            $params[':id' . $i] = $id;
+        }
+        $sql = 'UPDATE `node` SET `deleted_at` = now() WHERE `id` IN (' . implode(',', $sqlParts) . ')';
+        if ($tenantId !== null) {
+            $sql .= ' AND `tenant_id` = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
+        //throw new Error($sql . ' | ' . print_r($params, true));
         return Mysql::execute($sql, $params) > 0;
     }
 

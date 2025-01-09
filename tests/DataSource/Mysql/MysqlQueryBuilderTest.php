@@ -304,7 +304,7 @@ class MysqlQueryBuilderTest extends TestCase
             ]],
         );
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `node` LEFT JOIN `node_property` AS `node_last_name` ON (`node_last_name`.`node_id` = `node`.`id` AND `node_last_name`.`property` = :p1 AND `node_last_name`.`deleted_at` IS NULL) LEFT JOIN `node_property` AS `node_date` ON (`node_date`.`node_id` = `node`.`id` AND `node_date`.`property` = :p7 AND `node_date`.`deleted_at` IS NULL) WHERE `node`.`model` = :p0 AND (((`node_last_name`.`value_string` LIKE :p2 AND `node`.`created_at` BETWEEN :p3 AND :p4 AND `node`.`id` IN (:p5,:p6)) OR `node_date`.`value_int` IS NULL)) AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `node` LEFT JOIN `node_property` AS `node_last_name` ON (`node_last_name`.`node_id` = `node`.`id` AND `node_last_name`.`property` = :p1 AND `node_last_name`.`deleted_at` IS NULL) LEFT JOIN `node_property` AS `node_date` ON (`node_date`.`node_id` = `node`.`id` AND `node_date`.`property` = :p7 AND `node_date`.`deleted_at` IS NULL) WHERE `node`.`model` = :p0 AND (((COALESCE(`node_last_name`.value_int, `node_last_name`.value_string, `node_last_name`.value_float) LIKE :p2 AND `node`.`created_at` BETWEEN :p3 AND :p4 AND `node`.`id` IN (:p5,:p6)) OR COALESCE(`node_date`.value_int, `node_date`.value_string, `node_date`.value_float) IS NULL)) AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         $expected = [
             ':p0' => 'DummyModel',
@@ -507,7 +507,7 @@ class MysqlQueryBuilderTest extends TestCase
         $builder = MysqlQueryBuilder::forRelation($relation, ['a']);
         $builder->whereRelated(['column' => '_float', 'operator' => '=', 'value' => 1.123]);
         $query = trim($builder->toSql());
-        self::assertSame('SELECT * FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` LEFT JOIN `edge_property` AS `edge_float` ON (`edge_float`.`parent_id` = `edge`.`parent_id` AND `edge_float`.`child_id` = `edge`.`child_id`  AND `edge_float`.`property` = :p2 AND `edge_float`.`deleted_at` IS NULL) WHERE `edge_float`.`value_float` = :p3 AND `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL', $query);
+        self::assertSame('SELECT * FROM `edge` LEFT JOIN `node` ON `node`.`id` = `edge`.`parent_id` LEFT JOIN `edge_property` AS `edge_float` ON (`edge_float`.`parent_id` = `edge`.`parent_id` AND `edge_float`.`child_id` = `edge`.`child_id`  AND `edge_float`.`property` = :p2 AND `edge_float`.`deleted_at` IS NULL) WHERE COALESCE(`edge_float`.value_int, `edge_float`.value_string, `edge_float`.value_float) = :p3 AND `edge`.`child_id` IN (:p0) AND `edge`.`parent` = :p1 AND `edge`.`deleted_at` IS NULL AND `node`.`deleted_at` IS NULL', $query);
         $params = $builder->getParameters();
         self::assertSame([':p0' => 'a', ':p1' => 'DummyModel',':p2'=> 'float',':p3'=>1.123], $params);
     }

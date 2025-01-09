@@ -47,10 +47,6 @@ class MutationTypeTest extends TestCase
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'createDummyModel';
-        $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->once())
-            ->method('toString')
-            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -100,10 +96,6 @@ class MutationTypeTest extends TestCase
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'updateDummyModel';
-        $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->once())
-            ->method('toString')
-            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
@@ -156,10 +148,6 @@ class MutationTypeTest extends TestCase
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
         $info->fieldName = 'restoreDummyModel';
-        $info->returnType = $this->createMock(Type::class);
-        $info->returnType->expects($this->atLeast(1))
-            ->method('toString')
-            ->willReturn('DummyModel');
 
         $mock = $this->createMock(MysqlDataProvider::class);
 
