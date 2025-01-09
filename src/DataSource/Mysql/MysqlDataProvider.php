@@ -585,7 +585,7 @@ class MysqlDataProvider implements DataProvider
     protected function getIdsForWhere(
         Model $model,
         string $name,
-        string $tenantId,
+        ?string $tenantId,
         array $args,
         string $resultType,
         ?int $limit = null,
