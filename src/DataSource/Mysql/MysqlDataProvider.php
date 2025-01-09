@@ -619,8 +619,8 @@ class MysqlDataProvider implements DataProvider
         }
 
         match ($resultType) {
-            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
-            'WITH_TRASHED' => $query->withTrashed(),
+            Result::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
+            Result::WITH_TRASHED => $query->withTrashed(),
             default => null
         };
 
