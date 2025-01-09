@@ -21,20 +21,15 @@ class Scheduler
         if (isset($this->config['always']) && !is_array($this->config['always'])) {
             throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'always\'] is not an array.');
         }
-        if (isset($this->config['hourly']) && !is_array($this->config['hourly'])) {
-            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'hourly\'] is not an array.');
-        }
-        if (isset($this->config['daily']) && !is_array($this->config['daily'])) {
-            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'daily\'] is not an array.');
-        }
-        if (isset($this->config['weekly']) && !is_array($this->config['weekly'])) {
-            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'weekly\'] is not an array.');
+        if (isset($this->config['each-start']) && !is_array($this->config['each-start'])) {
+            throw new RuntimeException('Error in ' . ClassFinder::rootPath() . '/config/scheduler.php' . ': [\'each-start\'] is not an array.');
         }
     }
 
     public function run(): array
     {
         $this->start = time();
+        $this->runScripts($this->config['each-start'] ?? []);
         while ($this->time() < 290) {
             set_time_limit(90);
             $this->loop();
@@ -59,7 +54,6 @@ class Scheduler
             return;
             // @codeCoverageIgnoreEnd
         }
-        // TODO: hourly, daily, weekly?
         while (time() - $start < 15) {
             if ($this->runJob() === false) {
                 break;

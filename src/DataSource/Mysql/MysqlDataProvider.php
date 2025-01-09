@@ -282,6 +282,7 @@ class MysqlDataProvider implements DataProvider
             $model->afterDelete($node);
             Mysql::history()->recordDelete($node, $model->getPropertyNamesForHistory());
             Mysql::commit();
+            $node->deleted_at = date('Y-m-d H:i:s');
             return $node;
         } catch (\Throwable $e) {
             Mysql::rollBack();
@@ -584,7 +585,7 @@ class MysqlDataProvider implements DataProvider
     protected function getIdsForWhere(
         Model $model,
         string $name,
-        string $tenantId,
+        ?string $tenantId,
         array $args,
         string $resultType,
         ?int $limit = null,
@@ -600,7 +601,6 @@ class MysqlDataProvider implements DataProvider
         }
 
         $query->select(['id'])
-            ->limit($limit, $offset)
             ->where($args['where'] ?? null)
             ->whereMode($args['whereMode'] ?? 'AND')
             ->orderBy($args['orderBy'] ?? [])

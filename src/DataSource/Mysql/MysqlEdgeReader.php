@@ -242,12 +242,12 @@ class MysqlEdgeReader
         $params = [];
         $i = 0;
         foreach ($idGroups as $idGroup) {
-            $sqlParts[] = '(`parent_id` = :p' . $i .' AND `child_id` = :c' . $i . ')';
+            $sqlParts[] = '(:p' . $i .', :c' . $i . ')';
             $params['p' . $i] = $idGroup->parent_id;
             $params['c' . $i] = $idGroup->child_id;
             $i++;
         }
-        $sql = 'SELECT * FROM `edge_property` WHERE (' . implode(' OR ', $sqlParts) . ') AND `deleted_at` IS NULL';
+        $sql = 'SELECT * FROM `edge_property` WHERE (`parent_id`, `child_id`) IN (' . implode(', ', $sqlParts) . ') AND `deleted_at` IS NULL';
         $result = Mysql::fetchAll($sql, $params);
         StopWatch::stop(__METHOD__);
         return $result;

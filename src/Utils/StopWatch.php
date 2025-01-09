@@ -98,4 +98,9 @@ class StopWatch
         Mysql::execute($sql, $params);
     }
 
+    public static function currentRunTime(): float
+    {
+        return microtime(true) - self::$firstStart ?? 0.0;
+    }
+
 }

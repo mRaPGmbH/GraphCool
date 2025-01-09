@@ -27,9 +27,9 @@ class File
      * @throws \Box\Spout\Common\Exception\IOException
      * @throws \Box\Spout\Writer\Exception\WriterNotOpenedException
      */
-    public static function write(string $name, array $data, array $args, string $type = 'xlsx'): stdClass
+    public static function write(string $name, array $data, array $args, string $type = 'xlsx', string $postFix = ''): stdClass
     {
-        return self::getExporter()->export($name, $data, $args, $type);
+        return self::getExporter()->export($name, $data, $args, $type, $postFix);
     }
 
     /**

@@ -202,6 +202,9 @@ class MysqlNodeWriter
 
     protected function deleteNodes(?string $tenantId, array $ids): bool
     {
+        if (count($ids) === 0) {
+            return true;
+        }
         $params = [];
         $sqlParts = [];
         foreach (array_values($ids) as $i => $id) {
