@@ -535,7 +535,7 @@ abstract class Type extends BaseType implements NullableType
     public static function job(string $type): Job
     {
         return match($type) {
-            'Import', 'Export' => static::cache(new Job($type)),
+            'Import', 'Export', 'Delete' => static::cache(new Job($type)),
             default => throw new RuntimeException('Unknown Job-Type: ' . $type),
         };
     }

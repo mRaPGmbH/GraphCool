@@ -18,6 +18,7 @@ use Mrap\GraphCool\Definition\Relation;
 use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Types\Objects\PaginatorInfo;
 use Mrap\GraphCool\Types\Type;
+use Mrap\GraphCool\Utils\JwtAuthentication;
 use stdClass;
 
 use function Mrap\GraphCool\model;
@@ -577,10 +578,12 @@ class MysqlDataProvider implements DataProvider
     /**
      * @param Model $model
      * @param string $name
-     * @param string $tenantId
-     * @param mixed[]|null $where
+     * @param string|null $tenantId
+     * @param array $args
      * @param string $resultType
-     * @return string[]
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return stdClass
      */
     protected function getIdsForWhere(
         Model $model,

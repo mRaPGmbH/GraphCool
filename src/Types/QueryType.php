@@ -40,6 +40,8 @@ class QueryType extends ObjectType
             '_ImportJobs' => $this->jobs('Import'),
             '_ExportJob' => $this->job('Export'),
             '_ExportJobs' => $this->jobs('Export'),
+            '_DeleteJob' => $this->job('Delete'),
+            '_DeleteJobs' => $this->jobs('Delete'),
             '_History' => $this->history(),
         ];
         foreach (ClassFinder::queries() as $name => $classname) {
@@ -113,6 +115,7 @@ class QueryType extends ObjectType
         return match($name) {
             'ImportJob' => 'importer',
             'ExportJob' => 'exporter',
+            'DeleteJob' => 'deleter',
         };
     }
 

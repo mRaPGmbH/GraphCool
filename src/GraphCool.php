@@ -16,6 +16,7 @@ use Mrap\GraphCool\Types\MutationType;
 use Mrap\GraphCool\Types\QueryType;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\ClassFinder;
+use Mrap\GraphCool\Utils\Deleter;
 use Mrap\GraphCool\Utils\Env;
 use Mrap\GraphCool\Utils\ErrorHandler;
 use Mrap\GraphCool\Utils\Exporter;
@@ -33,6 +34,7 @@ class GraphCool
     protected static Scheduler $scheduler;
     protected static Importer $importer;
     protected static Exporter $exporter;
+    protected static Deleter $deleter;
 
     public static function run(): void
     {
@@ -197,6 +199,7 @@ class GraphCool
                 'scheduler' => static::scheduler()->run(),
                 'importer' => static::importer()->run(array_shift($args)),
                 'exporter' => static::exporter()->run(array_shift($args)),
+                'deleter' => static::deleter()->run(array_shift($args)),
                 default => static::executeScript($scriptName, $args)
             };
         } catch (Throwable $e) {
@@ -296,6 +299,14 @@ class GraphCool
             static::$exporter = new Exporter();
         }
         return static::$exporter;
+    }
+
+    protected static function deleter(): Deleter
+    {
+        if (!isset(static::$deleter)) {
+            static::$deleter = new Deleter();
+        }
+        return static::$deleter;
     }
 
     public static function setExporter(Exporter $exporter): void

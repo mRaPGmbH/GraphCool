@@ -6,9 +6,11 @@ namespace Mrap\GraphCool\Mutations;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\DataSource\File;
 use Mrap\GraphCool\Definition\ModelBased;
 use Mrap\GraphCool\Definition\Mutation;
 use Mrap\GraphCool\Definition\Relation;
+use Mrap\GraphCool\Types\Enums\Result;
 use Mrap\GraphCool\Types\Type;
 use Mrap\GraphCool\Utils\Authorization;
 use Mrap\GraphCool\Utils\JwtAuthentication;
@@ -40,7 +42,7 @@ class DeleteManyModels extends Mutation
         }
 
         $this->config = [
-            'type' => Type::boolean(),
+            'type' => Type::string(),
             'description' => 'Delete many ' . $model . 's by where',
             'args' => $args
         ];
@@ -49,6 +51,11 @@ class DeleteManyModels extends Mutation
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
         Authorization::authorize('delete', $this->model);
-        return DB::deleteMany(JwtAuthentication::tenantId(), $this->model, $args);
+        $data = [
+            'name' => $this->model,
+            'args' => $args,
+            'jwt' => File::getToken(),
+        ];
+        return DB::addJob(JwtAuthentication::tenantId(), 'deleter', $this->model, $data);
     }
 }
