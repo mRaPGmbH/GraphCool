@@ -297,10 +297,10 @@ class MysqlDataProvider implements DataProvider
         $ids = $this->getIdsForWhere($model, $name, $tenantId, $data, Result::DEFAULT)->ids;
         $historyNames = $model->getPropertyNamesForHistory();
 
-        Mysql::beginTransaction();
-        try {
-            Mysql::nodeWriter()->deleteMany($tenantId, $ids);
-            foreach (array_chunk($ids, 1000) as $batch) {
+        foreach (array_chunk($ids, 500) as $batch) {
+            Mysql::beginTransaction();
+            try {
+                Mysql::nodeWriter()->deleteMany($tenantId, $batch);
                 $nodes = $this->loadNodes($tenantId, $batch, Result::WITH_TRASHED);
                 if (count($nodes) === 0) {
                     Mysql::rollBack();
@@ -315,16 +315,16 @@ class MysqlDataProvider implements DataProvider
                     $model->onDelete($node);
                     Mysql::history()->recordDelete($node, $historyNames);
                 }
+                Mysql::commit();
+            } catch (\Throwable $e) {
+                Mysql::rollBack();
+                throw $e;
             }
-            Mysql::commit();
-            return (object)[
-                'ids' => $ids,
-                'success' => true,
-            ];
-        } catch (\Throwable $e) {
-            Mysql::rollBack();
-            throw $e;
         }
+        return (object)[
+            'ids' => $ids,
+            'success' => true,
+        ];
     }
 
 
