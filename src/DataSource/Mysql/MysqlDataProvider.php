@@ -57,47 +57,13 @@ class MysqlDataProvider implements DataProvider
         $resultType = $args['result'] ?? Result::DEFAULT;
 
         $model = model($name);
-        $query = MysqlQueryBuilder::forModel($model, $name)->tenant($tenantId);
 
-        if (isset($args['where'])) {
-            $args['where'] = MysqlConverter::convertWhereValues($model, $args['where']);
-        }
-
-        $query->select(['id'])
-            ->limit($limit, $offset)
-            ->where($args['where'] ?? null)
-            ->whereMode($args['whereMode'] ?? 'AND')
-            ->orderBy($args['orderBy'] ?? [])
-            ->search($args['search'] ?? null)
-            ->searchLoosely($args['searchLoosely'] ?? null);
-
-        foreach (get_object_vars($model) as $key => $relation) {
-            if (!$relation instanceof Relation) {
-                continue;
-            }
-            $relatedClassname = $relation->classname;
-            $relatedModel = new $relatedClassname();
-            $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where' . ucfirst($key)]);
-
-            $query->whereHas($tenantId, $relatedModel, $relation->name, $relation->type, $relatedWhere);
-        }
-
-        match ($resultType) {
-            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
-            'WITH_TRASHED' => $query->withTrashed(),
-            default => null
-        };
-
-        $ids = [];
-        foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
-            $ids[] = $row->id;
-        }
-        $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+        $data = $this->getIdsForWhere($model, $name, $tenantId, $args, $resultType, $limit, $offset);
 
         $result = new stdClass();
-        $result->paginatorInfo = PaginatorInfo::create(count($ids), $page, $limit, $total);
-        $result->data = function() use($tenantId, $ids, $resultType) {return $this->loadNodes($tenantId, $ids, $resultType);};
-        $result->ids = $ids;
+        $result->paginatorInfo = PaginatorInfo::create(count($data->ids), $page, $limit, $data->total);
+        $result->data = function() use($tenantId, $data, $resultType) {return $this->loadNodes($tenantId, $data->ids, $resultType);};
+        $result->ids = $data->ids;
         return $result;
     }
 
@@ -287,7 +253,7 @@ class MysqlDataProvider implements DataProvider
             $updateData = $data['data'] ?? [];
             $resultType = $data['result'] ?? Result::DEFAULT;
             $this->checkNull($model, $updateData);
-            $ids = $this->getIdsForWhere($model, $name, $tenantId, $data['where'] ?? null, $resultType);
+            $ids = $this->getIdsForWhere($model, $name, $tenantId, $data, $resultType)->ids;
             $result = Mysql::nodeWriter()->updateMany($tenantId, $name, $ids, $updateData);
 
             $model->afterBulkUpdate($this->getClosure($tenantId, $name, $ids, $resultType));
@@ -323,6 +289,43 @@ class MysqlDataProvider implements DataProvider
             throw $e;
         }
     }
+
+    public function deleteMany(string $tenantId, string $name, array $data): stdClass
+    {
+        $model = model($name);
+        $ids = $this->getIdsForWhere($model, $name, $tenantId, $data, Result::DEFAULT)->ids;
+        $historyNames = $model->getPropertyNamesForHistory();
+
+        Mysql::beginTransaction();
+        try {
+            Mysql::nodeWriter()->deleteMany($tenantId, $ids);
+            foreach (array_chunk($ids, 1000) as $batch) {
+                $nodes = $this->loadNodes($tenantId, $batch, Result::WITH_TRASHED);
+                if (count($nodes) === 0) {
+                    Mysql::rollBack();
+                    return (object)[
+                        'ids' => $ids,
+                        'success' => false,
+                    ];
+                }
+                foreach ($nodes as $node) {
+                    $this->softDeleteFiles($name, $node);
+                    $model->afterDelete($node);
+                    $model->onDelete($node);
+                    Mysql::history()->recordDelete($node, $historyNames);
+                }
+            }
+            Mysql::commit();
+            return (object)[
+                'ids' => $ids,
+                'success' => true,
+            ];
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
+        }
+    }
+
 
     public function restore(?string $tenantId, string $name, string $id): stdClass
     {
@@ -583,23 +586,60 @@ class MysqlDataProvider implements DataProvider
         Model $model,
         string $name,
         string $tenantId,
-        ?array $where,
-        string $resultType
-    ): array {
-        $ids = [];
+        array $args,
+        string $resultType,
+        ?int $limit = null,
+        ?int $offset = null,
+    ): stdClass {
         $query = MysqlQueryBuilder::forModel($model, $name)
             ->tenant($tenantId)
             ->select(['id'])
-            ->where($where ?? null);
+            ->limit($limit ?? 99999, $offset ?? 0);
+
+        if (isset($args['where'])) {
+            $args['where'] = MysqlConverter::convertWhereValues($model, $args['where']);
+        }
+
+        $query->select(['id'])
+            ->limit($limit, $offset)
+            ->where($args['where'] ?? null)
+            ->whereMode($args['whereMode'] ?? 'AND')
+            ->orderBy($args['orderBy'] ?? [])
+            ->search($args['search'] ?? null)
+            ->searchLoosely($args['searchLoosely'] ?? null);
+
+        foreach (get_object_vars($model) as $key => $relation) {
+            if (!$relation instanceof Relation) {
+                continue;
+            }
+            $relatedClassname = $relation->classname;
+            $relatedModel = new $relatedClassname();
+            $relatedWhere = MysqlConverter::convertWhereValues($relatedModel, $args['where' . ucfirst($key)]);
+
+            $query->whereHas($tenantId, $relatedModel, $relation->name, $relation->type, $relatedWhere);
+        }
+
         match ($resultType) {
-            Result::ONLY_SOFT_DELETED => $query->onlySoftDeleted(),
-            Result::WITH_TRASHED => $query->withTrashed(),
+            'ONLY_SOFT_DELETED' => $query->onlySoftDeleted(),
+            'WITH_TRASHED' => $query->withTrashed(),
             default => null
         };
+
+        $ids = [];
         foreach (Mysql::fetchAll($query->toSql(), $query->getParameters()) as $row) {
             $ids[] = $row->id;
         }
-        return $ids;
+
+        if ($limit === null) {
+            $total = count($ids);
+        } else {
+            $total = (int)Mysql::fetchColumn($query->toCountSql(), $query->getParameters());
+        }
+
+        return (object)[
+            'ids' => $ids,
+            'total' => $total,
+        ];
     }
 
     /**

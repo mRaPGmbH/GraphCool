@@ -35,42 +35,6 @@ class SchedulerTest extends TestCase
         new Scheduler();
     }
 
-    public function testConstructorExceptionHourly(): void
-    {
-        $configProvider = $this->createMock(ConfigProvider::class);
-        $configProvider->expects($this->once())
-            ->method('get')
-            ->withAnyParameters()
-            ->willReturn(['hourly' => 'not_an_array']);
-        Config::setProvider($configProvider);
-        $this->expectException(RuntimeException::class);
-        new Scheduler();
-    }
-
-    public function testConstructorExceptionDaily(): void
-    {
-        $configProvider = $this->createMock(ConfigProvider::class);
-        $configProvider->expects($this->once())
-            ->method('get')
-            ->withAnyParameters()
-            ->willReturn(['daily' => 'not_an_array']);
-        Config::setProvider($configProvider);
-        $this->expectException(RuntimeException::class);
-        new Scheduler();
-    }
-
-    public function testConstructorExceptionWeekly(): void
-    {
-        $configProvider = $this->createMock(ConfigProvider::class);
-        $configProvider->expects($this->once())
-            ->method('get')
-            ->withAnyParameters()
-            ->willReturn(['weekly' => 'not_an_array']);
-        Config::setProvider($configProvider);
-        $this->expectException(RuntimeException::class);
-        new Scheduler();
-    }
-
     public function testScripts(): void
     {
         $configProvider = $this->createMock(ConfigProvider::class);

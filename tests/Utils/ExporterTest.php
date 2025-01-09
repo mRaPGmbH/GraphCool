@@ -29,10 +29,13 @@ class ExporterTest extends TestCase
         ];
 
         $dbMock = $this->createMock(MysqlDataProvider::class);
-        $dbMock->expects($this->once())
+        $dbMock->expects($this->exactly(2))
             ->method('findNodes')
             ->withAnyParameters()
-            ->willReturn((object)['data' => function(){return[];}]);
+            ->willReturn((object)[
+                'data' => function(){return[];},
+                'paginatorInfo' => (object)['lastPage' => 1]
+            ]);
         DB::setProvider($dbMock);
 
         $exporterMock = $this->createMock(FileExport::class);

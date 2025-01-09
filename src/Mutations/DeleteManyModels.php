@@ -16,23 +16,21 @@ use RuntimeException;
 use function Mrap\GraphCool\model;
 use function Mrap\GraphCool\pluralize;
 
-class UpdateManyModels extends Mutation
+class DeleteManyModels extends Mutation
 {
     use ModelBased;
 
     public function __construct(?string $model = null)
     {
         if ($model === null) {
-            throw new RuntimeException(__METHOD__.': parameter $model may not be null for ModelBased mutations.');
+            throw new RuntimeException(__METHOD__ . ': parameter $model may not be null for ModelBased mutations.');
         }
-        $this->name = 'updateMany'.pluralize($model);
+        $this->name = 'deleteMany' . pluralize($model);
         $this->model = $model;
 
         $args = [
             'where' => Type::whereConditions($model),
             'whereMode' => Type::whereMode(),
-            '_timezone' => Type::timezoneOffset(),
-            'data' => Type::nonNull(Type::input($model)),
         ];
         foreach (get_object_vars(model($model)) as $key => $relation) {
             if (!$relation instanceof Relation) {
@@ -42,15 +40,15 @@ class UpdateManyModels extends Mutation
         }
 
         $this->config = [
-            'type' => Type::updateManyResult(),
-            'description' => 'Modify multiple existing ' . $model . ' entries, using where.',
-            'args' => $args,
+            'type' => Type::boolean(),
+            'description' => 'Delete many ' . $model . 's by where',
+            'args' => $args
         ];
     }
 
     public function resolve(array $rootValue, array $args, mixed $context, ResolveInfo $info): mixed
     {
-        Authorization::authorize('updateMany', $this->model);
-        return DB::updateAll(JwtAuthentication::tenantId(), $this->model, $args);
+        Authorization::authorize('delete', $this->model);
+        return DB::deleteMany(JwtAuthentication::tenantId(), $this->model, $args);
     }
 }
