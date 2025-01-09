@@ -213,7 +213,6 @@ class MysqlNodeWriter
             $sql .= ' AND `tenant_id` = :tenant_id';
             $params[':tenant_id'] = $tenantId;
         }
-        //throw new Error($sql . ' | ' . print_r($params, true));
         return Mysql::execute($sql, $params) > 0;
     }
 
