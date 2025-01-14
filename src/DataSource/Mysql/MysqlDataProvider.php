@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mrap\GraphCool\DataSource\Mysql;
 
+use App\Models\Note;
 use Carbon\Carbon;
 use Closure;
 use GraphQL\Error\Error;
@@ -298,33 +299,44 @@ class MysqlDataProvider implements DataProvider
         $historyNames = $model->getPropertyNamesForHistory();
 
         foreach (array_chunk($ids, 500) as $batch) {
-            Mysql::beginTransaction();
-            try {
-                Mysql::nodeWriter()->deleteMany($tenantId, $batch);
-                $nodes = $this->loadNodes($tenantId, $batch, Result::WITH_TRASHED);
-                if (count($nodes) === 0) {
-                    Mysql::rollBack();
-                    return (object)[
-                        'ids' => $ids,
-                        'success' => false,
-                    ];
-                }
-                foreach ($nodes as $node) {
-                    $this->softDeleteFiles($name, $node);
-                    $model->afterDelete($node);
-                    $model->onDelete($node);
-                    Mysql::history()->recordDelete($node, $historyNames);
-                }
-                Mysql::commit();
-            } catch (\Throwable $e) {
-                Mysql::rollBack();
-                throw $e;
+            if (!$this->deleteBatch($tenantId, $batch, $historyNames, $name, $model)) {
+                return (object)[
+                    'ids' => $ids,
+                    'success' => false,
+                ];
             }
         }
         return (object)[
             'ids' => $ids,
             'success' => true,
         ];
+    }
+
+    protected function deleteBatch(string $tenantId, array $batch, array $historyNames, string $name, Model $model): bool
+    {
+        set_time_limit(60);
+        Mysql::beginTransaction();
+        try {
+            Mysql::nodeWriter()->deleteMany($tenantId, $batch);
+            $nodes = $this->loadNodes($tenantId, $batch, Result::WITH_TRASHED);
+            if (count($nodes) === 0) {
+                Mysql::rollBack();
+                return false;
+            }
+            foreach ($nodes as $node) {
+                $this->softDeleteFiles($name, $node);
+                $model->afterDelete($node);
+                $model->onDelete($node);
+                Mysql::history()->recordDelete($node, $historyNames);
+            }
+            Mysql::commit();
+        } catch (\Throwable $e) {
+            Mysql::rollBack();
+            throw $e;
+        }
+        $model->onShutdown();
+
+        return true;
     }
 
 

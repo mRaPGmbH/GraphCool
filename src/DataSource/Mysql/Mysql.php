@@ -158,7 +158,7 @@ class Mysql
         return static::$history;
     }
 
-    public static function setHistory(MysqlHistory $history): void
+    public static function setHistory(?MysqlHistory $history): void
     {
         static::$history = $history;
     }

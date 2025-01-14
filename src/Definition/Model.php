@@ -23,6 +23,7 @@ class Model extends stdClass
 
     public function onSave(stdClass $loaded, array $changes): void {}
     public function onDelete(stdClass $loaded): void {}
+    public function onShutdown(): void {}
 
     /**
      * @deprecated use onSave() instead!

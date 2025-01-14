@@ -221,8 +221,8 @@ class Microservice
     protected function getBaseUrl(): string
     {
         return match(Env::get('APP_ENV')) {
-            'local' => 'http://192.168.150.141:56201/',
-            //'local' => 'http://192.168.8.106:56201/',
+            //'local' => 'http://192.168.150.141:56201/',
+            'local' => 'http://192.168.8.106:56201/',
             'production' => 'https://myhello.cloud',
             default => 'https://staging.myhello.cloud'
         };
