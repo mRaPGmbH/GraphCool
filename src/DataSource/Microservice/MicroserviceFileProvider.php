@@ -95,12 +95,12 @@ class MicroserviceFileProvider implements FileProvider
             ->call();
     }
 
-    public function getToken(): string
+    public function getToken(string $operation = 'CREATE'): string
     {
         return Microservice::endpoint('file:query:_Token')
             ->authorization($_SERVER['HTTP_AUTHORIZATION'])
             ->paramEnum('endpoint', 'FILE')
-            ->paramEnum('operation', 'CREATE')
+            ->paramEnum('operation', $operation)
             ->call();
     }
 

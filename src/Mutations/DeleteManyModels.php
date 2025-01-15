@@ -54,7 +54,7 @@ class DeleteManyModels extends Mutation
         $data = [
             'name' => $this->model,
             'args' => $args,
-            'jwt' => File::getToken(),
+            'jwt' => File::getToken('DELETE'),
         ];
         return DB::addJob(JwtAuthentication::tenantId(), 'deleter', $this->model, $data);
     }

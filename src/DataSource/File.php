@@ -102,9 +102,9 @@ class File
         static::getFileProvider()->restore($name, $id, $key, $value);
     }
 
-    public static function getToken(): string
+    public static function getToken(string $operation = 'CREATE'): string
     {
-        return static::getFileProvider()->getToken();
+        return static::getFileProvider()->getToken($operation);
     }
 
     /**
