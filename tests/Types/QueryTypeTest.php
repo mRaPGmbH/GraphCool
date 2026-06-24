@@ -163,6 +163,7 @@ ENUM pivot_enum!';
         $query->config['fields'](); // has to be called to prime setup
         $closure = $query->resolveFieldFn;
         $info = $this->createMock(ResolveInfo::class);
+        $info->fieldName = '';
         $info->returnType = $this->createMock(Type::class);
         $info->returnType->name = '_Import_JobPaginator';
 

@@ -19,8 +19,8 @@ class Upload extends ScalarType
         return '_Upload';
     }
 
-    public $name = '_Upload';
-    public $description = 'A file to be uploaded (as multipart/blob).';
+    public string $name = '_Upload';
+    public ?string $description = 'A file to be uploaded (as multipart/blob).';
 
     public function serialize(mixed $value): void
     {

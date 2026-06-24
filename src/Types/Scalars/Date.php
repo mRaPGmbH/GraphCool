@@ -22,8 +22,8 @@ class Date extends ScalarType
         return '_Date';
     }
 
-    public $name = '_Date';
-    public $description = 'A Date string in ISO 8601 format: "2021-03-11"';
+    public string $name = '_Date';
+    public ?string $description = 'A Date string in ISO 8601 format: "2021-03-11"';
 
     public function serialize(mixed $value): string
     {
