@@ -76,6 +76,17 @@ abstract class Type extends BaseType implements NullableType
         return static::$types[$name];
     }
 
+    /**
+     * Register an application-defined type under a custom name so it can be
+     * resolved by get() / the schema type loader. Lets app code expose its own
+     * object/scalar types (e.g. a bespoke query result) that are not derived
+     * from a model.
+     */
+    public static function register(string $name, NullableType $type): void
+    {
+        static::$types[$name] = $type;
+    }
+
     protected static function create(string $name): NullableType
     {
         return match ($name) {
