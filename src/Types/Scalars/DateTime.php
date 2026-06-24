@@ -23,8 +23,8 @@ class DateTime extends ScalarType
         return '_DateTime';
     }
 
-    public $name = '_DateTime';
-    public $description = 'A DateTime string with timezone in following ISO 8601 format: "2021-03-11T11:54:04.123+00:00". When used as input several other ISO 8601 variants are accepted as well.';
+    public string $name = '_DateTime';
+    public ?string $description = 'A DateTime string with timezone in following ISO 8601 format: "2021-03-11T11:54:04.123+00:00". When used as input several other ISO 8601 variants are accepted as well.';
 
     public function serialize(mixed $value): string
     {

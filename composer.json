@@ -23,13 +23,13 @@
   },
   "require": {
     "php": ">=8.3",
-    "webonyx/graphql-php": "^14.4",
+    "webonyx/graphql-php": "^15.0",
     "ext-json": "^8.0",
     "vlucas/phpdotenv": "^5.2",
     "ext-pdo": "^8.0",
     "ramsey/uuid": "^4.1",
     "box/spout": "^3.1",
-    "mll-lab/graphql-php-scalars": "^4.0",
+    "mll-lab/graphql-php-scalars": "^6.0",
     "nesbot/carbon": "^2.46",
     "lcobucci/jwt": "^4.1"
   },

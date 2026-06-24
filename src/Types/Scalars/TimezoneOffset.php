@@ -23,8 +23,8 @@ class TimezoneOffset extends ScalarType
         return '_TimezoneOffset';
     }
 
-    public $name = '_TimezoneOffset';
-    public $description = 'A Timezone offset string in ISO 8601 format: "+00:00" or "Z"';
+    public string $name = '_TimezoneOffset';
+    public ?string $description = 'A Timezone offset string in ISO 8601 format: "+00:00" or "Z"';
 
     public function serialize(mixed $value): string
     {
