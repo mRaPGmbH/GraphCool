@@ -14,6 +14,9 @@ use function Mrap\GraphCool\model;
 
 class MysqlNodeReader
 {
+    // Reserved key holding a node's true entity type (the `node.model` column),
+    // preserved so a model field literally named `model` cannot shadow it.
+    public const ENTITY_TYPE_KEY = '__graphcool_entity_type';
 
     /** @var string[] */
     protected array $nodeIds = [];
@@ -34,6 +37,9 @@ class MysqlNodeReader
         }
         $nodes = [];
         foreach ($this->fetchNodes($tenantId, $ids, $resultType) as $id => $node) {
+            // Preserve the true entity type before node properties (which may include
+            // a field literally named `model`) overwrite $node->model below.
+            $node->{self::ENTITY_TYPE_KEY} = $node->model;
             $nodes[$id] = Mysql::edgeReader()->injectEdgeClosures($node);
         }
         if (count($nodes) === 0) {
