@@ -21,7 +21,7 @@ class MysqlHistory
     {
         StopWatch::start(__METHOD__);
         $changes = $this->compare($oldNode, $newNode, $properties);
-        $this->insert($newNode->tenant_id, $newNode->id, $newNode->model, 'update', $changes);
+        $this->insert($newNode->tenant_id, $newNode->id, MysqlNodeReader::entityType($newNode), 'update', $changes);
         StopWatch::stop(__METHOD__);
     }
 
@@ -38,7 +38,7 @@ class MysqlHistory
     {
         StopWatch::start(__METHOD__);
         $changes = $this->node($node, $properties);
-        $this->insert($node->tenant_id, $node->id, $node->model, 'delete', $changes);
+        $this->insert($node->tenant_id, $node->id, MysqlNodeReader::entityType($node), 'delete', $changes);
         StopWatch::stop(__METHOD__);
     }
 
@@ -46,7 +46,7 @@ class MysqlHistory
     {
         StopWatch::start(__METHOD__);
         $changes = $this->node($node, $properties);
-        $this->insert($node->tenant_id, $node->id, $node->model, 'restore', $changes);
+        $this->insert($node->tenant_id, $node->id, MysqlNodeReader::entityType($node), 'restore', $changes);
         StopWatch::stop(__METHOD__);
     }
 
@@ -54,7 +54,7 @@ class MysqlHistory
     {
         StopWatch::start(__METHOD__);
         $changes = $this->node($node, $properties);
-        $this->insert($node->tenant_id, $node->id, $node->model, 'create', $changes);
+        $this->insert($node->tenant_id, $node->id, MysqlNodeReader::entityType($node), 'create', $changes);
         StopWatch::stop(__METHOD__);
     }
 

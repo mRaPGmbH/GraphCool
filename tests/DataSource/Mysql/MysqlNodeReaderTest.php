@@ -54,6 +54,27 @@ class MysqlNodeReaderTest extends TestCase
         self::assertSame('DummyModel', $result->{MysqlNodeReader::ENTITY_TYPE_KEY});
     }
 
+    public function testEntityTypePrefersReservedKey(): void
+    {
+        // A model field literally named `model` overwrites $node->model on load;
+        // entityType() must still report the true type from the reserved key.
+        $node = new stdClass();
+        $node->{MysqlNodeReader::ENTITY_TYPE_KEY} = 'File';
+        $node->model = 'NoteAttachment'; // shadowed by the File model's `model` field
+
+        self::assertSame('File', MysqlNodeReader::entityType($node));
+    }
+
+    public function testEntityTypeFallsBackToModel(): void
+    {
+        // Nodes not produced by loadMany() (e.g. raw edge rows) lack the reserved
+        // key; entityType() must fall back to the `model` column.
+        $node = new stdClass();
+        $node->model = 'DummyModel';
+
+        self::assertSame('DummyModel', MysqlNodeReader::entityType($node));
+    }
+
     protected function mockLoad(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');

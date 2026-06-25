@@ -757,7 +757,7 @@ class MysqlDataProvider implements DataProvider
         // Use the preserved entity type: a model may define a field named `model`
         // (e.g. the file service's File model), which would otherwise shadow the
         // node's type on $data->model and break resolution.
-        $type = $data->{MysqlNodeReader::ENTITY_TYPE_KEY} ?? $data->model;
+        $type = MysqlNodeReader::entityType($data);
         $model = model($type);
         foreach (get_object_vars($model) as $key => $item) {
             if (

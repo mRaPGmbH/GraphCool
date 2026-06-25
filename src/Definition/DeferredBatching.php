@@ -4,6 +4,7 @@ namespace Mrap\GraphCool\Definition;
 
 use GraphQL\Deferred;
 use Mrap\GraphCool\DataSource\DB;
+use Mrap\GraphCool\DataSource\Mysql\MysqlNodeReader;
 use Mrap\GraphCool\Types\Enums\Result;
 use RuntimeException;
 use stdClass;
@@ -132,7 +133,7 @@ trait DeferredBatching
         if ($node === null) {
             return false;
         }
-        if ($node->model !== $name) {
+        if (MysqlNodeReader::entityType($node) !== $name) {
             return false;
         }
         if ($resultType === Result::DEFAULT && $node->deleted_at !== null) {

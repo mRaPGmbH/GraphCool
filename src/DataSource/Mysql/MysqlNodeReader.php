@@ -18,6 +18,17 @@ class MysqlNodeReader
     // preserved so a model field literally named `model` cannot shadow it.
     public const ENTITY_TYPE_KEY = '__graphcool_entity_type';
 
+    /**
+     * The node's true entity type. A loaded node's `model` property may have been
+     * overwritten by a model field literally named `model` (e.g. the file service's
+     * File model), so always resolve the type through the reserved key, falling back
+     * to `model` for nodes not produced by loadMany() (e.g. raw edge rows).
+     */
+    public static function entityType(stdClass $node): string
+    {
+        return $node->{self::ENTITY_TYPE_KEY} ?? $node->model;
+    }
+
     /** @var string[] */
     protected array $nodeIds = [];
 
