@@ -43,6 +43,17 @@ class MysqlNodeReaderTest extends TestCase
         self::assertEquals('Huber', $result->last_name);
     }
 
+    public function testLoadPreservesTrueEntityType(): void
+    {
+        $this->mockLoad();
+        $reader = new MysqlNodeReader();
+        $result = $reader->load('hc123', 'asdf123123');
+
+        // The node's true entity type must survive under a reserved key so a model
+        // field literally named `model` cannot shadow it (file service File model).
+        self::assertSame('DummyModel', $result->{MysqlNodeReader::ENTITY_TYPE_KEY});
+    }
+
     protected function mockLoad(): void
     {
         require_once($this->dataPath().'/app/Models/DummyModel.php');

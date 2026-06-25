@@ -754,7 +754,11 @@ class MysqlDataProvider implements DataProvider
 
     protected function retrieveFiles(stdClass $data): stdClass
     {
-        $model = model($data->model);
+        // Use the preserved entity type: a model may define a field named `model`
+        // (e.g. the file service's File model), which would otherwise shadow the
+        // node's type on $data->model and break resolution.
+        $type = $data->{MysqlNodeReader::ENTITY_TYPE_KEY} ?? $data->model;
+        $model = model($type);
         foreach (get_object_vars($model) as $key => $item) {
             if (
                 !$item instanceof Field
@@ -766,7 +770,7 @@ class MysqlDataProvider implements DataProvider
             //can't use closure here, because there are subfields - graphql-php only allows closures at leaf-nodes
             //$value = $data->$key;
             //$data->$key = function() use($name, $id, $key, $value) {File::retrieve($name, $id, $key, $value);};
-            $data->$key = File::retrieve($data->model, $data->id, $key, $data->$key);
+            $data->$key = File::retrieve($type, $data->id, $key, $data->$key);
         }
         return $data;
     }
