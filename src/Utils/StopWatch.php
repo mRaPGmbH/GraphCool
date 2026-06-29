@@ -79,8 +79,16 @@ class StopWatch
 
     public static function log(string $query): void
     {
+        // Slow-query logging threshold in milliseconds (default 2000). Set
+        // SLOW_QUERY_THRESHOLD to 0 (or false) to disable slow-query logging, e.g.
+        // for services whose request bodies are large or sensitive (the request is
+        // stored verbatim in the slow_query table).
+        $threshold = (int) Env::get('SLOW_QUERY_THRESHOLD', '2000');
+        if ($threshold <= 0) {
+            return;
+        }
         $total = 1000 * (microtime(true) - static::$firstStart);
-        if ($total < 2000) { // TODO: make time cutoff configure-able
+        if ($total < $threshold) {
             return;
         }
         $sql = 'INSERT INTO `slow_query` (`id`, `tenant_id`, `created_at`, `milliseconds`, `query`, `timings`, `ip`, `user_agent`) '
