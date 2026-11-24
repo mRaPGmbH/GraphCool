@@ -42,7 +42,7 @@ class Upload extends ScalarType
         }
         $tmpName = is_array($value) ? ($value['tmp_name'] ?? null) : null;
         if (!is_string($tmpName) || !(self::$isUploadedFile)($tmpName)) {
-            throw new Error('File upload must be sent as multipart/form-data.');
+            throw new Error('File upload failed or was not sent as multipart/form-data.');
         }
         return $value;
     }
